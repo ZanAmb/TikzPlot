@@ -1,4 +1,4 @@
-import tikzplot as plt
+import tikzplot.plots as plt
 import numpy as np
 
 x = np.linspace(1,10,20)
