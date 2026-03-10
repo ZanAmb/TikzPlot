@@ -1,32 +1,34 @@
+import numpy as np
+
 class Graph:
     COLOR_MAP = {'b':'blue', 'g':'teal', 'r':'red', 'c':'cyan', 'm':'magenta', 'y':'yellow', 'k':'black', 'w':'white', "orange":"orange", "green": "green", "cyan":"cyan", "peru": "brown", "lime": "lime", "gray": "gray", "magenta": "magetna", "purple": "violet"}
     LINE_MAP = {"--": "dashed", ":": "dotted", "-.": "dashdotted", "-":"solid"}
     MARKER_MAP = {'o':'*', ".": "*", 's':'square*', '^':'triangle', 'v':'triangle*', 'd':'diamond', '+':'+', 'x':'x', '*':'star'}
 
-    def __init__(self, axes, x, y, xerr=None, yerr=None, **style):
+    def __init__(self, axes, x, y, settings=None, xerr=None, yerr=None, **style):
         def _normalize_error(err, n):
             if err is None:
                 return None, False
             if isinstance(err, (int, float)):
-                return [err] * n, False
+                return np.asarray([err] * n), False
             if len(err) == n:
                 if hasattr(err[0], "__len__") and len(err[0]) == 2:
-                    return err, True
+                    return np.asarray(err), True
 
-                return list(err), False
+                return np.asarray(err), False
             raise ValueError("Invalid errorbar specification")
         self.axes = axes
-        self.x = x
-        self.y = y
+        self.x = np.asarray(x)
+        self.y = np.asarray(y)
         n = len(self.x)
         self.xerr, self.x_asym = _normalize_error(xerr, n)
         self.yerr, self.y_asym = _normalize_error(yerr, n)
         self.style = style
         self.label = None
+        self.settings = settings
 
         self.ms_multiplier = 1
         self.opacity = 1
-
 
     def _style_string(self):
         opts = []
@@ -105,7 +107,9 @@ class Graph:
             if mark:
                 opts.append(f"mark={self.MARKER_MAP[mark[0]]}")
                 fmt = fmt.replace(mark[0], "")
-            ls = match_ls(fmt)
+            ls = None
+            if fmt:
+                ls = match_ls(fmt)
             if ls:
                 opts.append(ls)
 
@@ -163,6 +167,8 @@ class Graph:
             key = opts[i].split("=")
             if key[0] in keys:
                 del opts[i]
+        if self.settings:
+            opts = self.settings + opts
 
         return ",\n".join(opts)
 
@@ -212,7 +218,51 @@ class Graph:
             return f"""\\addplot [{style}] table [{table_opts}] {{\n{header}\n{rows}\n}};\\addlegendentry{{{self.label}}}"""
         return f"""\\addplot [forget plot,\n{style}] table [{table_opts}] {{\n{header}\n{rows}\n}};"""    
     
-    def data_range(self):
+    def data_range(self, which):
         xmin, xmax = min(self.x), max(self.x)
         ymin, ymax = min(self.y), max(self.y)
-        return xmin, xmax, ymin, ymax            
+        return xmin, xmax, ymin, ymax
+    
+    def get_erange(self, which):
+        if which == "xmin":
+            return min(self.x)
+        if which == "xmax":
+            return max(self.x)
+        if which == "ymin":
+            return min(self.y)
+        if which == "ymax":
+            return max(self.y)
+        
+    def filter(self, which, value):
+        if which == "xmin":
+            mask = self.x >= value
+            idx_keep = np.argmin(np.abs(self.x - value))
+    
+        elif which == "xmax":
+            mask = self.x <= value
+            idx_keep = np.argmin(np.abs(self.x - value))
+    
+        elif which == "ymin":
+            mask = self.y >= value
+            idx_keep = np.argmin(np.abs(self.y - value))
+    
+        elif which == "ymax":
+            mask = self.y <= value
+            idx_keep = np.argmin(np.abs(self.y - value))
+    
+        else:
+            raise ValueError("Invalid filter type")
+    
+        mask[idx_keep] = True
+    
+        self.x = self.x[mask]
+        self.y = self.y[mask]
+    
+        if self.xerr is not None:
+            self.xerr = self.xerr[mask]
+    
+        if self.yerr is not None:
+            self.yerr = self.yerr[mask]
+    
+    
+    

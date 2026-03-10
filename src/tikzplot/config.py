@@ -24,6 +24,8 @@ class _TikzConfig:
         self.DEFAULT_WIDTH = 12
         self.DEFAULT_HEIGHT = 10
 
+        self.SHARED_AXIS_REL_MARGIN = 0.03
+
         self._config_file = Path.home() / ".tikz_userconf.json"
 
         self._load_user_config()

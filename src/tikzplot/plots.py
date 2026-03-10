@@ -59,15 +59,37 @@ def legend(*args, **kwargs):
     _ensure_axes()
     _current_axes.legend(*args, **kwargs)
 
-def subplot(nrows, ncols, index):
+def subplot(nrows, ncols, index, sharex=None, sharey=None):
     global _current_axes
 
     if _current_figure is None:
         figure()
 
-    _current_axes = _current_figure.add_subplot(nrows, ncols, index)
+    _current_axes = _current_figure.add_subplot(nrows, ncols, index, sharex, sharey)
     return _current_axes
 
+def subplots(nrows=1, ncols=1, sharex=None, sharey=None,**kwargs):
+
+    global _current_figure, _current_axes
+
+    _current_figure = Figure()
+    axes = _current_figure.add_subplots(nrows, ncols, sharex, sharey)
+
+    if nrows * ncols == 1:
+        _current_axes = axes[0]
+        return _current_figure, axes[0]
+
+    grid = []
+    k = 0
+    for r in range(nrows):
+        row = []
+        for c in range(ncols):
+            row.append(axes[k])
+            k += 1
+        grid.append(row)
+
+    _current_axes = axes[0]
+    return _current_figure, grid
 
 def plot(*args, **kwargs):
     _ensure_axes()
@@ -104,29 +126,9 @@ def errorbar(x, y, *args, **kwargs):
     _ensure_axes()
     _current_axes.errorbar(x, y, *args, **kwargs)
 
-def subplots(nrows=1, ncols=1):
-
-    global _current_figure, _current_axes
-
-    _current_figure = Figure()
-    axes = _current_figure.add_subplots(nrows, ncols)
-
-    if nrows * ncols == 1:
-        _current_axes = axes[0]
-        return _current_figure, axes[0]
-
-    grid = []
-    k = 0
-    for r in range(nrows):
-        row = []
-        for c in range(ncols):
-            row.append(axes[k])
-            k += 1
-        grid.append(row)
-
-    _current_axes = axes[0]
-    return _current_figure, grid
-
+def stem(*args, **kwargs):
+    _ensure_axes()
+    _current_axes.stem(*args, **kwargs)
 
 def savefig(filename):
     _current_figure.save(filename)

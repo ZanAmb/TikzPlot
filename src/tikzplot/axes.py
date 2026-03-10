@@ -11,8 +11,8 @@ class BaseAxes:
         if TikzConfig.USE_DECIMAL_COMMA:
             self.axis_args.add("/pgf/number format/use comma")
 
-    def _plot(self, x, y, *, xerr=None, yerr=None, **style):
-        self.elements.append(Graph(self, x, y, xerr=xerr, yerr=yerr, **style))
+    def _plot(self, x, y, settings=None, xerr=None, yerr=None, **style):
+        self.elements.append(Graph(self, x, y, settings, xerr=xerr, yerr=yerr, **style))
 
     def plot(self, *args, **kwargs):
         if len(args) == 1:
@@ -28,20 +28,46 @@ class BaseAxes:
     def scatter(self, x, y, *args, **kwargs):
         self._plot(x, y, **kwargs, ls="")
 
-
-    def semilogy(self, x, y, *args, **kwargs):
+    def semilogy(self, x, y, *args, base=10, **kwargs):
         self.axis_options["ymode"] = "log"
+        self.axis_options["log basis y"] = base
         self._plot(x, y, **kwargs)
 
     def errorbar(self, x, y, *args, **kwargs):
-        self._plot(x, y, **kwargs)
+        if len(args) == 1:
+            self._plot(x, y, **kwargs, yerr=args[0])
+        elif len(args) == 2:
+            self._plot(x, y, **kwargs, yerr=args[0], fmt=args[1])
+        else:
+            self._plot(x, y, **kwargs)
 
+    def stem(self, *args, **kwargs):
+        vert = True
+        if len(args) == 1:
+            y = args[0]
+            x = range(len(y))
+        elif len(args) == 2:
+            x,y=args
+        elif len(args) == 3:
+            x,y,fmt=args
+            kwargs["fmt"]=fmt
+        if "orientation" in kwargs:
+            o = kwargs.pop("orientation")
+            if o == "horizontal":
+                vert = False
+        if vert:
+            self._plot(x,y,settings=["ycomb"], **kwargs)
+        else:
+            self._plot(x,y,settings=["xcomb"], **kwargs)
     def set_ylabel(self, label):
         self.axis_options["ylabel"] = f"{{{label}}}"
 
     def set_ylim(self, *args, **kwargs):
         bottom = None
         top = None
+        for k in kwargs:
+            if k not in ["bottom", "top"]:
+                print(f"Invalid argument {kwargs.pop(k)} in ylim")
 
         if len(args) == 1:
             bottom, top = args[0]
@@ -59,6 +85,10 @@ class BaseAxes:
             self.axis_options["ymin"] = bottom
         if top is not None:
             self.axis_options["ymax"] = top
+
+    def set_yscale(self, *args):
+        if "log" in args:
+            self.axis_options["ymode"] = "log"
 
     LEGEND_LOC_MAP = ["best", "upper right", "upper left", "lower_left", "lower right", "right", "center left", "center right", "lower center", "upper center", "center"]
     ANCHOR_MAP = {"top": "north", "bottom": "south", "upper": "north", "lower": "south", "left": "west", "right": "east", "center": "center"}
@@ -100,6 +130,55 @@ class BaseAxes:
         
     def content_tex(self):
         return "\n".join(e.to_tex() for e in self.elements)
+    
+    """def get_ranges(self):
+        xm = xM = ym = yM = None
+        if "xmin" in self.axis_options:
+            xm = (self.axis_options["xmin"], True)
+        else:
+            xm = (min([e.get_range("xmin") for e in self.elements]), False)
+        if "xmax" in self.axis_options:
+            xM = (self.axis_options["xmax"], True)
+        else:
+            xM = (max([e.get_range("xmax") for e in self.elements]), False)
+        if "ymin" in self.axis_options:
+            ym = (self.axis_options["ymin"], True)
+        else:
+            ym = (min([e.get_range("ymin") for e in self.elements]), False)
+        if "ymax" in self.axis_options:
+            yM = (self.axis_options["ymax"], True)
+        else:
+            yM = (max([e.get_range("ymax") for e in self.elements]), False)
+        return xm, xM, ym, yM"""
+    
+    def get_hard_range(self,which):
+        arg = f"{which[0]}mode"
+        mode = "lin"
+        if arg in self.axis_options:
+            mode = self.axis_options[arg]
+        if which in self.axis_options:
+            for e in self.elements:
+                e.filter(which, self.axis_options[which])
+            return (self.axis_options[which], mode)
+        return None, mode
+    
+    def get_range(self, which):
+        arg = f"{which[0]}mode"
+        mode = "lin"
+        if arg in self.axis_options:
+            mode = self.axis_options[arg]
+        if which in self.axis_options:
+            for e in self.elements:
+                e.filter(which, self.axis_options[which])
+            return (self.axis_options[which], True, mode)
+        if "min" in which:
+            return (min([e.get_erange(which) for e in self.elements]), False, mode)
+        return (max([e.get_erange(which) for e in self.elements]), False, mode)
+    
+    def set_range(self, which, value):
+        self.axis_options[which] = value
+        for e in self.elements:
+            e.filter(which, value)
 
 class Axes(BaseAxes):
 
@@ -108,22 +187,23 @@ class Axes(BaseAxes):
         self.fig = fig
         self.left = False
         self.neigh = None
+        
+        self.nrows = nrows
+        self.ncols = ncols
+        self.index = index - 1
+        self.row = self.index // self.ncols
+        self.col = self.index - self.row * self.ncols
+
         def posit_string(): # returns neighbour, neighbour corner, anchor
-            i = index - 1
+            i = self.index
             if i == 0:
                 return None
-            row = i // ncols
-            col = i - row * ncols
-            if col == 0:
-                self.neigh = i - ncols
+            if self.col == 0:
+                self.neigh = i - self.ncols
                 self.left = True
                 return self.neigh, "south", "north"
             self.neigh = i - 1
             return self.neigh, "east", "west"
-        
-        self.nrows = nrows
-        self.ncols = ncols
-        self.index = index
 
         self.axis_options["name"] = f"p{index-1}"
         pos = posit_string()
@@ -147,13 +227,16 @@ class Axes(BaseAxes):
         if self.fig.height:
             self.height = f"{self.fig.height / self.nrows}cm"
 
-    def loglog(self, x, y, *args, **kwargs):
+    def loglog(self, x, y, *args, base=10, **kwargs):
         self.axis_options["xmode"] = "log"
         self.axis_options["ymode"] = "log"
+        self.axis_options["log basis x"] = base
+        self.axis_options["log basis y"] = base
         self._plot(x, y, **kwargs)
 
-    def semilogx(self, x, y, *args, **kwargs):
+    def semilogx(self, x, y, *args, base=10, **kwargs):
         self.axis_options["xmode"] = "log"
+        self.axis_options["log basis x"] = base
         self._plot(x, y, **kwargs)
 
     def set_xlabel(self, label):
@@ -182,6 +265,9 @@ class Axes(BaseAxes):
     def set_xlim(self, *args, **kwargs):
         left = None
         right = None
+        for k in kwargs:
+            if k not in ["left", "right"]:
+                print(f"Invalid argument {kwargs.pop(k)} in ylim")
 
         if len(args) == 1:
             left, right = args[0]
@@ -199,6 +285,10 @@ class Axes(BaseAxes):
             self.axis_options["xmin"] = left
         if right is not None:
             self.axis_options["xmax"] = right
+
+    def set_xscale(self, *args):
+        if "log" in args:
+            self.axis_options["xmode"] = "log"
 
     def twinx(self):
         self.secondary_y = Secondary(self)
@@ -243,11 +333,6 @@ class Secondary(BaseAxes):
         self.axis_options["at"] = f"{{({primary.axis_options["name"]}.south west)}}"
         self.axis_options["anchor"] = "south west"
         self.axis_options["y label style"] = r"{at={(1.1,0.5)}, rotate=180}"
-
-    def loglog(self, x, y, *args, **kwargs):
-        self.axis_options["xmode"] = "log"
-        self.axis_options["ymode"] = "log"
-        self._plot(x, y, **kwargs)
 
     def axis_option_string(self):
         if self.primary.width:
