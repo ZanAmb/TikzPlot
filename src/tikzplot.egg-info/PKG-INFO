@@ -1,0 +1,8 @@
+Metadata-Version: 2.4
+Name: tikzplot
+Version: 0.1.0
+Summary: TikzPlot to generate tikz pgf plot code using your matplotlib.pyplot commands.
+Author-email: Zan Ambrozic <you@example.com>
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+Requires-Dist: numpy
