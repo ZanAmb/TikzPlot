@@ -3,16 +3,17 @@ from .config import TikzConfig
 
 class BaseAxes:
     def __init__(self):
-        self.elements = []
-        self.axis_options = {}
-        self.axis_args = set()
-        self.legend_on = False
+        self._elements = []
+        self._axis_options = {}
+        self._axis_args = set()
+        self._legend_on = False
+        self._yticks = True
 
         if TikzConfig.USE_DECIMAL_COMMA:
-            self.axis_args.add("/pgf/number format/use comma")
+            self._axis_args.add("/pgf/number format/use comma")
 
     def _plot(self, x, y, settings=None, xerr=None, yerr=None, **style):
-        self.elements.append(Graph(self, x, y, settings, xerr=xerr, yerr=yerr, **style))
+        self._elements.append(Graph(self, x, y, settings, xerr=xerr, yerr=yerr, **style))
 
     def plot(self, *args, **kwargs):
         if len(args) == 1:
@@ -29,8 +30,8 @@ class BaseAxes:
         self._plot(x, y, **kwargs, ls="")
 
     def semilogy(self, x, y, *args, base=10, **kwargs):
-        self.axis_options["ymode"] = "log"
-        self.axis_options["log basis y"] = base
+        self._axis_options["ymode"] = "log"
+        self._axis_options["log basis y"] = base
         self._plot(x, y, **kwargs)
 
     def errorbar(self, x, y, *args, **kwargs):
@@ -60,7 +61,7 @@ class BaseAxes:
         else:
             self._plot(x,y,settings=["xcomb"], **kwargs)
     def set_ylabel(self, label):
-        self.axis_options["ylabel"] = f"{{{label}}}"
+        self._axis_options["ylabel"] = f"{{{label}}}"
 
     def set_ylim(self, *args, **kwargs):
         bottom = None
@@ -82,16 +83,25 @@ class BaseAxes:
             top = kwargs["top"]
 
         if bottom is not None:
-            self.axis_options["ymin"] = bottom
+            self._axis_options["ymin"] = bottom
         if top is not None:
-            self.axis_options["ymax"] = top
+            self._axis_options["ymax"] = top
 
     def set_yscale(self, *args):
         if "log" in args:
-            self.axis_options["ymode"] = "log"
+            self._axis_options["ymode"] = "log"
 
-    LEGEND_LOC_MAP = ["best", "upper right", "upper left", "lower_left", "lower right", "right", "center left", "center right", "lower center", "upper center", "center"]
-    ANCHOR_MAP = {"top": "north", "bottom": "south", "upper": "north", "lower": "south", "left": "west", "right": "east", "center": "center"}
+    def set_yticks(self, ticks, labels=None):
+        if ticks:
+            self._axis_options["ytick"]=f"{{{','.join(ticks)}}}"
+            if labels and len(labels)==len(ticks):
+                self._axis_options["yticklabels"]=f"{{{','.join(labels)}}}"
+        else:
+            self._axis_options["yticklabels"]=r"{}"
+            self._yticks = False
+
+    _LEGEND_LOC_MAP = ["best", "upper right", "upper left", "lower_left", "lower right", "right", "center left", "center right", "lower center", "upper center", "center"]
+    _ANCHOR_MAP = {"top": "north", "bottom": "south", "upper": "north", "lower": "south", "left": "west", "right": "east", "center": "center"}
 
     def legend(self, *args, **kwargs):
         if "loc" in kwargs:
@@ -104,8 +114,8 @@ class BaseAxes:
                 except: print(f"Error parsing legend location: {loc}")
             else:
                 if isinstance(loc, int):
-                    loc = self.LEGEND_LOC_MAP[loc]
-                posit = " ".join([self.ANCHOR_MAP[k] for k in self.ANCHOR_MAP if k in str(loc)])
+                    loc = self._LEGEND_LOC_MAP[loc]
+                posit = " ".join([self._ANCHOR_MAP[k] for k in self._ANCHOR_MAP if k in str(loc)])
                 if "center" in posit:
                     if "north" in posit or "south" in posit or "west" in posit or "east" in posit:
                         posit = posit.replace("center", "")
@@ -125,142 +135,143 @@ class BaseAxes:
             if len(posit):
                 legend_string.append(r"anchor=" + posit)
             else: print(posit)
-            self.axis_options["legend style"] = f"{{{','.join(legend_string)}}}"
-        self.legend_on = True            
+            self._axis_options["legend style"] = f"{{{','.join(legend_string)}}}"
+        self._legend_on = True            
         
     def content_tex(self):
-        return "\n".join(e.to_tex() for e in self.elements)
+        return "\n".join(e.to_tex() for e in self._elements)
     
     """def get_ranges(self):
         xm = xM = ym = yM = None
-        if "xmin" in self.axis_options:
-            xm = (self.axis_options["xmin"], True)
+        if "xmin" in self._axis_options:
+            xm = (self._axis_options["xmin"], True)
         else:
-            xm = (min([e.get_range("xmin") for e in self.elements]), False)
-        if "xmax" in self.axis_options:
-            xM = (self.axis_options["xmax"], True)
+            xm = (min([e.get_range("xmin") for e in self._elements]), False)
+        if "xmax" in self._axis_options:
+            xM = (self._axis_options["xmax"], True)
         else:
-            xM = (max([e.get_range("xmax") for e in self.elements]), False)
-        if "ymin" in self.axis_options:
-            ym = (self.axis_options["ymin"], True)
+            xM = (max([e.get_range("xmax") for e in self._elements]), False)
+        if "ymin" in self._axis_options:
+            ym = (self._axis_options["ymin"], True)
         else:
-            ym = (min([e.get_range("ymin") for e in self.elements]), False)
-        if "ymax" in self.axis_options:
-            yM = (self.axis_options["ymax"], True)
+            ym = (min([e.get_range("ymin") for e in self._elements]), False)
+        if "ymax" in self._axis_options:
+            yM = (self._axis_options["ymax"], True)
         else:
-            yM = (max([e.get_range("ymax") for e in self.elements]), False)
+            yM = (max([e.get_range("ymax") for e in self._elements]), False)
         return xm, xM, ym, yM"""
     
     def get_hard_range(self,which):
         arg = f"{which[0]}mode"
         mode = "lin"
-        if arg in self.axis_options:
-            mode = self.axis_options[arg]
-        if which in self.axis_options:
-            for e in self.elements:
-                e.filter(which, self.axis_options[which])
-            return (self.axis_options[which], mode)
+        if arg in self._axis_options:
+            mode = self._axis_options[arg]
+        if which in self._axis_options:
+            for e in self._elements:
+                e.filter(which, self._axis_options[which])
+            return (self._axis_options[which], mode)
         return None, mode
     
     def get_range(self, which):
         arg = f"{which[0]}mode"
         mode = "lin"
-        if arg in self.axis_options:
-            mode = self.axis_options[arg]
-        if which in self.axis_options:
-            for e in self.elements:
-                e.filter(which, self.axis_options[which])
-            return (self.axis_options[which], True, mode)
+        if arg in self._axis_options:
+            mode = self._axis_options[arg]
+        if which in self._axis_options:
+            for e in self._elements:
+                e.filter(which, self._axis_options[which])
+            return (self._axis_options[which], True, mode)
         if "min" in which:
-            return (min([e.get_erange(which) for e in self.elements]), False, mode)
-        return (max([e.get_erange(which) for e in self.elements]), False, mode)
+            return (min([e.get_erange(which) for e in self._elements]), False, mode)
+        return (max([e.get_erange(which) for e in self._elements]), False, mode)
     
     def set_range(self, which, value):
-        self.axis_options[which] = value
-        for e in self.elements:
+        self._axis_options[which] = value
+        for e in self._elements:
             e.filter(which, value)
 
 class Axes(BaseAxes):
 
     def __init__(self, nrows, ncols, index, fig):
         super().__init__()
-        self.fig = fig
-        self.left = False
-        self.neigh = None
+        self._fig = fig
+        self._left = False
+        self._neigh = None
         
-        self.nrows = nrows
-        self.ncols = ncols
-        self.index = index - 1
-        self.row = self.index // self.ncols
-        self.col = self.index - self.row * self.ncols
+        self._nrows = nrows
+        self._ncols = ncols
+        self._index = index - 1
+        self._row = self._index // self._ncols
+        self._col = self._index - self._row * self._ncols
 
-        def posit_string(): # returns neighbour, neighbour corner, anchor
-            i = self.index
+        def _posit_string(): # returns neighbour, neighbour corner, anchor
+            i = self._index
             if i == 0:
                 return None
-            if self.col == 0:
-                self.neigh = i - self.ncols
-                self.left = True
-                return self.neigh, "south", "north"
-            self.neigh = i - 1
-            return self.neigh, "east", "west"
+            if self._col == 0:
+                self._neigh = i - self._ncols
+                self._left = True
+                return self._neigh, "south", "north"
+            self._neigh = i - 1
+            return self._neigh, "east", "west"
 
-        self.axis_options["name"] = f"p{index-1}"
-        pos = posit_string()
+        self._axis_options["name"] = f"p{index-1}"
+        pos = _posit_string()
         if pos is not None:
-            self.axis_options["at"] = f"{{(p{self.neigh}.{pos[1]})}}"
-            self.axis_options["anchor"] = pos[2]
+            self._axis_options["at"] = f"{{(p{self._neigh}.{pos[1]})}}"
+            self._axis_options["anchor"] = pos[2]
 
-        self.secondary_y = None
+        self._secondary_y = None
 
-        self.width = None
-        self.height = None
-        if fig.width:
-            self.width= f"{fig.width / ncols}cm"
-        if fig.height:
-            self.height = f"{fig.height / nrows}cm"
+        self._width = None
+        self._height = None
+        if fig._get_width():
+            self._width= f"{fig._get_width() / ncols}cm"
+        if fig._get_height():
+            self._height = f"{fig._get_height() / nrows}cm"
+
+        self._xticks = True
 
 
     def _update_size(self):
-        if self.fig.width:
-            self.width= f"{self.fig.width / self.ncols}cm"
-        if self.fig.height:
-            self.height = f"{self.fig.height / self.nrows}cm"
+        if self._fig._get_width():
+            self._width= f"{self._fig._get_width() / self._ncols}cm"
+        if self._fig._get_height():
+            self._height = f"{self._fig._get_height() / self._nrows}cm"
 
     def loglog(self, x, y, *args, base=10, **kwargs):
-        self.axis_options["xmode"] = "log"
-        self.axis_options["ymode"] = "log"
-        self.axis_options["log basis x"] = base
-        self.axis_options["log basis y"] = base
+        self._axis_options["xmode"] = "log"
+        self._axis_options["ymode"] = "log"
+        self._axis_options["log basis x"] = base
+        self._axis_options["log basis y"] = base
         self._plot(x, y, **kwargs)
 
     def semilogx(self, x, y, *args, base=10, **kwargs):
-        self.axis_options["xmode"] = "log"
-        self.axis_options["log basis x"] = base
+        self._axis_options["xmode"] = "log"
+        self._axis_options["log basis x"] = base
         self._plot(x, y, **kwargs)
 
     def set_xlabel(self, label):
-        self.axis_options["xlabel"] = f"{{{label}}}"
-
+        self._axis_options["xlabel"] = f"{{{label}}}"
 
     def set_title(self, title):
-        self.axis_options["title"] = f"{{{title}}}"
+        self._axis_options["title"] = f"{{{title}}}"
 
     def grid(self, visible=True, which="major"):
 
         if not visible:
-            self.axis_options["grid"] = "none"
+            self._axis_options["grid"] = "none"
             return
 
         if which == "major":
-            self.axis_options["grid"] = "major"
+            self._axis_options["grid"] = "major"
 
         elif which == "minor":
-            self.axis_options["minor grid style"] = "{dotted}"
-            self.axis_options["grid"] = "both"
+            self._axis_options["minor grid style"] = "{dotted}"
+            self._axis_options["grid"] = "both"
 
         elif which == "both":
-            self.axis_options["grid"] = "both"
+            self._axis_options["grid"] = "both"
 
     def set_xlim(self, *args, **kwargs):
         left = None
@@ -282,70 +293,88 @@ class Axes(BaseAxes):
             right = kwargs["right"]
 
         if left is not None:
-            self.axis_options["xmin"] = left
+            self._axis_options["xmin"] = left
         if right is not None:
-            self.axis_options["xmax"] = right
+            self._axis_options["xmax"] = right
 
     def set_xscale(self, *args):
         if "log" in args:
-            self.axis_options["xmode"] = "log"
+            self._axis_options["xmode"] = "log"
+
+    def set_xticks(self, ticks, labels=None):
+        if ticks:
+            self._axis_options["xtick"]=f"{{{','.join(ticks)}}}"
+            if labels and len(labels)==len(ticks):
+                self._axis_options["xticklabels"]=f"{{{','.join(labels)}}}"
+        else:
+            self._axis_options["xticklabels"]=r"{}"
+            self._xticks = False
 
     def twinx(self):
-        self.secondary_y = Secondary(self)
-        return self.secondary_y
+        self._secondary_y = Secondary(self)
+        return self._secondary_y
 
-    def axis_option_string(self, gs):
-        if self.width:
-            self.axis_options["width"] = self.width
-        if self.height:
-            self.axis_options["height"] = self.height
-        if self.left:
-            self.axis_options["yshift"] = gs[1]
+    def _axis_option_string(self):
+        self._update_size()
+        if self._width:
+            self._axis_options["width"] = self._width
+        if self._height:
+            self._axis_options["height"] = self._height
+        if self._left:
+            self._axis_options["yshift"] = f"-{self._fig._get_spacing(self._row, self._col)}cm"
         else:
-            self.axis_options["xshift"] = gs[0]
+            self._axis_options["xshift"] = f"{self._fig._get_spacing(self._row, self._col)}cm"
         axis_opt_str = ""
-        if self.axis_args:
-            axis_opt_str += ",\n".join(self.axis_args)
-        if self.axis_options:
+        if self._axis_args:
+            axis_opt_str += ",\n".join(self._axis_args)
+        if self._axis_options:
             if axis_opt_str: axis_opt_str += ",\n"
-            axis_opt_str += ",\n".join(f"{k}={v}" for k, v in self.axis_options.items())
+            axis_opt_str += ",\n".join(f"{k}={v}" for k, v in self._axis_options.items())
         return axis_opt_str
 
     
-    def margins(self):
-        left = TikzConfig.LEFT_PADDING + TikzConfig.Y_LABEL_PADDING * ("ylabel" in self.axis_options)
+    def _margins(self):
+        left = TikzConfig.LEFT_PADDING * self._yticks + TikzConfig.Y_LABEL_PADDING * ("ylabel" in self._axis_options)
         right = TikzConfig.RIGHT_PADDING
-        top = TikzConfig.TOP_PADDING + TikzConfig.TITLE_PADDING * ("title" in self.axis_options)
-        bottom = TikzConfig.BOTTOM_PADDING + TikzConfig.X_LABEL_PADDING * ("xlabel" in self.axis_options)
-
-        if self.secondary_y is not None:
-            right += self.secondary_y.padding()
+        top = TikzConfig.TOP_PADDING + TikzConfig.TITLE_PADDING * ("title" in self._axis_options)
+        bottom = TikzConfig.BOTTOM_PADDING * self._xticks + TikzConfig.X_LABEL_PADDING * ("xlabel" in self._axis_options)
+        if self._secondary_y is not None:
+            right += self._secondary_y._padding()
 
         return left, right, top, bottom
+    
+    def _get_row(self):
+        return self._row
+    def _get_col(self):
+        return self._col
+    def _get_nrows(self):
+        return self._nrows
+    def _get_ncols(self):
+        return self._ncols
     
 class Secondary(BaseAxes):
     def __init__(self, primary):
         super().__init__()
-        self.primary = primary
+        self._primary = primary
 
-        self.axis_options["axis y line*"] = "right"
-        self.axis_options["axis x line"] = "none"
-        self.axis_options["at"] = f"{{({primary.axis_options["name"]}.south west)}}"
-        self.axis_options["anchor"] = "south west"
-        self.axis_options["y label style"] = r"{at={(1.1,0.5)}, rotate=180}"
+        self._axis_options["axis y line*"] = "right"
+        self._axis_options["axis x line"] = "none"
+        self._axis_options["at"] = f"{{({primary._axis_options["name"]}.south west)}}"
+        self._axis_options["anchor"] = "south west"
+        self._axis_options["y label style"] = r"{at={(1.1,0.5)}, rotate=180}"
 
-    def axis_option_string(self):
-        if self.primary.width:
-            self.axis_options["width"] = self.primary.width
-        if self.primary.height:
-            self.axis_options["height"] = self.primary.height
+    def _axis_option_string(self):
+        if self._primary._width:
+            self._axis_options["width"] = self._primary._width
+        if self._primary._height:
+            self._axis_options["height"] = self._primary._height
         axis_opt_str = ""
-        if self.axis_args:
-            axis_opt_str += ",\n".join(self.axis_args)
-        if self.axis_options:
+        if self._axis_args:
+            axis_opt_str += ",\n".join(self._axis_args)
+        if self._axis_options:
             if axis_opt_str: axis_opt_str += ",\n"
-            axis_opt_str += ",\n".join(f"{k}={v}" for k, v in self.axis_options.items())
+            axis_opt_str += ",\n".join(f"{k}={v}" for k, v in self._axis_options.items())
         return axis_opt_str
     
-    def padding(self):
-        return TikzConfig.SEC_Y_PADDING + TikzConfig.SEC_Y_LABEL_PADDING * ("ylabel" in self.axis_options)
+    def _padding(self):
+        return TikzConfig.SEC_Y_PADDING + TikzConfig.SEC_Y_LABEL_PADDING * ("ylabel" in self._axis_options)

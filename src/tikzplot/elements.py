@@ -1,12 +1,12 @@
 import numpy as np
 
 class Graph:
-    COLOR_MAP = {'b':'blue', 'g':'teal', 'r':'red', 'c':'cyan', 'm':'magenta', 'y':'yellow', 'k':'black', 'w':'white', "orange":"orange", "green": "green", "cyan":"cyan", "peru": "brown", "lime": "lime", "gray": "gray", "magenta": "magetna", "purple": "violet"}
-    LINE_MAP = {"--": "dashed", ":": "dotted", "-.": "dashdotted", "-":"solid"}
-    MARKER_MAP = {'o':'*', ".": "*", 's':'square*', '^':'triangle', 'v':'triangle*', 'd':'diamond', '+':'+', 'x':'x', '*':'star'}
+    _COLOR_MAP = {'b':'blue', 'g':'teal', 'r':'red', 'c':'cyan', 'm':'magenta', 'y':'yellow', 'k':'black', 'w':'white', "orange":"orange", "green": "green", "cyan":"cyan", "peru": "brown", "lime": "lime", "gray": "gray", "magenta": "magetna", "purple": "violet"}
+    _LINE_MAP = {"--": "dashed", ":": "dotted", "-.": "dashdotted", "-":"solid"}
+    _MARKER_MAP = {'o':'*', ".": "*", 's':'square*', '^':'triangle', 'v':'triangle*', 'd':'diamond', '+':'+', 'x':'x', '*':'star'}
 
     def __init__(self, axes, x, y, settings=None, xerr=None, yerr=None, **style):
-        def _normalize_error(err, n):
+        def __normalize_error(err, n):
             if err is None:
                 return None, False
             if isinstance(err, (int, float)):
@@ -17,34 +17,34 @@ class Graph:
 
                 return np.asarray(err), False
             raise ValueError("Invalid errorbar specification")
-        self.axes = axes
-        self.x = np.asarray(x)
-        self.y = np.asarray(y)
-        n = len(self.x)
-        self.xerr, self.x_asym = _normalize_error(xerr, n)
-        self.yerr, self.y_asym = _normalize_error(yerr, n)
-        self.style = style
-        self.label = None
-        self.settings = settings
+        self._axes = axes
+        self._x = np.asarray(x)
+        self._y = np.asarray(y)
+        n = len(self._x)
+        self._xerr, self._x_asym = __normalize_error(xerr, n)
+        self._yerr, self._y_asym = __normalize_error(yerr, n)
+        self._style = style
+        self._label = None
+        self._settings = settings
 
-        self.ms_multiplier = 1
-        self.opacity = 1
+        self._ms_multiplier = 1
+        self._opacity = 1
 
     def _style_string(self):
         opts = []
 
         def match_ls(input):
-            if input in self.LINE_MAP.keys():
-                return self.LINE_MAP[input]
-            if input in self.LINE_MAP.values():
+            if input in self._LINE_MAP.keys():
+                return self._LINE_MAP[input]
+            if input in self._LINE_MAP.values():
                 return input
             print(f"Unrecognized linestyle {input}")
             return None
         
         def match_mark(input):
-            if input in self.MARKER_MAP.keys():
-                return self.MARKER_MAP[input]
-            if input in self.MARKER_MAP.values():
+            if input in self._MARKER_MAP.keys():
+                return self._MARKER_MAP[input]
+            if input in self._MARKER_MAP.values():
                 return input
             print(f"Unrecognized marker {input}")
             return None
@@ -68,12 +68,12 @@ class Graph:
                 if len(input) == 1:
                     input = input[0]
                 elif len(input) == 2:
-                    self.opacity= input[1]
+                    self._opacity= input[1]
                     input = input[0]
                 else:
                     r,g,b = input[:3]
                     if len(input) == 4:
-                        self.opacity = input[3]                    
+                        self._opacity = input[3]                    
                     return rgb_string(r,g,b)
             s = str(input)
             if s[0] == "#":
@@ -82,30 +82,30 @@ class Graph:
                 else:
                     hex = s[:8]
                     if len(s) > 8:
-                        self.opacity = int(s[8:]) / 100
+                        self._opacity = int(s[8:]) / 100
                 return hex_to_rgb(hex)
             if s.isdigit():
                 i = float(s)
                 return rgb_string(i,i,i)
             if s.lower() == "none":
-                self.opacity = 0
+                self._opacity = 0
                 return rgb_string(0,0,0)
-            if s in self.COLOR_MAP.keys():
-                return self.COLOR_MAP[s]
-            if s in self.COLOR_MAP.values():
+            if s in self._COLOR_MAP.keys():
+                return self._COLOR_MAP[s]
+            if s in self._COLOR_MAP.values():
                 return s
             print(f"Unrecognized color {input}")
             return None
 
-        if "fmt" in self.style:
-            fmt = self.style["fmt"]
-            col = list(set(self.COLOR_MAP.keys()) & set(fmt))
+        if "fmt" in self._style:
+            fmt = self._style["fmt"]
+            col = list(set(self._COLOR_MAP.keys()) & set(fmt))
             if col:
-                opts.append(f"color={self.COLOR_MAP[col[0]]}")
+                opts.append(f"color={self._COLOR_MAP[col[0]]}")
                 fmt = fmt.replace(col[0], "")
-            mark = list(set(self.MARKER_MAP.keys()) & set(fmt))
+            mark = list(set(self._MARKER_MAP.keys()) & set(fmt))
             if mark:
-                opts.append(f"mark={self.MARKER_MAP[mark[0]]}")
+                opts.append(f"mark={self._MARKER_MAP[mark[0]]}")
                 fmt = fmt.replace(mark[0], "")
             ls = None
             if fmt:
@@ -113,74 +113,74 @@ class Graph:
             if ls:
                 opts.append(ls)
 
-        if "c" in self.style:
-            sel_col = match_color(self.style['c'])
+        if "c" in self._style:
+            sel_col = match_color(self._style['c'])
             if sel_col:
-                opts.append(f"color={sel_col}")
-        if "color" in self.style:
-            sel_col = match_color(self.style['color'])
+                opts.append(f"color={{{sel_col}}}")
+        if "color" in self._style:
+            sel_col = match_color(self._style['color'])
             if sel_col:
-                opts.append(f"color={sel_col}")
-        if "ls" in self.style:
-            ls = self.style["ls"]
+                opts.append(f"color={{{sel_col}}}")
+        if "ls" in self._style:
+            ls = self._style["ls"]
             if ls == "":
                 opts.append("only marks")
             else:
                 sel_ls = match_ls(ls)
                 if sel_ls:
                     opts.append(sel_ls)
-        if "linestyle" in self.style:
-            ls = self.style["linestyle"]
+        if "linestyle" in self._style:
+            ls = self._style["linestyle"]
             if ls == "":
                 opts.append("only marks")
             else:
                 sel_ls = match_ls(ls)
                 if sel_ls:
                     opts.append(sel_ls)
-        if "lw" in self.style:
-            opts.append(self.style["lw"])
-        if "linewidth" in self.style:
-            opts.append(f"line width={self.style["linewidth"]}pt")
-        if "marker" in self.style:
-            sel_mark = match_mark(self.style['marker'])
+        if "lw" in self._style:
+            opts.append(f"line width={self._style["lw"]}pt")
+        if "linewidth" in self._style:
+            opts.append(f"line width={self._style["linewidth"]}pt")
+        if "marker" in self._style:
+            sel_mark = match_mark(self._style['marker'])
             if sel_mark:
                 opts.append(f"mark={sel_mark}")
-        if "ms" in self.style:
-            opts.append(f"mark size={self.style['ms']}pt")
-        if "marksize" in self.style:
-            opts.append(f"mark size={self.style['marksize']}pt")
-        if "label" in self.style:
-            self.label = self.style["label"]
+        if "ms" in self._style:
+            opts.append(f"mark size={self._style['ms']}pt")
+        if "marksize" in self._style:
+            opts.append(f"mark size={self._style['marksize']}pt")
+        if "label" in self._style:
+            self._label = self._style["label"]
 
         # Errorbar style
-        if self.xerr is not None or self.yerr is not None:
+        if self._xerr is not None or self._yerr is not None:
             opts.append("error bars/.cd")
-            if self.xerr is not None:
+            if self._xerr is not None:
                 opts.append("x dir=both")
                 opts.append("x explicit")
-            if self.yerr is not None:
+            if self._yerr is not None:
                 opts.append("y dir=both")
                 opts.append("y explicit")
             
         keys = {}
         for i in reversed(range(len(opts))):
-            key = opts[i].split("=")
+            key = str(opts[i]).split("=")
             if key[0] in keys:
                 del opts[i]
-        if self.settings:
-            opts = self.settings + opts
+        if self._settings:
+            opts = self._settings + opts
 
-        return ",\n".join(opts)
+        return ",\n".join(str(o) for o in opts)
 
     def _header(self):
         cols = ["x", "y"]
-        if self.xerr is not None:
-            if self.x_asym:
+        if self._xerr is not None:
+            if self._x_asym:
                 cols += ["xerrminus", "xerrplus"]
             else:
                 cols.append("xerror")
-        if self.yerr is not None:
-            if self.y_asym:
+        if self._yerr is not None:
+            if self._y_asym:
                 cols += ["yerrminus", "yerrplus"]
             else:
                 cols.append("yerror")
@@ -188,18 +188,18 @@ class Graph:
 
     def _rows(self):    
         rows = []
-        for i in range(len(self.x)):
-            line = [self.x[i], self.y[i]]
-            if self.xerr is not None:
-                if self.x_asym:
-                    line += list(self.xerr[i])
+        for i in range(len(self._x)):
+            line = [self._x[i], self._y[i]]
+            if self._xerr is not None:
+                if self._x_asym:
+                    line += list(self._xerr[i])
                 else:
-                    line.append(self.xerr[i])
-            if self.yerr is not None:
-                if self.y_asym:
-                    line += list(self.yerr[i])
+                    line.append(self._xerr[i])
+            if self._yerr is not None:
+                if self._y_asym:
+                    line += list(self._yerr[i])
                 else:
-                    line.append(self.yerr[i])
+                    line.append(self._yerr[i])
             rows.append(" ".join(str(v) for v in line))
         return "\n".join(rows)
 
@@ -210,59 +210,59 @@ class Graph:
 
         # Include y error in table if present
         table_opts = "x=x,y=y"
-        if self.xerr is not None:
+        if self._xerr is not None:
             table_opts += ",x error=xerror"
-        if self.yerr is not None:
+        if self._yerr is not None:
             table_opts += ",y error=yerror"
-        if self.label and self.axes.legend_on:
-            return f"""\\addplot [{style}] table [{table_opts}] {{\n{header}\n{rows}\n}};\\addlegendentry{{{self.label}}}"""
+        if self._label and self._axes._legend_on:
+            return f"""\\addplot [{style}] table [{table_opts}] {{\n{header}\n{rows}\n}};\\addlegendentry{{{self._label}}}"""
         return f"""\\addplot [forget plot,\n{style}] table [{table_opts}] {{\n{header}\n{rows}\n}};"""    
     
     def data_range(self, which):
-        xmin, xmax = min(self.x), max(self.x)
-        ymin, ymax = min(self.y), max(self.y)
+        xmin, xmax = min(self._x), max(self._x)
+        ymin, ymax = min(self._y), max(self._y)
         return xmin, xmax, ymin, ymax
     
     def get_erange(self, which):
         if which == "xmin":
-            return min(self.x)
+            return min(self._x)
         if which == "xmax":
-            return max(self.x)
+            return max(self._x)
         if which == "ymin":
-            return min(self.y)
+            return min(self._y)
         if which == "ymax":
-            return max(self.y)
+            return max(self._y)
         
     def filter(self, which, value):
         if which == "xmin":
-            mask = self.x >= value
-            idx_keep = np.argmin(np.abs(self.x - value))
+            mask = self._x >= value
+            idx_keep = np.argmin(np.abs(self._x - value))
     
         elif which == "xmax":
-            mask = self.x <= value
-            idx_keep = np.argmin(np.abs(self.x - value))
+            mask = self._x <= value
+            idx_keep = np.argmin(np.abs(self._x - value))
     
         elif which == "ymin":
-            mask = self.y >= value
-            idx_keep = np.argmin(np.abs(self.y - value))
+            mask = self._y >= value
+            idx_keep = np.argmin(np.abs(self._y - value))
     
         elif which == "ymax":
-            mask = self.y <= value
-            idx_keep = np.argmin(np.abs(self.y - value))
+            mask = self._y <= value
+            idx_keep = np.argmin(np.abs(self._y - value))
     
         else:
             raise ValueError("Invalid filter type")
     
         mask[idx_keep] = True
     
-        self.x = self.x[mask]
-        self.y = self.y[mask]
+        self._x = self._x[mask]
+        self._y = self._y[mask]
     
-        if self.xerr is not None:
-            self.xerr = self.xerr[mask]
+        if self._xerr is not None:
+            self._xerr = self._xerr[mask]
     
-        if self.yerr is not None:
-            self.yerr = self.yerr[mask]
+        if self._yerr is not None:
+            self._yerr = self._yerr[mask]
     
     
     
