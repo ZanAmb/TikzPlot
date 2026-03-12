@@ -1,3 +1,5 @@
+import numpy as np
+
 from .figure import Figure
 
 _current_figure = None
@@ -17,7 +19,7 @@ def _ensure_axes():
         _current_figure = Figure()
 
     if _current_axes is None:
-        _current_axes = _current_figure.add_subplot(1, 1, 1)
+        _current_axes = _current_figure._add_subplot(1, 1, 1)
 
 def xlabel(label):
     _ensure_axes()
@@ -65,7 +67,7 @@ def subplot(nrows, ncols, index, sharex=None, sharey=None):
     if _current_figure is None:
         figure()
 
-    _current_axes = _current_figure.add_subplot(nrows, ncols, index, sharex, sharey)
+    _current_axes = _current_figure._add_subplot(nrows, ncols, index, sharex, sharey)
     return _current_axes
 
 def subplots(nrows=1, ncols=1, sharex=None, sharey=None,**kwargs):
@@ -73,7 +75,7 @@ def subplots(nrows=1, ncols=1, sharex=None, sharey=None,**kwargs):
     global _current_figure, _current_axes
 
     _current_figure = Figure()
-    axes = _current_figure.add_subplots(nrows, ncols, sharex, sharey)
+    axes = _current_figure._add_subplots(nrows, ncols, sharex, sharey)
 
     if nrows * ncols == 1:
         _current_axes = axes[0]
@@ -89,6 +91,11 @@ def subplots(nrows=1, ncols=1, sharex=None, sharey=None,**kwargs):
         grid.append(row)
 
     _current_axes = axes[0]
+    grid = np.asarray(grid)
+    if grid.shape[0] == 1:
+        grid = grid[0]
+    elif grid.shape[1] == 1:
+        grid = grid[:,0]
     return _current_figure, grid
 
 def plot(*args, **kwargs):
@@ -130,7 +137,21 @@ def stem(*args, **kwargs):
     _ensure_axes()
     _current_axes.stem(*args, **kwargs)
 
+def xticks(*args, **kwargs):
+    _ensure_axes()
+    _current_axes.set_xticks(*args, **kwargs)
+
+def yticks(*args, **kwargs):
+    _ensure_axes()
+    _current_axes.set_yticks(*args, **kwargs)
+
 def savefig(filename):
-    _current_figure.save(filename)
+    if not(filename.endswith(".tex") or filename.endswith(".tikz")):
+        filename += ".tex"
+    _current_figure._save(filename)
+
 def show(): ### DODELAJ!
-    _current_figure.save(f"plot.tex")
+    _current_figure._save(f"plot.tex")
+
+def clf():
+    _current_figure._clear()

@@ -13,11 +13,11 @@ class _TikzConfig:
 
         self.LEFT_PADDING = 0.8
         self.RIGHT_PADDING = 0.2
-        self.TOP_PADDING = 0.4
+        self.TOP_PADDING = 0.2
         self.BOTTOM_PADDING = 0.8
-        self.Y_LABEL_PADDING = 0.4
+        self.Y_LABEL_PADDING = 0.6
         self.SEC_Y_PADDING = 0.8
-        self.SEC_Y_LABEL_PADDING = 0.4
+        self.SEC_Y_LABEL_PADDING = 0.6
         self.TITLE_PADDING = 0.6
         self.X_LABEL_PADDING = 0.6
 
