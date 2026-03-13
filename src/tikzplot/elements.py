@@ -5,7 +5,7 @@ class Graph:
     _LINE_MAP = {"--": "dashed", ":": "dotted", "-.": "dashdotted", "-":"solid"}
     _MARKER_MAP = {'o':'*', ".": "*", 's':'square*', '^':'triangle', 'v':'triangle*', 'd':'diamond', '+':'+', 'x':'x', '*':'star'}
 
-    def __init__(self, axes, x, y, settings=None, xerr=None, yerr=None, **style):
+    def __init__(self, axes, coordinates, settings=None, xerr=None, yerr=None, path_name=None, **style):
         def __normalize_error(err, n):
             if err is None:
                 return None, False
@@ -18,17 +18,25 @@ class Graph:
                 return np.asarray(err), False
             raise ValueError("Invalid errorbar specification")
         self._axes = axes
-        self._x = np.asarray(x)
-        self._y = np.asarray(y)
-        n = len(self._x)
-        self._xerr, self._x_asym = __normalize_error(xerr, n)
-        self._yerr, self._y_asym = __normalize_error(yerr, n)
+        self._classic = False
+        if isinstance(coordinates, tuple):
+            self._classic = True
+            x,y=coordinates
+            self._x = np.asarray(x)
+            self._y = np.asarray(y)
+            n = len(self._x)
+            self._xerr, self._x_asym = __normalize_error(xerr, n)
+            self._yerr, self._y_asym = __normalize_error(yerr, n)
+        else:
+            self._special = coordinates
         self._style = style
         self._label = None
         self._settings = settings
+        if self._settings == None: self._settings = []
 
         self._ms_multiplier = 1
         self._opacity = 1
+        self._path_name = path_name
 
     def _style_string(self):
         opts = []
@@ -152,21 +160,26 @@ class Graph:
         if "label" in self._style:
             self._label = self._style["label"]
 
-        # Errorbar style
-        if self._xerr is not None or self._yerr is not None:
-            opts.append("error bars/.cd")
-            if self._xerr is not None:
-                opts.append("x dir=both")
-                opts.append("x explicit")
-            if self._yerr is not None:
-                opts.append("y dir=both")
-                opts.append("y explicit")
-            
+        if "alpha" in self._style:
+            self._opacity = self._style["alpha"]
+
+        if self._classic:
+            if self._xerr is not None or self._yerr is not None:
+                opts.append("error bars/.cd")
+                if self._xerr is not None:
+                    opts.append("x dir=both")
+                    opts.append("x explicit")
+                if self._yerr is not None:
+                    opts.append("y dir=both")
+                    opts.append("y explicit")
+        if self._opacity < 1:
+            opts.append(f"opacity={self._opacity}")            
         keys = {}
         for i in reversed(range(len(opts))):
             key = str(opts[i]).split("=")
             if key[0] in keys:
                 del opts[i]
+        if self._path_name: self._settings.append(f"name path={self._path_name}")
         if self._settings:
             opts = self._settings + opts
 
@@ -205,18 +218,20 @@ class Graph:
 
     def to_tex(self):
         style = self._style_string()
-        header = self._header()
-        rows = self._rows()
 
-        # Include y error in table if present
-        table_opts = "x=x,y=y"
-        if self._xerr is not None:
-            table_opts += ",x error=xerror"
-        if self._yerr is not None:
-            table_opts += ",y error=yerror"
-        if self._label and self._axes._legend_on:
-            return f"""\\addplot [{style}] table [{table_opts}] {{\n{header}\n{rows}\n}};\\addlegendentry{{{self._label}}}"""
-        return f"""\\addplot [forget plot,\n{style}] table [{table_opts}] {{\n{header}\n{rows}\n}};"""    
+        if self._classic:
+            header = self._header()
+            rows = self._rows()
+            table_opts = "x=x,y=y"
+            if self._xerr is not None:
+                table_opts += ",x error=xerror"
+            if self._yerr is not None:
+                table_opts += ",y error=yerror"
+            if self._label and self._axes._legend_on:
+                return f"""\\addplot [{style}] table [{table_opts}] {{\n{header}\n{rows}\n}};\\addlegendentry{{{self._label}}}"""
+            return f"""\\addplot [forget plot,\n{style}] table [{table_opts}] {{\n{header}\n{rows}\n}};"""
+        else:
+            return f"""\\addplot [forget plot,\n{style}] {self._special};"""
     
     def data_range(self, which):
         xmin, xmax = min(self._x), max(self._x)
@@ -263,6 +278,14 @@ class Graph:
     
         if self._yerr is not None:
             self._yerr = self._yerr[mask]
-    
-    
-    
+
+    def _check_equal(self, x,y):
+        if self._classic:
+            return np.array_equal(np.asarray(x),self._x) and np.array_equal(np.asarray(y),self._y)
+        return False
+
+    def _try_set_pname(self, pname):
+        if self._path_name:
+            return self._path_name
+        self._path_name = pname
+        return pname

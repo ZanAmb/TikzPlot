@@ -21,8 +21,10 @@ class Figure:
         self._ncols = 0
 
         self._spacings = None
+        
+        self._last_path_num = 0
 
-    def _add_subplot(self, nrows, ncols, index, sharex, sharey):
+    def _add_subplot(self, nrows, ncols, index, sharex=None, sharey=None):
         ax = Axes(nrows, ncols, index, self)
         self._nrows = nrows
         self._ncols = ncols
@@ -33,7 +35,7 @@ class Figure:
             self._sharey = sharey
         return ax    
     
-    def _add_subplots(self, nrows, ncols, sharex, sharey):
+    def _add_subplots(self, nrows, ncols, sharex=None, sharey=None):
         grid = []
         if sharex:
             self._sharex = sharex
@@ -198,5 +200,9 @@ class Figure:
     def _get_height(self):
         return self._height
     
-    def _clear(self):
+    def clear(self):
         del self
+
+    def _get_free_path_name(self):
+        self._last_path_num += 1
+        return f"path{self._last_path_num}"

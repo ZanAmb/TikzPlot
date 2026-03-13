@@ -137,6 +137,10 @@ def stem(*args, **kwargs):
     _ensure_axes()
     _current_axes.stem(*args, **kwargs)
 
+def fill_between(*args, **kwargs):
+    _ensure_axes()
+    _current_axes.fill_between(*args, **kwargs)
+
 def xticks(*args, **kwargs):
     _ensure_axes()
     _current_axes.set_xticks(*args, **kwargs)
@@ -154,4 +158,4 @@ def show(): ### DODELAJ!
     _current_figure._save(f"plot.tex")
 
 def clf():
-    _current_figure._clear()
+    _current_figure.clear()

@@ -1,3 +1,5 @@
+import numpy as np
+
 from .elements import Graph
 from .config import TikzConfig
 
@@ -8,12 +10,13 @@ class BaseAxes:
         self._axis_args = set()
         self._legend_on = False
         self._yticks = True
+        self._fig = None
 
         if TikzConfig.USE_DECIMAL_COMMA:
             self._axis_args.add("/pgf/number format/use comma")
 
     def _plot(self, x, y, settings=None, xerr=None, yerr=None, **style):
-        self._elements.append(Graph(self, x, y, settings, xerr=xerr, yerr=yerr, **style))
+        self._elements.append(Graph(self, (x, y), settings, xerr=xerr, yerr=yerr, **style))
 
     def plot(self, *args, **kwargs):
         if len(args) == 1:
@@ -60,6 +63,43 @@ class BaseAxes:
             self._plot(x,y,settings=["ycomb"], **kwargs)
         else:
             self._plot(x,y,settings=["xcomb"], **kwargs)
+
+    def fill_between(self, x, y1, y2=None, **kwargs):
+        def _check_instance(xs, ys, pname):
+            for el in self._elements:
+                if el._check_equal(xs,ys):
+                    return el._try_set_pname(pname)
+                else:
+                    return None
+        name1 = self._fig._get_free_path_name()
+        name2 = self._fig._get_free_path_name()
+        if isinstance(y1, (int, float)):
+            y1 = np.asarray([y1] * len(x))
+        inst = _check_instance(x,y1,name1)
+        if inst is None:
+            self._plot(x,y1,path_name=name1, opacity=0)
+        else:
+            name1 = inst
+
+        if y2 is not None:
+            if isinstance(y1, (int, float)):
+                y2 = np.asarray([y2] * len(x))
+            inst = _check_instance(x,y2,name2)
+            if inst is None:
+                self._plot(x,y2,path_name=name2, opacity=0)
+            else:
+                name2 = inst
+        else:
+            xs = [min(x), max(x)]
+            ys = [0,0]
+            inst = _check_instance(xs,ys,name2)
+            if inst is None:
+                self._plot(xs,ys,path_name=name2, opacity=0)
+            else:
+                name2 = inst
+        self._elements.append(Graph(self, f"fill between [of={name1} and {name2}]",settings=None, xerr=None, yerr=None, **kwargs))
+        
+
     def set_ylabel(self, label):
         self._axis_options["ylabel"] = f"{{{label}}}"
 
@@ -96,9 +136,17 @@ class BaseAxes:
             self._axis_options["ytick"]=f"{{{','.join(ticks)}}}"
             if labels and len(labels)==len(ticks):
                 self._axis_options["yticklabels"]=f"{{{','.join(labels)}}}"
+            elif labels is not None and len(labels) == 0:
+                self._axis_options["yticklabels"]=r"{}"
+        else:
+            self._axis_options["yticks"]=r"{}"
+            self._yticks = False
+
+    def set_yticklabels(self, labels):
+        if labels:
+            self._axis_options["yticklabels"]=f"{{{','.join(labels)}}}"
         else:
             self._axis_options["yticklabels"]=r"{}"
-            self._yticks = False
 
     _LEGEND_LOC_MAP = ["best", "upper right", "upper left", "lower_left", "lower right", "right", "center left", "center right", "lower center", "upper center", "center"]
     _ANCHOR_MAP = {"top": "north", "bottom": "south", "upper": "north", "lower": "south", "left": "west", "right": "east", "center": "center"}
@@ -194,7 +242,6 @@ class Axes(BaseAxes):
 
     def __init__(self, nrows, ncols, index, fig):
         super().__init__()
-        self._fig = fig
         self._left = False
         self._neigh = None
         
@@ -203,6 +250,8 @@ class Axes(BaseAxes):
         self._index = index - 1
         self._row = self._index // self._ncols
         self._col = self._index - self._row * self._ncols
+
+        self._fig = fig
 
         def _posit_string(): # returns neighbour, neighbour corner, anchor
             i = self._index
@@ -225,10 +274,10 @@ class Axes(BaseAxes):
 
         self._width = None
         self._height = None
-        if fig._get_width():
-            self._width= f"{fig._get_width() / ncols}cm"
-        if fig._get_height():
-            self._height = f"{fig._get_height() / nrows}cm"
+        if self._fig._get_width():
+            self._width= f"{self._fig._get_width() / ncols}cm"
+        if self._fig._get_height():
+            self._height = f"{self._fig._get_height() / nrows}cm"
 
         self._xticks = True
 
@@ -306,12 +355,20 @@ class Axes(BaseAxes):
             self._axis_options["xtick"]=f"{{{','.join(ticks)}}}"
             if labels and len(labels)==len(ticks):
                 self._axis_options["xticklabels"]=f"{{{','.join(labels)}}}"
+            elif labels is not None and len(labels) == 0:
+                self._axis_options["xticklabels"]=r"{}"
         else:
-            self._axis_options["xticklabels"]=r"{}"
+            self._axis_options["xticks"]=r"{}"
             self._xticks = False
 
+    def set_xticklabels(self, labels):
+        if labels:
+            self._axis_options["xticklabels"]=f"{{{','.join(labels)}}}"
+        else:
+            self._axis_options["xticklabels"]=r"{}"
+
     def twinx(self):
-        self._secondary_y = Secondary(self)
+        self._secondary_y = Secondary(self, fig=self._fig)
         return self._secondary_y
 
     def _axis_option_string(self):
@@ -362,6 +419,8 @@ class Secondary(BaseAxes):
         self._axis_options["at"] = f"{{({primary._axis_options["name"]}.south west)}}"
         self._axis_options["anchor"] = "south west"
         self._axis_options["y label style"] = r"{at={(1.1,0.5)}, rotate=180}"
+
+        self._fig = primary._fig
 
     def _axis_option_string(self):
         if self._primary._width:
