@@ -40,7 +40,11 @@ ax2.plot(xs, np.cos(xs), label="cos")
 
 fig.set_size_inches(8,6)
 
+<<<<<<< HEAD
 ax4.stem(xs,xs, "r.")
+=======
+ax4.semilogx(xs,xs)
+>>>>>>> 0a7fbc5561a9fd93b0d2a38256bf13ec9f07c8d7
 
 x = [1, 2, 3, 4, 5]
 y1 = [1, 4, 9, 16, 25]
