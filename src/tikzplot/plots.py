@@ -5,10 +5,12 @@ from .figure import Figure
 _current_figure = None
 _current_axes = None
 
-def figure():
+def figure(**kwargs):        
     global _current_figure, _current_axes
     _current_figure = Figure()
     _current_axes = None
+    if "figsize" in kwargs:
+        _current_figure.set_size_inches(kwargs["figsize"])
     return _current_figure
 
 def _ensure_axes():
@@ -33,21 +35,9 @@ def title(text):
     _ensure_axes()
     _current_axes.set_title(text)
 
-def grid(visible=True, which="major"):
+def grid(*args, **kwargs):
         _ensure_axes()
-        if not visible:
-            _current_axes.axis_options["grid"] = "none"
-            return
-
-        if which == "major":
-            _current_axes.axis_options["grid"] = "major"
-
-        elif which == "minor":
-            _current_axes.axis_options["minor grid style"] = "{dotted}"
-            _current_axes.axis_options["grid"] = "both"
-
-        elif which == "both":
-            _current_axes.axis_options["grid"] = "both"
+        _current_axes.grid(*args, **kwargs)
 
 def xlim(*args, **kwargs):
     _ensure_axes()
@@ -140,6 +130,14 @@ def stem(*args, **kwargs):
 def fill_between(*args, **kwargs):
     _ensure_axes()
     _current_axes.fill_between(*args, **kwargs)
+
+def hlines(*args, **kwargs):
+    _ensure_axes()
+    _current_axes.hlines(*args, **kwargs)
+
+def vlines(*args, **kwargs):
+    _ensure_axes()
+    _current_axes.vlines(*args, **kwargs)
 
 def xticks(*args, **kwargs):
     _ensure_axes()

@@ -99,6 +99,25 @@ class BaseAxes:
                 name2 = inst
         self._elements.append(Graph(self, f"fill between [of={name1} and {name2}]",settings=None, xerr=None, yerr=None, **kwargs))
         
+    def hlines(self, y, xmin, xmax, colors="k", linestyles="solid", **kwargs):
+        def _pad_or_truncate(some_list, target_len):
+            return some_list[:target_len] + [some_list[-1]]*(target_len - len(some_list))
+        def _to_list(x):
+            if x is None:
+                return []
+            if isinstance(x, (int, float, str)):
+                return [x]
+            return list(x)
+        ys = _to_list(y)
+        xmins = _pad_or_truncate(_to_list(xmin), len(ys))
+        xmaxs = _pad_or_truncate(_to_list(xmax), len(ys))
+        colorss = _pad_or_truncate(_to_list(colors), len(ys))
+        lss = _pad_or_truncate(_to_list(linestyles), len(ys))
+        for i in range(len(ys)):
+            if i == 0 and "label" in kwargs:
+                self._plot([xmins[i], xmaxs[i]], [ys[i]]*2, None, None, None, c=colorss[i], ls=lss[i], label=kwargs["label"])
+            else:
+                self._plot([xmins[i], xmaxs[i]], [ys[i]]*2, None, None, None, c=colorss[i], ls=lss[i])
 
     def set_ylabel(self, label):
         self._axis_options["ylabel"] = f"{{{label}}}"
@@ -133,7 +152,8 @@ class BaseAxes:
 
     def set_yticks(self, ticks, labels=None):
         if ticks:
-            self._axis_options["ytick"]=f"{{{','.join(ticks)}}}"
+            s_ticks = map(str, ticks)
+            self._axis_options["ytick"]=f"{{{','.join(s_ticks)}}}"
             if labels and len(labels)==len(ticks):
                 self._axis_options["yticklabels"]=f"{{{','.join(labels)}}}"
             elif labels is not None and len(labels) == 0:
@@ -300,6 +320,26 @@ class Axes(BaseAxes):
         self._axis_options["log basis x"] = base
         self._plot(x, y, **kwargs)
 
+    def vlines(self, x, ymin, ymax, colors="k", linestyles="solid", **kwargs):
+        def _pad_or_truncate(some_list, target_len):
+            return some_list[:target_len] + [some_list[-1]]*(target_len - len(some_list))
+        def _to_list(x):
+            if x is None:
+                return []
+            if isinstance(x, (int, float, str)):
+                return [x]
+            return list(x)
+        xs = _to_list(x)
+        ymins = _pad_or_truncate(_to_list(ymin), len(xs))
+        ymaxs = _pad_or_truncate(_to_list(ymax), len(xs))
+        colorss = _pad_or_truncate(_to_list(colors), len(xs))
+        lss = _pad_or_truncate(_to_list(linestyles), len(xs))
+        for i in range(len(xs)):
+            if i == 0 and "label" in kwargs:
+                self._plot([xs[i]]*2, [ymins[i], ymaxs[i]], None, None, None, c=colorss[i], ls=lss[i], label=kwargs["label"])
+            else:
+                self._plot([xs[i]]*2, [ymins[i], ymaxs[i]], None, None, None, c=colorss[i], ls=lss[i])
+
     def set_xlabel(self, label):
         self._axis_options["xlabel"] = f"{{{label}}}"
 
@@ -352,7 +392,8 @@ class Axes(BaseAxes):
 
     def set_xticks(self, ticks, labels=None):
         if ticks:
-            self._axis_options["xtick"]=f"{{{','.join(ticks)}}}"
+            s_ticks = map(str, ticks)
+            self._axis_options["xtick"]=f"{{{','.join(s_ticks)}}}"
             if labels and len(labels)==len(ticks):
                 self._axis_options["xticklabels"]=f"{{{','.join(labels)}}}"
             elif labels is not None and len(labels) == 0:

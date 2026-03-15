@@ -47,6 +47,8 @@ class Figure:
         return grid
     
     def set_size_inches(self, *args):
+        if isinstance(args[0], tuple):
+            args = args[0]
         try:
             w,h = args
             self._width = w * 2.5
