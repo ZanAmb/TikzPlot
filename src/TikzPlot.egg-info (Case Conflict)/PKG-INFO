@@ -1,8 +1,0 @@
-Metadata-Version: 2.4
-Name: TikzPlot
-Version: 0.1.0
-Summary: TikzPlot to make Tikz PGF plots with matplotlib.pyplot syntax.
-Author-email: Zan Ambrozic <zan.ambrozic7@gmail.com>
-Requires-Python: >=3.9
-Description-Content-Type: text/markdown
-Requires-Dist: numpy
