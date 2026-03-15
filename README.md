@@ -59,7 +59,8 @@ For plot configurations (default sizes, paddings, etc.), use `from tikzplot impo
 Currently supported parameters are listed with their default values in `src/tikzplot/config.py`.
 
 ## More features comming soon...
-- automatic removal of datapoints to prevent LaTeX memory overflow,
+- automatic removal of datapoints to prevent LaTeX memory overflow, external datapoints saving,
+- imshow,
 - automatic color setting for plots with no specified color + basic color schemes,
 - 3D plots,
 - ... 
