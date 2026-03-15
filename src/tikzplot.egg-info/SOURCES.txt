@@ -1,8 +1,0 @@
-pyproject.toml
-src/tikzplot/__init__.py
-src/tikzplot/plots.py
-src/tikzplot.egg-info/PKG-INFO
-src/tikzplot.egg-info/SOURCES.txt
-src/tikzplot.egg-info/dependency_links.txt
-src/tikzplot.egg-info/requires.txt
-src/tikzplot.egg-info/top_level.txt
