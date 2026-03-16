@@ -24,7 +24,8 @@ Some basic plot commands are already implemented with commonly used arguments:
 - `errorbar()`,
 - `stem()`,
 - `fill-between()`,
-- `hlines()/vlines()`.
+- `hlines()/vlines()`,
+- `hisotrgam()`.
 
 #### Figures
 - `plt.figure()` (currently only to give you figure object or to set `figsize`),

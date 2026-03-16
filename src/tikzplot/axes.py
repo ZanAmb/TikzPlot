@@ -119,6 +119,39 @@ class BaseAxes:
             else:
                 self._plot([xmins[i], xmaxs[i]], [ys[i]]*2, None, None, None, c=colorss[i], ls=lss[i])
 
+    def hist(self, x, bins=10, density=False,**kwargs):
+        try:
+            iter(x)
+            iter(x[0])
+            datasets = x
+        except:
+            datasets = [x]
+        all_data = np.concatenate(datasets)
+        edges = np.histogram_bin_edges(all_data, bins=bins)
+        for data in datasets:
+            counts, _ = np.histogram(data, edges, density=density)
+            centers = (edges[:-1] + edges[1:]) / 2
+        widths = edges[1:] - edges[:-1]
+        settings = []
+        if "orientation" in kwargs and kwargs["orientation"] == "horizontal":
+            settings.append("xbar")
+        else:
+            settings.append("ybar")
+        settings.append("fill")
+        if "rwidth" in kwargs:
+            settings.append(f"bar width={widths.mean()*kwargs["rwidth"]}")
+        else:
+            settings[0] += " interval"
+        if "range" in kwargs:
+            if settings[0] == "xbar":
+                self.set_ylim(kwargs["range"])
+            else:
+                self.set_xlim(kwargs["range"])
+        if "cumulative" in kwargs and kwargs["cumulative"]:
+            counts = np.cumsum(counts)
+
+        self._plot(centers, counts, settings=settings, **kwargs)
+
     def set_ylabel(self, label):
         self._axis_options["ylabel"] = f"{{{label}}}"
 
