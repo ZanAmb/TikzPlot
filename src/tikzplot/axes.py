@@ -239,8 +239,8 @@ class BaseAxes:
             self._axis_options["legend style"] = f"{{{','.join(legend_string)}}}"
         self._legend_on = True            
         
-    def content_tex(self):
-        return "\n".join(e.to_tex() for e in self._elements)
+    def _content_tex(self, filename):
+        return "\n".join(e.to_tex(filename) for e in self._elements)
     
     """def get_ranges(self):
         xm = xM = ym = yM = None
@@ -262,7 +262,7 @@ class BaseAxes:
             yM = (max([e.get_range("ymax") for e in self._elements]), False)
         return xm, xM, ym, yM"""
     
-    def get_hard_range(self,which):
+    def _get_hard_range(self,which):
         arg = f"{which[0]}mode"
         mode = "lin"
         if arg in self._axis_options:
@@ -273,7 +273,7 @@ class BaseAxes:
             return (self._axis_options[which], mode)
         return None, mode
     
-    def get_range(self, which):
+    def _get_range(self, which):
         arg = f"{which[0]}mode"
         mode = "lin"
         if arg in self._axis_options:
@@ -286,10 +286,22 @@ class BaseAxes:
             return (min([e.get_erange(which) for e in self._elements]), False, mode)
         return (max([e.get_erange(which) for e in self._elements]), False, mode)
     
-    def set_range(self, which, value):
+    def _set_range(self, which, value):
         self._axis_options[which] = value
         for e in self._elements:
             e.filter(which, value)
+
+    def _num_points(self):
+        return [e._num_points() for e in self._elements]
+    
+    def _reduce_points(self, limit):
+        logx, logy = False, False
+        if "xmode" in self._axis_options and self._axis_options["xmode"] == "log":
+            logx = True
+        if "ymode" in self._axis_options and self._axis_options["ymode"] == "log":
+            logy = True
+        for e in self._elements:
+            e._reduce_points(limit, logx, logy)
 
 class Axes(BaseAxes):
 

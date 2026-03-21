@@ -26,6 +26,17 @@ class _TikzConfig:
 
         self.SHARED_AXIS_REL_MARGIN = 0.03
 
+        self.SAVE_DATAPOINTS = True
+        self.DATAPOINTS_DIR = "datapoints"  # ignored if SAVE_DATAPOINTS == False
+        self.UPDATE_DATA_ONLY = False       # ignored if SAVE_DATAPOINTS == False
+        self.UPDATE_STYLE_ONLY = False      # ignored if SAVE_DATAPOINTS == False
+        self.SHOW_SAVENAME = "showplot"
+
+        self.REDUCE_NUM_POINTS = True
+        self.REDUCE_METHOD = 1              # 0: remove based on index; 1: remove based on plot distance; 2: remove based on curvature
+        self.MAX_POINTS_PER_FIGURE = 10000
+        self.MAX_POINTS_PER_ELEMENT = 1000
+
         self._config_file = Path.home() / ".tikz_userconf.json"
 
         self._load_user_config()

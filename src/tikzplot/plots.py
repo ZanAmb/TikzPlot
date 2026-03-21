@@ -1,6 +1,8 @@
 import numpy as np
 
 from .figure import Figure
+from .state import main_name, next_show_num
+from .config import TikzConfig
 
 _current_figure = None
 _current_axes = None
@@ -152,8 +154,9 @@ def savefig(filename):
         filename += ".tex"
     _current_figure._save(filename)
 
-def show(): ### DODELAJ!
-    _current_figure._save(f"plot.tex")
+def show():
+    _current_figure._save(f"{str(main_name()[1]).removesuffix(".py")}_{TikzConfig.SHOW_SAVENAME}{next_show_num()}.tex")
+    clf()
 
 def clf():
     _current_figure.clear()

@@ -1,5 +1,8 @@
 import numpy as np
+from pathlib import Path
 
+from .config import TikzConfig
+from .state import next_export_num, main_name
 class Graph:
     _COLOR_MAP = {'b':'blue', 'g':'teal', 'r':'red', 'c':'cyan', 'm':'magenta', 'y':'yellow', 'k':'black', 'w':'white', "orange":"orange", "green": "green", "cyan":"cyan", "peru": "brown", "lime": "lime", "gray": "gray", "magenta": "magetna", "purple": "violet"}
     _LINE_MAP = {"--": "dashed", ":": "dotted", "-.": "dashdotted", "-":"solid"}
@@ -24,9 +27,17 @@ class Graph:
             x,y=coordinates
             self._x = np.asarray(x)
             self._y = np.asarray(y)
+            mask = np.isfinite(self._x) & np.isfinite(self._y)
+            self._x = self._x[mask]
+            self._y = self._y[mask]
             n = len(self._x)
             self._xerr, self._x_asym = __normalize_error(xerr, n)
             self._yerr, self._y_asym = __normalize_error(yerr, n)
+            if self._xerr is not None:
+                self._xerr = np.asarray(self._xerr)[mask]
+            
+            if self._yerr is not None:
+                self._yerr = np.asarray(self._yerr)[mask]
         else:
             self._special = coordinates
         self._style = style
@@ -215,8 +226,20 @@ class Graph:
                     line.append(self._yerr[i])
             rows.append(" ".join(str(v) for v in line))
         return "\n".join(rows)
-
-    def to_tex(self):
+    
+    def save_data(self, points, filename):
+        path = Path(filename)
+        file_number = next_export_num()
+        current = path.parent
+        dir = current / TikzConfig.DATAPOINTS_DIR
+        dir.mkdir(parents=True, exist_ok=True)
+        file_name = dir / f"{str(filename).removesuffix(".tex")}_{file_number}.dat"
+        if not TikzConfig.UPDATE_STYLE_ONLY:
+            with file_name.open("w", encoding="utf-8") as f:
+                f.write(points)
+        return str(file_name)
+    
+    def to_tex(self, filename):
         style = self._style_string()
 
         if self._classic:
@@ -227,11 +250,18 @@ class Graph:
                 table_opts += ",x error=xerror"
             if self._yerr is not None:
                 table_opts += ",y error=yerror"
-            if self._label and self._axes._legend_on:
-                return f"""\\addplot [{style}] table [{table_opts}] {{\n{header}\n{rows}\n}};\\addlegendentry{{{self._label}}}"""
-            return f"""\\addplot [forget plot,\n{style}] table [{table_opts}] {{\n{header}\n{rows}\n}};"""
-        else:
+            datapoints = f"{header}\n{rows}\n"
+            if TikzConfig.SAVE_DATAPOINTS:
+                datapoints = self.save_data(datapoints, filename)
+            if TikzConfig.SAVE_DATAPOINTS and not TikzConfig.UPDATE_DATA_ONLY:
+                if self._label and self._axes._legend_on:
+                    return f"""\\addplot [{style}] table [{table_opts}] {{{datapoints}}};\\addlegendentry{{{self._label}}}"""
+                return f"""\\addplot [forget plot,\n{style}] table [{table_opts}] {{{datapoints}}};"""
+            return ""
+        elif not (TikzConfig.SAVE_DATAPOINTS and not TikzConfig.UPDATE_STYLE_ONLY):
             return f"""\\addplot [forget plot,\n{style}] {self._special};"""
+        else:
+            return ""
     
     def data_range(self, which):
         xmin, xmax = min(self._x), max(self._x)
@@ -251,19 +281,24 @@ class Graph:
     def filter(self, which, value):
         if which == "xmin":
             mask = self._x >= value
-            idx_keep = np.argmin(np.abs(self._x - value))
-    
+            idx_keep = np.where(self._x < value)[0]
+            if len(idx_keep) > 0:
+                idx_keep = idx_keep[-1]
         elif which == "xmax":
             mask = self._x <= value
-            idx_keep = np.argmin(np.abs(self._x - value))
-    
+            idx_keep = np.where(self._x > value)[0]
+            if len(idx_keep) > 0:
+                idx_keep = idx_keep[0]
         elif which == "ymin":
             mask = self._y >= value
-            idx_keep = np.argmin(np.abs(self._y - value))
-    
+            idx_keep = np.where(self._y < value)[0]
+            if len(idx_keep) > 0:
+                idx_keep = idx_keep[-1]
         elif which == "ymax":
             mask = self._y <= value
-            idx_keep = np.argmin(np.abs(self._y - value))
+            idx_keep = np.where(self._y > value)[0]
+            if len(idx_keep) > 0:
+                idx_keep = idx_keep[0]
     
         else:
             raise ValueError("Invalid filter type")
@@ -289,3 +324,50 @@ class Graph:
             return self._path_name
         self._path_name = pname
         return pname
+    
+    def _num_points(self):
+        return len(self._x)
+    
+    def _reduce_points(self, limit, logx=False, logy=False):
+        l = len(self._x)
+        if l > limit:
+            if TikzConfig.REDUCE_METHOD == 0:
+                idx_keep = np.linspace(0, l-1, limit, dtype=int)
+                self._x = self._x[idx_keep]
+                self._y = self._y[idx_keep]
+                if self._xerr is not None:
+                    self._xerr = self._xerr[idx_keep]
+                if self._yerr is not None:
+                    self._yerr = self._yerr[idx_keep]
+            elif TikzConfig.REDUCE_METHOD in [1,2]:
+                if logx:
+                    vis_x = np.log(self._x)
+                else:
+                    vis_x = self._x
+                if logy:
+                    vis_y = np.log(self._y)
+                else:
+                    vis_y = self._y
+                while len(self._x) > limit:
+                    if TikzConfig.REDUCE_METHOD == 1:
+                        dx1 = vis_x[1:-1] - vis_x[:-2]
+                        dy1 = vis_y[1:-1] - vis_y[:-2]
+                        dx2 = vis_x[2:] - vis_x[1:-1]
+                        dy2 = vis_y[2:] - vis_y[1:-1]
+                        crit = np.hypot(dx1, dy1) + np.hypot(dx2, dy2)
+                    elif TikzConfig.REDUCE_METHOD == 2:
+                        x0, x1, x2 = vis_x[:-2], vis_x[1:-1], vis_x[2:]
+                        y0, y1, y2 = vis_y[:-2], vis_y[1:-1], vis_y[2:]
+                        crit = np.abs((x1 - x0)*(y2 - y0) - (y1 - y0)*(x2 - x0))
+                    idx_remove = np.argmin(crit)+1
+                    if idx_remove == len(crit): idx_remove -= 1
+                    mask = np.ones(len(self._x), dtype=bool)
+                    mask[idx_remove] = False
+                    self._x = self._x[mask]
+                    self._y = self._y[mask]
+                    vis_x = vis_x[mask]
+                    vis_y = vis_y[mask]
+                    if self._xerr is not None:
+                        self._xerr = self._xerr[mask]
+                    if self._yerr is not None:
+                        self._yerr = self._yerr[mask]

@@ -113,13 +113,13 @@ class Figure:
             mode = "lin"
         
             for ax in group:
-                hmin, m = ax.get_hard_range(which + "min")
+                hmin, m = ax._get_hard_range(which + "min")
                 if m == "log":
                     mode = "log"
                 if hmin is not None:
                     hard_min_vals.append(hmin)
         
-                hmax, m = ax.get_hard_range(which + "max")
+                hmax, m = ax._get_hard_range(which + "max")
                 if m == "log":
                     mode = "log"
                 if hmax is not None:
@@ -131,16 +131,16 @@ class Figure:
         
                 if min_val is not None:
                     for ax in group:
-                        ax.set_range(which + "min", min_val)
+                        ax._set_range(which + "min", min_val)
         
                 if max_val is not None:
                     for ax in group:
-                        ax.set_range(which + "max", max_val)
+                        ax._set_range(which + "max", max_val)
         
                 return
         
-            mins = [ax.get_range(which + "min") for ax in group]
-            maxes = [ax.get_range(which + "max") for ax in group]
+            mins = [ax._get_range(which + "min") for ax in group]
+            maxes = [ax._get_range(which + "max") for ax in group]
         
             min_val = min(r[0] for r in mins)
             max_val = max(r[0] for r in maxes)
@@ -161,8 +161,8 @@ class Figure:
                     max_val *= d
         
             for ax in group:
-                ax.set_range(which + "min", min_val)
-                ax.set_range(which + "max", max_val)
+                ax._set_range(which + "min", min_val)
+                ax._set_range(which + "max", max_val)
         
         
         for group in shared_x:
@@ -171,30 +171,54 @@ class Figure:
         for group in shared_y:
             set_ax_ranges("y", group)
 
-    def _to_tex(self):
+    def _reduce_points(self):
+        counts = []
+        for ax in self._axes:
+            counts += ax._num_points()
+        counts = [min(c, TikzConfig.MAX_POINTS_PER_ELEMENT) for c in counts]
+        limit = max(counts)
+        if sum(counts) > TikzConfig.MAX_POINTS_PER_FIGURE:
+            lo, hi = 0, max(counts)
+            while lo < hi:
+                mid = (lo + hi + 1) // 2
+                total = sum(min(c, mid) for c in counts)
+                if total <= TikzConfig.MAX_POINTS_PER_FIGURE:
+                    lo = mid
+                else:
+                    hi = mid - 1
+            limit = lo
+
+        for ax in self._axes:
+            ax._reduce_points(limit)
+
+    def _to_tex(self, filename):
         if not self._axes:
             return ""
         self._shared_ranges()
+        if TikzConfig.REDUCE_NUM_POINTS:
+            self._reduce_points()
         lines = ["\\begin{tikzpicture}"]
         nrows = self._axes[0]._get_nrows()
         ncols = self._axes[0]._get_ncols()
         for ax in self._axes:
             lines.append("\\begin{axis}")
             lines.append(f"[{ax._axis_option_string()}]")
-            lines.append(ax.content_tex())
+            lines.append(ax._content_tex(filename))
             lines.append("\\end{axis}")
             if ax._secondary_y is not None:
                 ax_sec_y = ax._secondary_y
                 lines.append("\\begin{axis}")
                 lines.append(f"[{ax_sec_y._axis_option_string()}]")
-                lines.append(ax_sec_y.content_tex())
+                lines.append(ax_sec_y._content_tex(filename))
                 lines.append("\\end{axis}")
         lines.append("\\end{tikzpicture}")
         return "\n".join(lines)
 
     def _save(self, filename):
-        with open(filename, "w") as f:
-            f.write(self._to_tex())
+        content = self._to_tex(filename)
+        if TikzConfig.SAVE_DATAPOINTS and not TikzConfig.UPDATE_DATA_ONLY:
+            with open(filename, "w") as f:
+                f.write(content)
 
     def _get_width(self):
         return self._width
@@ -203,7 +227,7 @@ class Figure:
         return self._height
     
     def clear(self):
-        del self
+        self.__init__()
 
     def _get_free_path_name(self):
         self._last_path_num += 1
