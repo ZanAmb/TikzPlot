@@ -143,7 +143,7 @@ def vlines(*args, **kwargs):
 
 def imshow(*args, **kwargs):
     _ensure_axes()
-    _current_axes.imshow(*args, **kwargs)
+    return _current_axes.imshow(*args, **kwargs)
 
 def xticks(*args, **kwargs):
     _ensure_axes()
@@ -152,6 +152,14 @@ def xticks(*args, **kwargs):
 def yticks(*args, **kwargs):
     _ensure_axes()
     _current_axes.set_yticks(*args, **kwargs)
+
+def xscale(self, *args, **kwargs):
+    _ensure_axes()
+    _current_axes.set_xscale(*args, **kwargs)
+
+def yscale(self, *args, **kwargs):
+    _ensure_axes()
+    _current_axes.set_yscale(*args, **kwargs)
 
 def savefig(filename):
     if not(filename.endswith(".tex") or filename.endswith(".tikz")):

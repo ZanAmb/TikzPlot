@@ -55,6 +55,12 @@ If axes and plot have different name for command with same effect, both are impl
 - `alpha`,
 - `label`.
 
+#### Colorbars
+Colorbars and colormaps are implemented a bit differently than in matplotlib (simplified):
+- if you use `imshow()`, you may use its return in `Colorbar()` (which you have to import as `from tikzplot import Colorbar`),
+- you may use `Colorbar(axis, cmap, lower, upper, ...)` for manual colorbar. Additional kwargs may also be used by `imshow()` return.
+Some common colormaps are implemented. For now, title and other formatting options are have basic or no support.
+
 #### TikzConfig
 For plot configurations (default sizes, paddings, etc.), use `from tikzplot import TikzConfig`:
 - `modifyParam(PARAM=value)` (for runtime session setting),
@@ -62,7 +68,6 @@ For plot configurations (default sizes, paddings, etc.), use `from tikzplot impo
 Currently supported parameters are listed with their default values in `src/tikzplot/config.py`.
 
 ## More features comming soon...
-- colorbars,
 - basic color schemes,
 - 3D plots,
 - ... 

@@ -1,7 +1,6 @@
 import json
 from pathlib import Path
 
-
 class _TikzConfig:
 
     def __init__(self):

@@ -34,9 +34,10 @@ class BaseAxes:
     def scatter(self, x, y, *args, **kwargs):
         self._plot(x, y, **kwargs, ls="")
 
-    def semilogy(self, x, y, *args, base=10, **kwargs):
+    def semilogy(self, x, y, *args, **kwargs):
         self._axis_options["ymode"] = "log"
-        self._axis_options["log basis y"] = base
+        if "base" in kwargs:
+            self._axis_options["log basis y"] = kwargs["base"]
         self._plot(x, y, **kwargs)
 
     def errorbar(self, x, y, *args, **kwargs):
@@ -181,9 +182,11 @@ class BaseAxes:
         if top is not None:
             self._axis_options["ymax"] = top
 
-    def set_yscale(self, *args):
+    def set_yscale(self, *args, **kwargs):
         if "log" in args:
             self._axis_options["ymode"] = "log"
+        if "base" in kwargs:
+            self._axis_options["log basis y"] = kwargs["base"]
 
     def set_yticks(self, ticks, labels=None):
         if ticks:
@@ -305,6 +308,7 @@ class Axes(BaseAxes):
         self._imshow = None
 
         self._defcol_counter = 0
+        self._colorbar = ""
 
         def _posit_string(): # returns neighbour, neighbour corner, anchor
             i = self._index
@@ -341,16 +345,19 @@ class Axes(BaseAxes):
         if self._fig._get_height():
             self._height = f"{self._fig._get_height() / self._nrows}cm"
 
-    def loglog(self, x, y, *args, base=10, **kwargs):
+    def loglog(self, x, y, *args, **kwargs):
         self._axis_options["xmode"] = "log"
         self._axis_options["ymode"] = "log"
-        self._axis_options["log basis x"] = base
-        self._axis_options["log basis y"] = base
+        if "base" in kwargs:
+            base = kwargs["base"]
+            self._axis_options["log basis x"] = base
+            self._axis_options["log basis y"] = base
         self._plot(x, y, **kwargs)
 
-    def semilogx(self, x, y, *args, base=10, **kwargs):
+    def semilogx(self, x, y, *args, **kwargs):
         self._axis_options["xmode"] = "log"
-        self._axis_options["log basis x"] = base
+        if "base" in kwargs:
+            self._axis_options["log basis x"] = kwargs["base"]
         self._plot(x, y, **kwargs)
 
     def vlines(self, x, ymin, ymax, colors="k", linestyles="solid", **kwargs):
@@ -377,7 +384,14 @@ class Axes(BaseAxes):
         self._imshow = (args, kwargs)
         self._axis_options["enlargelimits"] = "false"
         self._fig._add_global("\\pgfplotsset{set layers}")
-
+        data = args[0]
+        m, M = _np.min(data), _np.max(data)
+        if "cmap" in kwargs:
+            cmap = kwargs["cmap"]
+        else:
+            cmap = "viridis"
+        return (self, cmap, m, M)
+    
     def set_xlabel(self, label):
         self._axis_options["xlabel"] = f"{{{label}}}"
 
@@ -424,9 +438,11 @@ class Axes(BaseAxes):
         if right is not None:
             self._axis_options["xmax"] = right
 
-    def set_xscale(self, *args):
+    def set_xscale(self, *args, **kwargs):
         if "log" in args:
             self._axis_options["xmode"] = "log"
+        if "base" in kwargs:
+            self._axis_options["log basis x"] = kwargs["base"]
 
     def set_xticks(self, ticks, labels=None):
         if ticks:
@@ -451,6 +467,16 @@ class Axes(BaseAxes):
         return self._secondary_y
     
     def _export_imshow(self, *args, **kwargs):
+        if "xmode" in self._axis_options and self._axis_options["xmode"] == "log":
+            base = 10
+            if "log basis x" in self._axis_options:
+                base = self._axis_options["log basis x"]
+            _plt.xscale("log", base=base)
+        if "ymode" in self._axis_options and self._axis_options["ymode"] == "log":
+            base = 10
+            if "log basis y" in self._axis_options:
+                base = self._axis_options["log basis y"]
+            _plt.yscale("log", base=base)
         _plt.axis("off")
         _plt.imshow(*args, **kwargs)
         im_name = f"{str(main_name()[1]).removesuffix(".py")}_{TikzConfig.IMSHOW_SAVENAME}{_next_imshow_num()}.pdf"
@@ -481,6 +507,7 @@ class Axes(BaseAxes):
         if self._axis_options:
             if axis_opt_str: axis_opt_str += ",\n"
             axis_opt_str += ",\n".join(f"{k}={v}" for k, v in self._axis_options.items())
+        axis_opt_str += self._colorbar
         return axis_opt_str
 
     
@@ -505,6 +532,8 @@ class Axes(BaseAxes):
     def _get_defcol(self):
         self._defcol_counter += 1
         return self._defcol_counter - 1
+    def _show_colorbar(self, cbar):
+        self._colorbar = ",\n" + cbar
     
 class Secondary(BaseAxes):
     def __init__(self, primary):

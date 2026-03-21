@@ -7,10 +7,24 @@ enlargelimits=false,
 grid=major,
 width=12.0cm,
 height=10.0cm,
-xshift=0cm]
+xshift=0cm,
+colormap={urgb}{
+    rgb=(0.9932, 0.9062, 0.1439)
+    rgb=(0.3692, 0.7889, 0.3853)
+    rgb=(0.1276, 0.5670, 0.5505)
+    rgb=(0.2297, 0.3224, 0.5457)
+    rgb=(0.2670, 0.0049, 0.3294)
+},
+colorbar,
+colorbar style={
+/pgf/number format/use comma,
+width=0.3cm,
+title={$x$},
+title style={at={(3,0.5)}, anchor=south, rotate=-90},
+},
+point meta min={-1.782554111694738},
+point meta max={1.7825541116947379}]
 \addplot [forget plot,
-on layer=axis background] graphics [xmin=-3, xmax=3, ymin=-3, ymax=3] {test6_imshow1.pdf};
-\addplot [forget plot,
-color={white}] table [x=x,y=y] {datapoints/figure_1.dat};
+on layer=axis background] graphics [xmin=1, xmax=3, ymin=1, ymax=3] {test6_imshow1.pdf};
 \end{axis}
 \end{tikzpicture}
