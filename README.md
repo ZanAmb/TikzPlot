@@ -10,7 +10,8 @@ Instead of using `import matplotlib.pyplot (as plt)`, use `import tikzplot.plots
 - `\usepackage{tikz}`
 - `\usepackage{pgfplots}`
 - `\pgfplotsset{compat=1.18}`
-- `\usepgfplotslibrary{fillbetween}` (if you use fill-between plots).
+- `\usepgfplotslibrary{fillbetween}` (if you use fill-between plots),
+- `\usepackage{xcolor}` (recommended for best colors, works without but needs change of TikzConfig USE_XCOLOR=False).
 
 Then use the generated file as `\input{example_graph.tex}`.
 
@@ -60,8 +61,8 @@ For plot configurations (default sizes, paddings, etc.), use `from tikzplot impo
 Currently supported parameters are listed with their default values in `src/tikzplot/config.py`.
 
 ## More features comming soon...
-- automatic removal of datapoints to prevent LaTeX memory overflow, external datapoints saving,
 - imshow,
-- automatic color setting for plots with no specified color + basic color schemes,
+- colorbars,
+- basic color schemes,
 - 3D plots,
 - ... 
