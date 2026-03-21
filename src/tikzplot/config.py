@@ -37,6 +37,8 @@ class _TikzConfig:
         self.MAX_POINTS_PER_FIGURE = 10000
         self.MAX_POINTS_PER_ELEMENT = 1000
 
+        self.USE_XCOLOR = True
+
         self._config_file = Path.home() / ".tikz_userconf.json"
 
         self._load_user_config()

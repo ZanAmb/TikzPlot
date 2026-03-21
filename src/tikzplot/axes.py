@@ -303,6 +303,9 @@ class BaseAxes:
         for e in self._elements:
             e._reduce_points(limit, logx, logy)
 
+    def _add_col(self, r,g,b):
+        self._fig._add_col(r,g,b)
+
 class Axes(BaseAxes):
 
     def __init__(self, nrows, ncols, index, fig):
@@ -317,6 +320,8 @@ class Axes(BaseAxes):
         self._col = self._index - self._row * self._ncols
 
         self._fig = fig
+
+        self._defcol_counter = 0
 
         def _posit_string(): # returns neighbour, neighbour corner, anchor
             i = self._index
@@ -454,7 +459,7 @@ class Axes(BaseAxes):
             self._axis_options["xticklabels"]=r"{}"
 
     def twinx(self):
-        self._secondary_y = Secondary(self, fig=self._fig)
+        self._secondary_y = Secondary(self)
         return self._secondary_y
 
     def _axis_option_string(self):
@@ -494,6 +499,9 @@ class Axes(BaseAxes):
         return self._nrows
     def _get_ncols(self):
         return self._ncols
+    def _get_defcol(self):
+        self._defcol_counter += 1
+        return self._defcol_counter - 1
     
 class Secondary(BaseAxes):
     def __init__(self, primary):
@@ -523,3 +531,6 @@ class Secondary(BaseAxes):
     
     def _padding(self):
         return TikzConfig.SEC_Y_PADDING + TikzConfig.SEC_Y_LABEL_PADDING * ("ylabel" in self._axis_options)
+    
+    def _get_defcol(self):
+        return self._primary._get_defcol()

@@ -16,7 +16,7 @@ dist2 = 0.4 * rng.standard_normal(N_points) + 5
 fig, axs = plt.subplots(1, 2, sharey=True, tight_layout=True)
 
 # We can set the number of bins with the *bins* keyword argument.
-axs[0].hist(dist1, bins=n_bins, color="b")
+axs[0].hist(dist1, bins=n_bins, color="C9", density=True)
 axs[1].hist(dist2, bins=n_bins, color="r", rwidth=0.5, cumulative=True)
 
 #plt.show()

@@ -24,6 +24,8 @@ class Figure:
         
         self._last_path_num = 0
 
+        self._col_dict = {}
+
     def _add_subplot(self, nrows, ncols, index, sharex=None, sharey=None):
         ax = Axes(nrows, ncols, index, self)
         self._nrows = nrows
@@ -212,11 +214,14 @@ class Figure:
                 lines.append(ax_sec_y._content_tex(filename))
                 lines.append("\\end{axis}")
         lines.append("\\end{tikzpicture}")
+        for c in self._col_dict:
+            r,g,b=self._col_dict[c]
+            lines.insert(1,f"\\definecolor{{{c}}}{{rgb}}{{{r:.3f}, {g:.3f}, {b:.3f}}}")
         return "\n".join(lines)
 
     def _save(self, filename):
         content = self._to_tex(filename)
-        if TikzConfig.SAVE_DATAPOINTS and not TikzConfig.UPDATE_DATA_ONLY:
+        if not TikzConfig.SAVE_DATAPOINTS or (TikzConfig.SAVE_DATAPOINTS and not TikzConfig.UPDATE_DATA_ONLY):
             with open(filename, "w") as f:
                 f.write(content)
 
@@ -232,3 +237,7 @@ class Figure:
     def _get_free_path_name(self):
         self._last_path_num += 1
         return f"path{self._last_path_num}"
+    
+    def _add_col(self, r,g,b):
+        code = f"c{r:.3f}{g:.3f}{b:.3f}".replace(".", "")
+        self._col_dict[code] = (r,g,b)

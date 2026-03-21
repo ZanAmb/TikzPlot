@@ -3,6 +3,7 @@ from pathlib import Path
 
 from .config import TikzConfig
 from .state import next_export_num, main_name
+from .colors import _tex_color
 class Graph:
     _COLOR_MAP = {'b':'blue', 'g':'teal', 'r':'red', 'c':'cyan', 'm':'magenta', 'y':'yellow', 'k':'black', 'w':'white', "orange":"orange", "green": "green", "cyan":"cyan", "peru": "brown", "lime": "lime", "gray": "gray", "magenta": "magetna", "purple": "violet"}
     _LINE_MAP = {"--": "dashed", ":": "dotted", "-.": "dashdotted", "-":"solid"}
@@ -35,7 +36,7 @@ class Graph:
             self._yerr, self._y_asym = __normalize_error(yerr, n)
             if self._xerr is not None:
                 self._xerr = np.asarray(self._xerr)[mask]
-            
+
             if self._yerr is not None:
                 self._yerr = np.asarray(self._yerr)[mask]
         else:
@@ -48,6 +49,7 @@ class Graph:
         self._ms_multiplier = 1
         self._opacity = 1
         self._path_name = path_name
+        self._has_color = False
 
     def _style_string(self):
         opts = []
@@ -69,52 +71,15 @@ class Graph:
             return None
         
         def match_color(input):
-
-            def rgb_string(r,g,b):
-                return f"rgb:red,{r};green,{g};blue,{b}"
-            
-            def hex_to_rgb(hex):
-                if hex[0] == "#":
-                    hex = hex[1:]
-                hex = hex.upper()
-                rgb = []
-                for i in (0, 2, 4):
-                    decimal = int(hex[i:i+2], 16) / 255
-                    rgb.append(decimal)  
-                return rgb_string(rgb[0],rgb[1],rgb[2])           
-
-            if isinstance(input, tuple):
-                if len(input) == 1:
-                    input = input[0]
-                elif len(input) == 2:
-                    self._opacity= input[1]
-                    input = input[0]
-                else:
-                    r,g,b = input[:3]
-                    if len(input) == 4:
-                        self._opacity = input[3]                    
-                    return rgb_string(r,g,b)
-            s = str(input)
-            if s[0] == "#":
-                if len(s) == 4:
-                    hex = s[1] * 2 + s[2] * 2 + s[3] * 2
-                else:
-                    hex = s[:8]
-                    if len(s) > 8:
-                        self._opacity = int(s[8:]) / 100
-                return hex_to_rgb(hex)
-            if s.isdigit():
-                i = float(s)
-                return rgb_string(i,i,i)
-            if s.lower() == "none":
-                self._opacity = 0
-                return rgb_string(0,0,0)
-            if s in self._COLOR_MAP.keys():
-                return self._COLOR_MAP[s]
-            if s in self._COLOR_MAP.values():
-                return s
-            print(f"Unrecognized color {input}")
-            return None
+            self._has_color = True
+            ccode, op = _tex_color(input)
+            if not isinstance(op, bool):
+                self._opacity = op
+            if isinstance(ccode, str):
+                return ccode
+            r,g,b=ccode
+            self._axes._add_col(r,g,b)
+            return f"c{r:.3f}{g:.3f}{b:.3f}".replace(".", "")
 
         if "fmt" in self._style:
             fmt = self._style["fmt"]
@@ -122,6 +87,7 @@ class Graph:
             if col:
                 opts.append(f"color={self._COLOR_MAP[col[0]]}")
                 fmt = fmt.replace(col[0], "")
+                self._has_color = True
             mark = list(set(self._MARKER_MAP.keys()) & set(fmt))
             if mark:
                 opts.append(f"mark={self._MARKER_MAP[mark[0]]}")
@@ -184,7 +150,9 @@ class Graph:
                     opts.append("y dir=both")
                     opts.append("y explicit")
         if self._opacity < 1:
-            opts.append(f"opacity={self._opacity}")            
+            opts.append(f"opacity={self._opacity}")
+        if not self._has_color:
+            opts.append(f"color={{{match_color(f'C{self._axes._get_defcol()}')}}}")
         keys = {}
         for i in reversed(range(len(opts))):
             key = str(opts[i]).split("=")
@@ -233,11 +201,11 @@ class Graph:
         current = path.parent
         dir = current / TikzConfig.DATAPOINTS_DIR
         dir.mkdir(parents=True, exist_ok=True)
-        file_name = dir / f"{str(filename).removesuffix(".tex")}_{file_number}.dat"
+        file_name = dir / f"{str(path.stem)}_{file_number}.dat"
         if not TikzConfig.UPDATE_STYLE_ONLY:
             with file_name.open("w", encoding="utf-8") as f:
                 f.write(points)
-        return str(file_name)
+        return str(Path(TikzConfig.DATAPOINTS_DIR) / f"{str(path.stem)}_{file_number}.dat")
     
     def to_tex(self, filename):
         style = self._style_string()
@@ -253,7 +221,7 @@ class Graph:
             datapoints = f"{header}\n{rows}\n"
             if TikzConfig.SAVE_DATAPOINTS:
                 datapoints = self.save_data(datapoints, filename)
-            if TikzConfig.SAVE_DATAPOINTS and not TikzConfig.UPDATE_DATA_ONLY:
+            if not TikzConfig.SAVE_DATAPOINTS or (TikzConfig.SAVE_DATAPOINTS and not TikzConfig.UPDATE_DATA_ONLY):
                 if self._label and self._axes._legend_on:
                     return f"""\\addplot [{style}] table [{table_opts}] {{{datapoints}}};\\addlegendentry{{{self._label}}}"""
                 return f"""\\addplot [forget plot,\n{style}] table [{table_opts}] {{{datapoints}}};"""
