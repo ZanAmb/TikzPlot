@@ -31,6 +31,7 @@ class _TikzConfig:
         self.UPDATE_DATA_ONLY = False       # ignored if SAVE_DATAPOINTS == False
         self.UPDATE_STYLE_ONLY = False      # ignored if SAVE_DATAPOINTS == False
         self.SHOW_SAVENAME = "showplot"
+        self.IMSHOW_SAVENAME = "imshow"
 
         self.REDUCE_NUM_POINTS = True
         self.REDUCE_METHOD = 1              # 0: remove based on index; 1: remove based on plot distance; 2: remove based on curvature

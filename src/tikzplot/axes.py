@@ -1,7 +1,9 @@
-import numpy as np
+import numpy as _np
+import matplotlib.pyplot as _plt
 
 from .elements import Graph
 from .config import TikzConfig
+from .state import _next_imshow_num, main_name
 
 class BaseAxes:
     def __init__(self):
@@ -74,7 +76,7 @@ class BaseAxes:
         name1 = self._fig._get_free_path_name()
         name2 = self._fig._get_free_path_name()
         if isinstance(y1, (int, float)):
-            y1 = np.asarray([y1] * len(x))
+            y1 = _np.asarray([y1] * len(x))
         inst = _check_instance(x,y1,name1)
         if inst is None:
             self._plot(x,y1,path_name=name1, opacity=0)
@@ -83,7 +85,7 @@ class BaseAxes:
 
         if y2 is not None:
             if isinstance(y1, (int, float)):
-                y2 = np.asarray([y2] * len(x))
+                y2 = _np.asarray([y2] * len(x))
             inst = _check_instance(x,y2,name2)
             if inst is None:
                 self._plot(x,y2,path_name=name2, opacity=0)
@@ -126,10 +128,10 @@ class BaseAxes:
             datasets = x
         except:
             datasets = [x]
-        all_data = np.concatenate(datasets)
-        edges = np.histogram_bin_edges(all_data, bins=bins)
+        all_data = _np.concatenate(datasets)
+        edges = _np.histogram_bin_edges(all_data, bins=bins)
         for data in datasets:
-            counts, _ = np.histogram(data, edges, density=density)
+            counts, _ = _np.histogram(data, edges, density=density)
             centers = (edges[:-1] + edges[1:]) / 2
         widths = edges[1:] - edges[:-1]
         settings = []
@@ -148,7 +150,7 @@ class BaseAxes:
             else:
                 self.set_xlim(kwargs["range"])
         if "cumulative" in kwargs and kwargs["cumulative"]:
-            counts = np.cumsum(counts)
+            counts = _np.cumsum(counts)
 
         self._plot(centers, counts, settings=settings, **kwargs)
 
@@ -242,26 +244,6 @@ class BaseAxes:
     def _content_tex(self, filename):
         return "\n".join(e.to_tex(filename) for e in self._elements)
     
-    """def get_ranges(self):
-        xm = xM = ym = yM = None
-        if "xmin" in self._axis_options:
-            xm = (self._axis_options["xmin"], True)
-        else:
-            xm = (min([e.get_range("xmin") for e in self._elements]), False)
-        if "xmax" in self._axis_options:
-            xM = (self._axis_options["xmax"], True)
-        else:
-            xM = (max([e.get_range("xmax") for e in self._elements]), False)
-        if "ymin" in self._axis_options:
-            ym = (self._axis_options["ymin"], True)
-        else:
-            ym = (min([e.get_range("ymin") for e in self._elements]), False)
-        if "ymax" in self._axis_options:
-            yM = (self._axis_options["ymax"], True)
-        else:
-            yM = (max([e.get_range("ymax") for e in self._elements]), False)
-        return xm, xM, ym, yM"""
-    
     def _get_hard_range(self,which):
         arg = f"{which[0]}mode"
         mode = "lin"
@@ -320,6 +302,7 @@ class Axes(BaseAxes):
         self._col = self._index - self._row * self._ncols
 
         self._fig = fig
+        self._imshow = None
 
         self._defcol_counter = 0
 
@@ -389,6 +372,11 @@ class Axes(BaseAxes):
                 self._plot([xs[i]]*2, [ymins[i], ymaxs[i]], None, None, None, c=colorss[i], ls=lss[i], label=kwargs["label"])
             else:
                 self._plot([xs[i]]*2, [ymins[i], ymaxs[i]], None, None, None, c=colorss[i], ls=lss[i])
+
+    def imshow(self, *args, **kwargs):
+        self._imshow = (args, kwargs)
+        self._axis_options["enlargelimits"] = "false"
+        self._fig._add_global("\\pgfplotsset{set layers}")
 
     def set_xlabel(self, label):
         self._axis_options["xlabel"] = f"{{{label}}}"
@@ -461,6 +449,13 @@ class Axes(BaseAxes):
     def twinx(self):
         self._secondary_y = Secondary(self)
         return self._secondary_y
+    
+    def _export_imshow(self, *args, **kwargs):
+        _plt.axis("off")
+        _plt.imshow(*args, **kwargs)
+        im_name = f"{str(main_name()[1]).removesuffix(".py")}_{TikzConfig.IMSHOW_SAVENAME}{_next_imshow_num()}.pdf"
+        _plt.savefig(im_name,bbox_inches='tight', pad_inches=0)
+        return im_name
 
     def _axis_option_string(self):
         self._update_size()
@@ -472,6 +467,14 @@ class Axes(BaseAxes):
             self._axis_options["yshift"] = f"-{self._fig._get_spacing(self._row, self._col)}cm"
         else:
             self._axis_options["xshift"] = f"{self._fig._get_spacing(self._row, self._col)}cm"
+        if self._imshow:
+            im_name = self._export_imshow(*self._imshow[0], **self._imshow[1])
+            dims = _np.shape(self._imshow[0][0])
+            bounds = [0, dims[1], 0, dims[0]]
+            if "extent" in self._imshow[1]:
+                bounds = self._imshow[1]["extent"]
+            xm, xM, ym, yM = bounds
+            self._elements.insert(0, Graph(self, f"graphics [xmin={xm}, xmax={xM}, ymin={ym}, ymax={yM}] {{{im_name}}}",settings=None, xerr=None, yerr=None, onlayer="axis background"))
         axis_opt_str = ""
         if self._axis_args:
             axis_opt_str += ",\n".join(self._axis_args)

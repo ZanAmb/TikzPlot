@@ -26,7 +26,8 @@ Some basic plot commands are already implemented with commonly used arguments:
 - `stem()`,
 - `fill-between()`,
 - `hlines()/vlines()`,
-- `hisotrgam()`.
+- `hisotrgam()`,
+- `imshow()`.
 
 #### Figures
 - `plt.figure()` (currently only to give you figure object or to set `figsize`),
@@ -61,7 +62,6 @@ For plot configurations (default sizes, paddings, etc.), use `from tikzplot impo
 Currently supported parameters are listed with their default values in `src/tikzplot/config.py`.
 
 ## More features comming soon...
-- imshow,
 - colorbars,
 - basic color schemes,
 - 3D plots,

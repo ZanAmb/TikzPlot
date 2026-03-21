@@ -1,84 +1,16 @@
+\pgfplotsset{set layers}
 \begin{tikzpicture}
-\definecolor{c100004980055}{rgb}{1.000, 0.498, 0.055}
-\definecolor{c012204670706}{rgb}{0.122, 0.467, 0.706}
 \begin{axis}
 [/pgf/number format/use comma,
 name=p0,
+enlargelimits=false,
 grid=major,
-xlabel={$t$ [min]},
-ylabel={$\frac{1}{4\pi k^2}\left(\frac{S}{Y}\right)^2$ [m$^2$]},
-legend style={at={(0.03,0.97)},anchor=north west},
-xmin=0,
-xmax=190,
-width=10.0cm,
-height=7.5cm,
+width=12.0cm,
+height=10.0cm,
 xshift=0cm]
-\addplot [color={blue},
-only marks,
-mark=*,
-error bars/.cd,
-y dir=both,
-y explicit] table [x=x,y=y,y error=yerror] {datapoints/figure_1.dat};\addlegendentry{Meritve}
-\addplot [color={orange},
-line width=2pt] table [x=x,y=y] {datapoints/figure_2.dat};\addlegendentry{Fit}
-\end{axis}
-\begin{axis}
-[/pgf/number format/use comma,
-name=p1,
-at={(p0.east)},
-anchor=west,
-width=10.0cm,
-height=7.5cm,
-xshift=2.4cm]
 \addplot [forget plot,
-ycomb,
-color=red,
-mark=*] table [x=x,y=y] {datapoints/figure_3.dat};
-\end{axis}
-\begin{axis}
-[/pgf/number format/use comma,
-name=p2,
-at={(p0.south)},
-anchor=north,
-ylabel={$ly$},
-xlabel={$x1$},
-grid=major,
-legend style={at={(0.03,0.03)},anchor=south west},
-width=10.0cm,
-height=7.5cm,
-yshift=-1.5999999999999999cm]
-\addplot [color={c012204670706}] table [x=x,y=y] {datapoints/figure_4.dat};\addlegendentry{cos}
-\addplot [color={c100004980055}] table [x=x,y=y] {datapoints/figure_5.dat};\addlegendentry{cos2}
-\end{axis}
-\begin{axis}
-[/pgf/number format/use comma,
-axis y line*=right,
-axis x line=none,
-at={(p2.south west)},
-anchor=south west,
-y label style={at={(1.1,0.5)}, rotate=180},
-ylabel={$ry$},
-legend style={at={(0.97,0.97)},anchor=north east},
-width=10.0cm,
-height=7.5cm]
-\addplot [color=red,
-dashed] table [x=x,y=y] {datapoints/figure_6.dat};\addlegendentry{sin}
-\end{axis}
-\begin{axis}
-[/pgf/number format/use comma,
-name=p3,
-at={(p2.east)},
-anchor=west,
-width=10.0cm,
-height=7.5cm,
-xshift=2.4cm]
+on layer=axis background] graphics [xmin=-3, xmax=3, ymin=-3, ymax=3] {test6_imshow1.pdf};
 \addplot [forget plot,
-color={cyan},
-dashed,
-mark=*] table [x=x,y=y] {datapoints/figure_7.dat};
-\addplot [forget plot,
-color={violet},
-solid,
-mark=x] table [x=x,y=y] {datapoints/figure_8.dat};
+color={white}] table [x=x,y=y] {datapoints/figure_1.dat};
 \end{axis}
 \end{tikzpicture}

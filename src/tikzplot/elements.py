@@ -140,6 +140,9 @@ class Graph:
         if "alpha" in self._style:
             self._opacity = self._style["alpha"]
 
+        if "onlayer" in self._style:
+            opts.append(f"on layer={self._style["onlayer"]}")
+
         if self._classic:
             if self._xerr is not None or self._yerr is not None:
                 opts.append("error bars/.cd")
@@ -151,7 +154,7 @@ class Graph:
                     opts.append("y explicit")
         if self._opacity < 1:
             opts.append(f"opacity={self._opacity}")
-        if not self._has_color:
+        if not self._has_color and self._classic:
             opts.append(f"color={{{match_color(f'C{self._axes._get_defcol()}')}}}")
         keys = {}
         for i in reversed(range(len(opts))):
@@ -223,10 +226,10 @@ class Graph:
                 datapoints = self.save_data(datapoints, filename)
             if not TikzConfig.SAVE_DATAPOINTS or (TikzConfig.SAVE_DATAPOINTS and not TikzConfig.UPDATE_DATA_ONLY):
                 if self._label and self._axes._legend_on:
-                    return f"""\\addplot [{style}] table [{table_opts}] {{{datapoints}}};\\addlegendentry{{{self._label}}}"""
-                return f"""\\addplot [forget plot,\n{style}] table [{table_opts}] {{{datapoints}}};"""
+                    return f"\\addplot [{style}] table [{table_opts}] {{{datapoints}}};\\addlegendentry{{{self._label}}}"
+                return f"\\addplot [forget plot,\n{style}] table [{table_opts}] {{{datapoints}}};"
             return ""
-        elif not (TikzConfig.SAVE_DATAPOINTS and not TikzConfig.UPDATE_STYLE_ONLY):
+        elif TikzConfig.SAVE_DATAPOINTS or not (TikzConfig.SAVE_DATAPOINTS and not TikzConfig.UPDATE_STYLE_ONLY):
             return f"""\\addplot [forget plot,\n{style}] {self._special};"""
         else:
             return ""

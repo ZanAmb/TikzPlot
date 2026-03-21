@@ -26,6 +26,8 @@ class Figure:
 
         self._col_dict = {}
 
+        self._globals = set()
+
     def _add_subplot(self, nrows, ncols, index, sharex=None, sharey=None):
         ax = Axes(nrows, ncols, index, self)
         self._nrows = nrows
@@ -174,7 +176,7 @@ class Figure:
             set_ax_ranges("y", group)
 
     def _reduce_points(self):
-        counts = []
+        counts = [0]
         for ax in self._axes:
             counts += ax._num_points()
         counts = [min(c, TikzConfig.MAX_POINTS_PER_ELEMENT) for c in counts]
@@ -199,7 +201,8 @@ class Figure:
         self._shared_ranges()
         if TikzConfig.REDUCE_NUM_POINTS:
             self._reduce_points()
-        lines = ["\\begin{tikzpicture}"]
+        lines = [g for g in self._globals]
+        lines.append("\\begin{tikzpicture}")
         nrows = self._axes[0]._get_nrows()
         ncols = self._axes[0]._get_ncols()
         for ax in self._axes:
@@ -241,3 +244,6 @@ class Figure:
     def _add_col(self, r,g,b):
         code = f"c{r:.3f}{g:.3f}{b:.3f}".replace(".", "")
         self._col_dict[code] = (r,g,b)
+
+    def _add_global(self, setting):
+        self._globals.add(setting)

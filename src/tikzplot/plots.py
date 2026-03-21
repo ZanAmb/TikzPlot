@@ -141,6 +141,10 @@ def vlines(*args, **kwargs):
     _ensure_axes()
     _current_axes.vlines(*args, **kwargs)
 
+def imshow(*args, **kwargs):
+    _ensure_axes()
+    _current_axes.imshow(*args, **kwargs)
+
 def xticks(*args, **kwargs):
     _ensure_axes()
     _current_axes.set_xticks(*args, **kwargs)
