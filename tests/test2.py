@@ -16,4 +16,4 @@ ax1.set_xlabel(r"$x$")
 ax1.set_ylabel(r"$y$")
 ax2.grid()
 
-plt.savefig("tests/figure.tex")
+plt.savefig("figure.tex")

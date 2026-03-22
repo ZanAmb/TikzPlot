@@ -14,4 +14,4 @@ plt.xlim(0,10)
 
 plt.errorbar(x, y, 1, color="black")
 
-plt.savefig("tests/figure.tex")
+plt.savefig("figure.tex")

@@ -39,6 +39,11 @@ class _TikzConfig:
 
         self.USE_XCOLOR = True
 
+        self.CBAR_X_OFFSET = 0.05
+        self.CBAR_Y_OFFSET = 0.2
+        self.CBAR_X_MARGIN = 0.5
+        self.CBAR_Y_MARGIN = 0.5
+
         self._config_file = Path.home() / ".tikz_userconf.json"
 
         self._load_user_config()

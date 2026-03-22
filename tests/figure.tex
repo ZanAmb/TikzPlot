@@ -1,30 +1,141 @@
-\pgfplotsset{set layers}
 \begin{tikzpicture}
+\definecolor{c017306270173}{rgb}{0.173, 0.627, 0.173}
+\definecolor{c100004980055}{rgb}{1.000, 0.498, 0.055}
+\definecolor{c012204670706}{rgb}{0.122, 0.467, 0.706}
 \begin{axis}
 [/pgf/number format/use comma,
+axis on top,
 name=p0,
+grid=major,
+legend style={at={(0.97,0.97)},anchor=north east},
+xlabel={X axis},
+ylabel={Y axis},
+width=8.0cm,
+height=6.666666666666667cm,
+xshift=0cm]
+\addplot [color={blue},
+line width=1.5pt] table [x=x,y=y] {datapoints/figure_1.dat};\addlegendentry{sin(x)}
+\addplot [color={red},
+dashed] table [x=x,y=y] {datapoints/figure_2.dat};\addlegendentry{cos(x)}
+\end{axis}
+\begin{axis}
+[/pgf/number format/use comma,
+axis on top,
+name=p1,
+at={(p0.east)},
+anchor=west,
+grid=major,
+legend style={at={(0.5,0.97)},anchor=north },
+width=8.0cm,
+height=6.666666666666667cm,
+xshift=1.0cm]
+\addplot [color={green},
+only marks,
+mark=*] table [x=x,y=y] {datapoints/figure_3.dat};\addlegendentry{noisy}
+\end{axis}
+\begin{axis}
+[/pgf/number format/use comma,
+axis on top,
+axis y line*=right,
+axis x line=none,
+at={(p1.south west)},
+anchor=south west,
+y label style={at={(1.1,0.5)}, rotate=180},
+width=8.0cm,
+height=6.666666666666667cm]
+\addplot [forget plot,
+color={c012204670706}] table [x=x,y=y] {datapoints/figure_4.dat};
+\addplot [forget plot,
+color={c100004980055}] table [x=x,y=y] {datapoints/figure_5.dat};
+\addplot [forget plot,
+color={c017306270173}] table [x=x,y=y] {datapoints/figure_6.dat};
+\end{axis}
+\begin{axis}
+[/pgf/number format/use comma,
+axis on top,
+name=p2,
+at={(p0.south)},
+anchor=north,
+ymode=log,
+grid=both,
+width=8.0cm,
+height=6.666666666666667cm,
+yshift=-1.5999999999999999cm]
+\addplot [color={violet}] table [x=x,y=y] {datapoints/figure_7.dat};\addlegendentry{$|\sin(x)|$}
+\end{axis}
+\begin{axis}
+[/pgf/number format/use comma,
+axis on top,
+name=p3,
+at={(p2.east)},
+anchor=west,
+width=8.0cm,
+height=6.666666666666667cm,
+xshift=1.0cm]
+\addplot [solid,
+color={black},
+error bars/.cd,
+y dir=both,
+y explicit] table [x=x,y=y,y error=yerror] {datapoints/figure_8.dat};\addlegendentry{data}
+\addplot [forget plot,
+name path=path1,
+opacity=0,
+color={c012204670706}] table [x=x,y=y] {datapoints/figure_9.dat};
+\addplot [forget plot,
+name path=path2,
+opacity=0,
+color={c100004980055}] table [x=x,y=y] {datapoints/figure_10.dat};
+\addplot [forget plot,
+color={gray},
+opacity=0.3] fill between [of=path1 and path2];
+\end{axis}
+\begin{axis}
+[/pgf/number format/use comma,
+axis on top,
+name=p4,
+at={(p2.south)},
+anchor=north,
+width=8.0cm,
+height=6.666666666666667cm,
+yshift=-1.0cm]
+\addplot [forget plot,
+ybar interval,
+fill,
+color={orange}] table [x=x,y=y] {datapoints/figure_11.dat};
+\end{axis}
+\begin{axis}
+[/pgf/number format/use comma,
+axis on top,
+name=p5,
+at={(p4.east)},
+anchor=west,
 enlargelimits=false,
 grid=major,
-width=12.0cm,
-height=10.0cm,
-xshift=0cm,
+width=8.0cm,
+height=6.666666666666667cm,
+xshift=1.0cm,
 colormap={urgb}{
-    rgb=(0.9932, 0.9062, 0.1439)
-    rgb=(0.3692, 0.7889, 0.3853)
-    rgb=(0.1276, 0.5670, 0.5505)
-    rgb=(0.2297, 0.3224, 0.5457)
     rgb=(0.2670, 0.0049, 0.3294)
+    rgb=(0.2297, 0.3224, 0.5457)
+    rgb=(0.1276, 0.5669, 0.5506)
+    rgb=(0.3692, 0.7889, 0.3829)
+    rgb=(0.9932, 0.9062, 0.1439)
 },
 colorbar,
 colorbar style={
 /pgf/number format/use comma,
 width=0.3cm,
-title={$x$},
-title style={at={(3,0.5)}, anchor=south, rotate=-90},
+anchor=west,
+at={(p5.east)},
+xshift=0.05cm,
+height=0.8*\pgfkeysvalueof{/pgfplots/parent axis height},
+title={$Z$},
+title style={at={(4,0.5)}, anchor=base, yshift=-7pt, rotate=-90},
+ytick={-0.5,0,0.5},
 },
-point meta min={-1.782554111694738},
-point meta max={1.7825541116947379}]
+point meta min={-0.8901178391006421},
+point meta max={0.8910716463807059}]
 \addplot [forget plot,
-on layer=axis background] graphics [xmin=1, xmax=3, ymin=1, ymax=3] {test6_imshow1.pdf};
+] graphics [xmin=-3, xmax=3, ymin=-3, ymax=3] {test7_imshow1.pdf};
 \end{axis}
 \end{tikzpicture}

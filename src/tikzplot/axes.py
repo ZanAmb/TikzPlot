@@ -14,6 +14,7 @@ class BaseAxes:
         self._yticks = True
         self._fig = None
 
+        self._axis_args.add("axis on top")
         if TikzConfig.USE_DECIMAL_COMMA:
             self._axis_args.add("/pgf/number format/use comma")
 
@@ -49,6 +50,8 @@ class BaseAxes:
             self._plot(x, y, **kwargs)
 
     def stem(self, *args, **kwargs):
+        if "linefmt" in kwargs:
+            kwargs["fmt"] = kwargs.pop("linefmt")
         vert = True
         if len(args) == 1:
             y = args[0]
@@ -65,7 +68,7 @@ class BaseAxes:
         if vert:
             self._plot(x,y,settings=["ycomb"], **kwargs)
         else:
-            self._plot(x,y,settings=["xcomb"], **kwargs)
+            self._plot(y,x,settings=["xcomb"], **kwargs)
 
     def fill_between(self, x, y1, y2=None, **kwargs):
         def _check_instance(xs, ys, pname):
@@ -80,7 +83,7 @@ class BaseAxes:
             y1 = _np.asarray([y1] * len(x))
         inst = _check_instance(x,y1,name1)
         if inst is None:
-            self._plot(x,y1,path_name=name1, opacity=0)
+            self._plot(x,y1,path_name=name1, alpha=0)
         else:
             name1 = inst
 
@@ -89,7 +92,7 @@ class BaseAxes:
                 y2 = _np.asarray([y2] * len(x))
             inst = _check_instance(x,y2,name2)
             if inst is None:
-                self._plot(x,y2,path_name=name2, opacity=0)
+                self._plot(x,y2,path_name=name2, alpha=0)
             else:
                 name2 = inst
         else:
@@ -97,7 +100,7 @@ class BaseAxes:
             ys = [0,0]
             inst = _check_instance(xs,ys,name2)
             if inst is None:
-                self._plot(xs,ys,path_name=name2, opacity=0)
+                self._plot(xs,ys,path_name=name2, alpha=0)
             else:
                 name2 = inst
         self._elements.append(Graph(self, f"fill between [of={name1} and {name2}]",settings=None, xerr=None, yerr=None, **kwargs))
@@ -309,6 +312,7 @@ class Axes(BaseAxes):
 
         self._defcol_counter = 0
         self._colorbar = ""
+        self._cbar_h = False
 
         def _posit_string(): # returns neighbour, neighbour corner, anchor
             i = self._index
@@ -383,7 +387,7 @@ class Axes(BaseAxes):
     def imshow(self, *args, **kwargs):
         self._imshow = (args, kwargs)
         self._axis_options["enlargelimits"] = "false"
-        self._fig._add_global("\\pgfplotsset{set layers}")
+        #self._fig._add_global("\\pgfplotsset{set layers}")
         data = args[0]
         m, M = _np.min(data), _np.max(data)
         if "cmap" in kwargs:
@@ -513,9 +517,9 @@ class Axes(BaseAxes):
     
     def _margins(self):
         left = TikzConfig.LEFT_PADDING * self._yticks + TikzConfig.Y_LABEL_PADDING * ("ylabel" in self._axis_options)
-        right = TikzConfig.RIGHT_PADDING
+        right = TikzConfig.RIGHT_PADDING + TikzConfig.CBAR_X_MARGIN * (self._colorbar != "" and not self._cbar_h)
         top = TikzConfig.TOP_PADDING + TikzConfig.TITLE_PADDING * ("title" in self._axis_options)
-        bottom = TikzConfig.BOTTOM_PADDING * self._xticks + TikzConfig.X_LABEL_PADDING * ("xlabel" in self._axis_options)
+        bottom = TikzConfig.BOTTOM_PADDING * self._xticks + TikzConfig.X_LABEL_PADDING * ("xlabel" in self._axis_options) + TikzConfig.CBAR_Y_MARGIN * (self._colorbar != "" and self._cbar_h)
         if self._secondary_y is not None:
             right += self._secondary_y._padding()
 
@@ -532,8 +536,11 @@ class Axes(BaseAxes):
     def _get_defcol(self):
         self._defcol_counter += 1
         return self._defcol_counter - 1
-    def _show_colorbar(self, cbar):
+    def _show_colorbar(self, cbar, horizontal=False):
         self._colorbar = ",\n" + cbar
+        self._cbar_h = horizontal
+    def _get_index(self):
+        return self._index
     
 class Secondary(BaseAxes):
     def __init__(self, primary):
@@ -566,3 +573,6 @@ class Secondary(BaseAxes):
     
     def _get_defcol(self):
         return self._primary._get_defcol()
+    
+    def _get_index(self):
+        return self._primary._get_index()

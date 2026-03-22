@@ -134,14 +134,24 @@ class Graph:
             opts.append(f"mark size={self._style['ms']}pt")
         if "marksize" in self._style:
             opts.append(f"mark size={self._style['marksize']}pt")
+        if "markerfmt" in self._style:
+            col = list(set(self._COLOR_MAP.keys()) & set(fmt))
+            if col:
+                opts.append(f"mark options={{{self._COLOR_MAP[col[0]]}}}")
+                fmt = fmt.replace(col[0], "")
+                self._has_color = True
+            mark = list(set(self._MARKER_MAP.keys()) & set(fmt))
+            if mark:
+                opts.append(f"mark={self._MARKER_MAP[mark[0]]}")
+                fmt = fmt.replace(mark[0], "")
         if "label" in self._style:
             self._label = self._style["label"]
 
         if "alpha" in self._style:
             self._opacity = self._style["alpha"]
 
-        if "onlayer" in self._style:
-            opts.append(f"on layer={self._style["onlayer"]}")
+        #if "onlayer" in self._style:
+        #    opts.append(f"on layer={self._style["onlayer"]}")
 
         if self._classic:
             if self._xerr is not None or self._yerr is not None:
@@ -297,48 +307,51 @@ class Graph:
         return pname
     
     def _num_points(self):
-        return len(self._x)
+        if self._classic:
+            return len(self._x)
+        return 0
     
     def _reduce_points(self, limit, logx=False, logy=False):
-        l = len(self._x)
-        if l > limit:
-            if TikzConfig.REDUCE_METHOD == 0:
-                idx_keep = np.linspace(0, l-1, limit, dtype=int)
-                self._x = self._x[idx_keep]
-                self._y = self._y[idx_keep]
-                if self._xerr is not None:
-                    self._xerr = self._xerr[idx_keep]
-                if self._yerr is not None:
-                    self._yerr = self._yerr[idx_keep]
-            elif TikzConfig.REDUCE_METHOD in [1,2]:
-                if logx:
-                    vis_x = np.log(self._x)
-                else:
-                    vis_x = self._x
-                if logy:
-                    vis_y = np.log(self._y)
-                else:
-                    vis_y = self._y
-                while len(self._x) > limit:
-                    if TikzConfig.REDUCE_METHOD == 1:
-                        dx1 = vis_x[1:-1] - vis_x[:-2]
-                        dy1 = vis_y[1:-1] - vis_y[:-2]
-                        dx2 = vis_x[2:] - vis_x[1:-1]
-                        dy2 = vis_y[2:] - vis_y[1:-1]
-                        crit = np.hypot(dx1, dy1) + np.hypot(dx2, dy2)
-                    elif TikzConfig.REDUCE_METHOD == 2:
-                        x0, x1, x2 = vis_x[:-2], vis_x[1:-1], vis_x[2:]
-                        y0, y1, y2 = vis_y[:-2], vis_y[1:-1], vis_y[2:]
-                        crit = np.abs((x1 - x0)*(y2 - y0) - (y1 - y0)*(x2 - x0))
-                    idx_remove = np.argmin(crit)+1
-                    if idx_remove == len(crit): idx_remove -= 1
-                    mask = np.ones(len(self._x), dtype=bool)
-                    mask[idx_remove] = False
-                    self._x = self._x[mask]
-                    self._y = self._y[mask]
-                    vis_x = vis_x[mask]
-                    vis_y = vis_y[mask]
+        if self._classic:
+            l = len(self._x)
+            if l > limit:
+                if TikzConfig.REDUCE_METHOD == 0:
+                    idx_keep = np.linspace(0, l-1, limit, dtype=int)
+                    self._x = self._x[idx_keep]
+                    self._y = self._y[idx_keep]
                     if self._xerr is not None:
-                        self._xerr = self._xerr[mask]
+                        self._xerr = self._xerr[idx_keep]
                     if self._yerr is not None:
-                        self._yerr = self._yerr[mask]
+                        self._yerr = self._yerr[idx_keep]
+                elif TikzConfig.REDUCE_METHOD in [1,2]:
+                    if logx:
+                        vis_x = np.log(self._x)
+                    else:
+                        vis_x = self._x
+                    if logy:
+                        vis_y = np.log(self._y)
+                    else:
+                        vis_y = self._y
+                    while len(self._x) > limit:
+                        if TikzConfig.REDUCE_METHOD == 1:
+                            dx1 = vis_x[1:-1] - vis_x[:-2]
+                            dy1 = vis_y[1:-1] - vis_y[:-2]
+                            dx2 = vis_x[2:] - vis_x[1:-1]
+                            dy2 = vis_y[2:] - vis_y[1:-1]
+                            crit = np.hypot(dx1, dy1) + np.hypot(dx2, dy2)
+                        elif TikzConfig.REDUCE_METHOD == 2:
+                            x0, x1, x2 = vis_x[:-2], vis_x[1:-1], vis_x[2:]
+                            y0, y1, y2 = vis_y[:-2], vis_y[1:-1], vis_y[2:]
+                            crit = np.abs((x1 - x0)*(y2 - y0) - (y1 - y0)*(x2 - x0))
+                        idx_remove = np.argmin(crit)+1
+                        if idx_remove == len(crit): idx_remove -= 1
+                        mask = np.ones(len(self._x), dtype=bool)
+                        mask[idx_remove] = False
+                        self._x = self._x[mask]
+                        self._y = self._y[mask]
+                        vis_x = vis_x[mask]
+                        vis_y = vis_y[mask]
+                        if self._xerr is not None:
+                            self._xerr = self._xerr[mask]
+                        if self._yerr is not None:
+                            self._yerr = self._yerr[mask]

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "TikzPlot"
-version = "0.1.9"
+version = "0.2.0"
 description = "TikzPlot to make Tikz PGF plots with matplotlib.pyplot syntax."
 authors = [
     {name="Zan Ambrozic", email="zan.ambrozic7@gmail.com"}
@@ -12,9 +12,7 @@ authors = [
 readme = "README.md"
 requires-python = ">=3.9"
 
-dependencies = [
-    "numpy", "pathlib", "os.path", "json
-]
+dependencies = ["numpy", "matplotlib"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
