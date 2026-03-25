@@ -3,6 +3,9 @@ A clean version of PltToTikz, this time as Python package. Easy to use: only rep
 
 Please let me know if you find any buggs or unexpected behaviour. When the project will be ready, I might publish it on PyPI.
 
+# Installation
+Download this package and install using: `pip install [path]`, where [path] is the path to the directory, containing `pyproject.toml`.
+
 ## Python usage
 Instead of using `import matplotlib.pyplot (as plt)`, use `import tikzplot.plots (as plt)`.
 

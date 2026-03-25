@@ -92,17 +92,7 @@ def subplots(nrows=1, ncols=1, sharex=None, sharey=None,**kwargs):
 
 def plot(*args, **kwargs):
     _ensure_axes()
-    if len(args) == 0:
-        pass
-    elif len(args) == 1:
-        y = args[0]
-        _current_axes._plot(range(len(y)), y, **kwargs)
-    elif len(args) == 2:
-        x, y = args
-        _current_axes._plot(x, y, **kwargs)
-    else:
-        x,y,fmt = args[:3]
-        _current_axes._plot(x,y,fmt=fmt, **kwargs)
+    _current_axes.plot(*args, **kwargs)
 
 def scatter(x, y, *args, **kwargs):
     _ensure_axes()

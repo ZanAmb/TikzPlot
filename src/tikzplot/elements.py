@@ -50,8 +50,11 @@ class Graph:
         self._opacity = 1
         self._path_name = path_name
         self._has_color = False
+        self._style_str = None
 
     def _style_string(self):
+        if self._style_str != None:
+            return self._style_str
         opts = []
 
         def match_ls(input):
@@ -174,8 +177,8 @@ class Graph:
         if self._path_name: self._settings.append(f"name path={self._path_name}")
         if self._settings:
             opts = self._settings + opts
-
-        return ",\n".join(str(o) for o in opts)
+        self._style_str = ",\n".join(str(o) for o in opts)
+        return self._style_str
 
     def _header(self):
         cols = ["x", "y"]
@@ -208,7 +211,7 @@ class Graph:
             rows.append(" ".join(str(v) for v in line))
         return "\n".join(rows)
     
-    def save_data(self, points, filename):
+    def _save_data(self, points, filename):
         path = Path(filename)
         file_number = next_export_num()
         current = path.parent
@@ -220,7 +223,7 @@ class Graph:
                 f.write(points)
         return str(Path(TikzConfig.DATAPOINTS_DIR) / f"{str(path.stem)}_{file_number}.dat")
     
-    def to_tex(self, filename):
+    def _to_tex(self, filename):
         style = self._style_string()
 
         if self._classic:
@@ -233,7 +236,7 @@ class Graph:
                 table_opts += ",y error=yerror"
             datapoints = f"{header}\n{rows}\n"
             if TikzConfig.SAVE_DATAPOINTS:
-                datapoints = self.save_data(datapoints, filename)
+                datapoints = self._save_data(datapoints, filename)
             if not TikzConfig.SAVE_DATAPOINTS or (TikzConfig.SAVE_DATAPOINTS and not TikzConfig.UPDATE_DATA_ONLY):
                 if self._label and self._axes._legend_on:
                     return f"\\addplot [{style}] table [{table_opts}] {{{datapoints}}};\\addlegendentry{{{self._label}}}"
@@ -244,12 +247,12 @@ class Graph:
         else:
             return ""
     
-    def data_range(self, which):
+    def _data_range(self, which):
         xmin, xmax = min(self._x), max(self._x)
         ymin, ymax = min(self._y), max(self._y)
         return xmin, xmax, ymin, ymax
     
-    def get_erange(self, which):
+    def _get_erange(self, which):
         if which == "xmin":
             return min(self._x)
         if which == "xmax":
@@ -259,7 +262,7 @@ class Graph:
         if which == "ymax":
             return max(self._y)
         
-    def filter(self, which, value):
+    def _filter(self, which, value):
         if which == "xmin":
             mask = self._x >= value
             idx_keep = np.where(self._x < value)[0]
@@ -355,3 +358,6 @@ class Graph:
                             self._xerr = self._xerr[mask]
                         if self._yerr is not None:
                             self._yerr = self._yerr[mask]
+
+    def _set_label(self, lab):
+        self._style["label"] = lab

@@ -162,6 +162,9 @@ class BaseAxes:
         orientation: {"vertical", "horizontal"}, default "vertical
             Orientation of stems
 
+        alpha: float, optional
+            Opacity
+
         linefmt, markerfmt: str, optional
             Short style of line and marker
 
@@ -191,6 +194,9 @@ class BaseAxes:
 
         color or c: all matplotlib color formats (without X11/xkcd), optional
             Fill color: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+
+        label: str, optional
+            Legend entry
 
         """
         ...
@@ -256,6 +262,9 @@ class BaseAxes:
 
         Parameters
         ----------
+        *args:
+            - single arg: list/tuple, optional: list of labels to assign to axis elements (in given order assigned to plotted elements in the order of plotting). If label is used on any of the elements, the original label is overwritten.
+            - two args: list/tuple, optional: element, label - assign labels to plots (use references of plots which are returned in plot commands). In case that a plot already has a label, both will be displayed. This is the only option to merge the legend entries for double-axis (twinx) plots.
         loc: int, str or tuple, optional
             Location of legend (as in matplotlib: 1 - upper right, 2 - upper left, ... or with tuple of relative coordinates).
         """

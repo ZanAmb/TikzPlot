@@ -13,43 +13,62 @@ class BaseAxes:
         self._legend_on = False
         self._yticks = True
         self._fig = None
-
-        self._axis_args.add("axis on top")
         if TikzConfig.USE_DECIMAL_COMMA:
             self._axis_args.add("/pgf/number format/use comma")
 
+        self._add_legend = ""
+
     def _plot(self, x, y, settings=None, xerr=None, yerr=None, **style):
-        self._elements.append(Graph(self, (x, y), settings, xerr=xerr, yerr=yerr, **style))
+        e = Graph(self, (x, y), settings, xerr=xerr, yerr=yerr, **style)
+        self._elements.append(e)
+        return e
+
+    def _check_kwargs(self, func, allowed, **kwargs):
+        blacklist = set(kwargs) - allowed
+        for b in blacklist:
+            print(f"Ignoring unknown kwarg for {func}: {b}")
+        return {k: v for k, v in kwargs.items() if k in allowed}
 
     def plot(self, *args, **kwargs):
+        kws = {"fmt", "alpha", "color", "c", "linestyle", "ls", "linewidth", "lw", "marker", "markersize", "ms", "label"}
+        kwargs = self._check_kwargs("plot", kws, **kwargs)
         if len(args) == 1:
             y = args[0]
-            self._plot(range(len(y)), y, **kwargs)
+            return self._plot(range(len(y)), y, **kwargs)
         elif len(args) == 2:
             x, y = args
-            self._plot(x, y, **kwargs)
+            return self._plot(x, y, **kwargs)
         else:
             x,y,fmt = args[:3]
-            self._plot(x,y,fmt=fmt, **kwargs)
+            return self._plot(x,y,fmt=fmt, **kwargs)
 
     def scatter(self, x, y, *args, **kwargs):
-        self._plot(x, y, **kwargs, ls="")
+        kws = {"fmt", "alpha", "color", "c", "marker", "markersize", "ms", "label"}
+        kwargs = self._check_kwargs("scatter", kws, **kwargs)
+
+        return self._plot(x, y, **kwargs, ls="")
 
     def semilogy(self, x, y, *args, **kwargs):
+        kws = {"fmt", "base", "alpha", "color", "c", "linestyle", "ls", "linewidth", "lw", "marker", "markersize", "ms", "label"}
+        kwargs = self._check_kwargs("semilogy", kws, **kwargs)
         self._axis_options["ymode"] = "log"
         if "base" in kwargs:
             self._axis_options["log basis y"] = kwargs["base"]
-        self._plot(x, y, **kwargs)
+        return self._plot(x, y, **kwargs)
 
     def errorbar(self, x, y, *args, **kwargs):
+        kws = {"xerr", "yerr", "fmt", "alpha", "color", "c", "linestyle", "ls", "linewidth", "lw", "marker", "markersize", "ms", "label"}
+        kwargs = self._check_kwargs("errorbar", kws, **kwargs)
         if len(args) == 1:
-            self._plot(x, y, **kwargs, yerr=args[0])
+            return self._plot(x, y, **kwargs, yerr=args[0])
         elif len(args) == 2:
-            self._plot(x, y, **kwargs, yerr=args[0], fmt=args[1])
+            return self._plot(x, y, **kwargs, yerr=args[0], fmt=args[1])
         else:
-            self._plot(x, y, **kwargs)
+            return self._plot(x, y, **kwargs)
 
     def stem(self, *args, **kwargs):
+        kws = {"orientation", "linefmt", "markerfmt", "alpha", "color", "c", "linestyle", "ls", "linewidth", "lw", "marker", "markersize", "ms", "label"}
+        kwargs = self._check_kwargs("stem", kws, **kwargs)
         if "linefmt" in kwargs:
             kwargs["fmt"] = kwargs.pop("linefmt")
         vert = True
@@ -66,11 +85,13 @@ class BaseAxes:
             if o == "horizontal":
                 vert = False
         if vert:
-            self._plot(x,y,settings=["ycomb"], **kwargs)
+            return self._plot(x,y,settings=["ycomb"], **kwargs)
         else:
-            self._plot(y,x,settings=["xcomb"], **kwargs)
+            return self._plot(y,x,settings=["xcomb"], **kwargs)
 
     def fill_between(self, x, y1, y2=None, **kwargs):
+        kws = {"fmt", "alpha", "color", "c", "label"}
+        kwargs = self._check_kwargs("fill_between", kws, **kwargs)
         def _check_instance(xs, ys, pname):
             for el in self._elements:
                 if el._check_equal(xs,ys):
@@ -103,9 +124,13 @@ class BaseAxes:
                 self._plot(xs,ys,path_name=name2, alpha=0)
             else:
                 name2 = inst
-        self._elements.append(Graph(self, f"fill between [of={name1} and {name2}]",settings=None, xerr=None, yerr=None, **kwargs))
+        e = Graph(self, f"fill between [of={name1} and {name2}]",settings=None, xerr=None, yerr=None, **kwargs)
+        self._elements.append(e)
+        return e
         
     def hlines(self, y, xmin, xmax, colors="k", linestyles="solid", **kwargs):
+        kws = {"label"}
+        kwargs = self._check_kwargs("hlines", kws, **kwargs)
         def _pad_or_truncate(some_list, target_len):
             return some_list[:target_len] + [some_list[-1]]*(target_len - len(some_list))
         def _to_list(x):
@@ -121,11 +146,13 @@ class BaseAxes:
         lss = _pad_or_truncate(_to_list(linestyles), len(ys))
         for i in range(len(ys)):
             if i == 0 and "label" in kwargs:
-                self._plot([xmins[i], xmaxs[i]], [ys[i]]*2, None, None, None, c=colorss[i], ls=lss[i], label=kwargs["label"])
+                return self._plot([xmins[i], xmaxs[i]], [ys[i]]*2, None, None, None, c=colorss[i], ls=lss[i], label=kwargs["label"])
             else:
-                self._plot([xmins[i], xmaxs[i]], [ys[i]]*2, None, None, None, c=colorss[i], ls=lss[i])
+                return self._plot([xmins[i], xmaxs[i]], [ys[i]]*2, None, None, None, c=colorss[i], ls=lss[i])
 
     def hist(self, x, bins=10, density=False,**kwargs):
+        #kws = {"alpha", "color", "c", "label"}
+        #kwargs = self._check_kwargs("hist", kws, **kwargs)
         try:
             iter(x)
             iter(x[0])
@@ -156,7 +183,7 @@ class BaseAxes:
         if "cumulative" in kwargs and kwargs["cumulative"]:
             counts = _np.cumsum(counts)
 
-        self._plot(centers, counts, settings=settings, **kwargs)
+        return self._plot(centers, counts, settings=settings, **kwargs)
 
     def set_ylabel(self, label):
         self._axis_options["ylabel"] = f"{{{label}}}"
@@ -186,6 +213,8 @@ class BaseAxes:
             self._axis_options["ymax"] = top
 
     def set_yscale(self, *args, **kwargs):
+        kws = {"base"}
+        kwargs = self._check_kwargs("set_yscale", kws, **kwargs)
         if "log" in args:
             self._axis_options["ymode"] = "log"
         if "base" in kwargs:
@@ -245,10 +274,35 @@ class BaseAxes:
                 legend_string.append(r"anchor=" + posit)
             else: print(posit)
             self._axis_options["legend style"] = f"{{{','.join(legend_string)}}}"
-        self._legend_on = True            
+        self._legend_on = True
+        if "ncols" in kwargs:
+            self._axis_options["legend columns"] = kwargs["ncols"]
+        if len(args) == 2:
+            self._add_legend = args
+        elif len(args) == 1:
+            labs = args[0]
+            if len(labs) > len(self._elements):
+                print("Legend: more labels than elements")
+            else:
+                for i in range(len(labs)):
+                    self._elements[i]._set_label(labs[i])
+
+    def _add_legend_entries(self):
+        if self._add_legend == "": return ""
+        axs, labs = self._add_legend
+        output = ""
+        if len(axs) != len(labs):
+            print("Legend: different number of plots and labels, ignoring.")
+            return ""
+        for i in range(len(axs)):
+            output += f"\n\\addlegendimage{{{axs[i]._style_string()}}}"
+            output += f"\n\\addlegendentry{{{labs[i]}}}"
+        return output
         
     def _content_tex(self, filename):
-        return "\n".join(e.to_tex(filename) for e in self._elements)
+        ouptut = "\n".join(e._to_tex(filename) for e in self._elements)
+        ouptut += self._add_legend_entries()
+        return ouptut
     
     def _get_hard_range(self,which):
         arg = f"{which[0]}mode"
@@ -257,7 +311,7 @@ class BaseAxes:
             mode = self._axis_options[arg]
         if which in self._axis_options:
             for e in self._elements:
-                e.filter(which, self._axis_options[which])
+                e._filter(which, self._axis_options[which])
             return (self._axis_options[which], mode)
         return None, mode
     
@@ -268,7 +322,7 @@ class BaseAxes:
             mode = self._axis_options[arg]
         if which in self._axis_options:
             for e in self._elements:
-                e.filter(which, self._axis_options[which])
+                e._filter(which, self._axis_options[which])
             return (self._axis_options[which], True, mode)
         if "min" in which:
             return (min([e.get_erange(which) for e in self._elements]), False, mode)
@@ -277,7 +331,7 @@ class BaseAxes:
     def _set_range(self, which, value):
         self._axis_options[which] = value
         for e in self._elements:
-            e.filter(which, value)
+            e._filter(which, value)
 
     def _num_points(self):
         return [e._num_points() for e in self._elements]
@@ -350,21 +404,27 @@ class Axes(BaseAxes):
             self._height = f"{self._fig._get_height() / self._nrows}cm"
 
     def loglog(self, x, y, *args, **kwargs):
+        kws = {"base", "fmt", "alpha", "color", "c", "linestyle", "ls", "linewidth", "lw", "marker", "markersize", "ms", "label"}
+        kwargs = self._check_kwargs("loglog", kws, **kwargs)
         self._axis_options["xmode"] = "log"
         self._axis_options["ymode"] = "log"
         if "base" in kwargs:
             base = kwargs["base"]
             self._axis_options["log basis x"] = base
             self._axis_options["log basis y"] = base
-        self._plot(x, y, **kwargs)
+        return self._plot(x, y, **kwargs)
 
     def semilogx(self, x, y, *args, **kwargs):
+        kws = {"base", "fmt", "alpha", "color", "c", "linestyle", "ls", "linewidth", "lw", "marker", "markersize", "ms", "label"}
+        kwargs = self._check_kwargs("semilogx", kws, **kwargs)
         self._axis_options["xmode"] = "log"
         if "base" in kwargs:
             self._axis_options["log basis x"] = kwargs["base"]
-        self._plot(x, y, **kwargs)
+        return self._plot(x, y, **kwargs)
 
     def vlines(self, x, ymin, ymax, colors="k", linestyles="solid", **kwargs):
+        kws = {"label"}
+        kwargs = self._check_kwargs("vlines", kws, **kwargs)
         def _pad_or_truncate(some_list, target_len):
             return some_list[:target_len] + [some_list[-1]]*(target_len - len(some_list))
         def _to_list(x):
@@ -380,12 +440,15 @@ class Axes(BaseAxes):
         lss = _pad_or_truncate(_to_list(linestyles), len(xs))
         for i in range(len(xs)):
             if i == 0 and "label" in kwargs:
-                self._plot([xs[i]]*2, [ymins[i], ymaxs[i]], None, None, None, c=colorss[i], ls=lss[i], label=kwargs["label"])
+                return self._plot([xs[i]]*2, [ymins[i], ymaxs[i]], None, None, None, c=colorss[i], ls=lss[i], label=kwargs["label"])
             else:
-                self._plot([xs[i]]*2, [ymins[i], ymaxs[i]], None, None, None, c=colorss[i], ls=lss[i])
+                return self._plot([xs[i]]*2, [ymins[i], ymaxs[i]], None, None, None, c=colorss[i], ls=lss[i])
 
     def imshow(self, *args, **kwargs):
+        #kws = {"fmt", "alpha", "color", "c", "linestyle", "ls", "linewidth", "lw", "marker", "markersize", "ms", "label"}
+        #kwargs = self._check_kwargs("imshow", kws, **kwargs)
         self._imshow = (args, kwargs)
+        self._axis_args.add("axis on top")
         self._axis_options["enlargelimits"] = "false"
         #self._fig._add_global("\\pgfplotsset{set layers}")
         data = args[0]
@@ -443,6 +506,8 @@ class Axes(BaseAxes):
             self._axis_options["xmax"] = right
 
     def set_xscale(self, *args, **kwargs):
+        kws = {"base"}
+        kwargs = self._check_kwargs("set_xscale", kws, **kwargs)
         if "log" in args:
             self._axis_options["xmode"] = "log"
         if "base" in kwargs:

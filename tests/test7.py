@@ -31,22 +31,22 @@ ax.legend(loc="upper right")
 # (2) Scatter + markers
 # =========================
 ax = axs[0, 1]
-ax.scatter(x, y + noise, c="green", marker="o", label="noisy")
+sc = ax.scatter(x, y + noise, c="green", marker="o", label="noisy")
 ax.grid()
-ax.legend(loc=9)
 
 ax2 = ax.twinx()
-ax2.plot([0,10],[0,0])
-ax2.plot([0,10],[-1,1])
-ax2.plot([0,10],[1,-1])
+p1 = ax2.plot([0,10],[0,0], lw=2)
+p2 = ax2.plot([0,10],[-1,1])
+p3 = ax2.plot([0,10],[1,-1])
 
+ax.legend([p1,p2, p3], ["pl1", "pl2", "pl3"], loc=9, ncols = 2)
 # =========================
 # (3) Log scale
 # =========================
 ax = axs[1, 0]
-ax.semilogy(x, np.abs(y) + 1e-2, color="purple", label="$|\\sin(x)|$")
+ax.semilogy(x, np.abs(y) + 1e-2, color="purple", label="sin")
 ax.grid(which="both")
-ax.legend()
+ax.legend(["$|\\sin(x)|$"])
 
 # =========================
 # (4) Errorbar + fill_between

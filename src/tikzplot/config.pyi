@@ -39,6 +39,7 @@ class _ConfigParams(TypedDict, total=False):
     MAX_POINTS_PER_FIGURE: int
     MAX_POINTS_PER_ELEMENT: int
 
+    STANDALONE: bool
     USE_XCOLOR: bool
 
     CBAR_X_OFFSET: float

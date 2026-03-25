@@ -201,6 +201,17 @@ class Figure:
         self._shared_ranges()
         if TikzConfig.REDUCE_NUM_POINTS:
             self._reduce_points()
+        preambule = ""
+        if TikzConfig.STANDALONE:
+            preambule += "\\documentclass[tikz,border=2pt]{standalone}\n"
+            preambule += "\\usepackage{tikz}\n"
+            preambule += "\\usepackage{pgfplots}\n"
+            preambule += "\\usepgfplotslibrary{fillbetween}\n"
+            preambule += "\\pgfplotsset{compat=1.18}\n"
+            if TikzConfig.USE_XCOLOR:
+                preambule += "\\usepackage{xcolor}\n"
+            preambule += "\\begin{document}\n"
+            
         lines = [g for g in self._globals]
         lines.append("\\begin{tikzpicture}")
         nrows = self._axes[0]._get_nrows()
@@ -220,7 +231,11 @@ class Figure:
         for c in self._col_dict:
             r,g,b=self._col_dict[c]
             lines.insert(1,f"\\definecolor{{{c}}}{{rgb}}{{{r:.3f}, {g:.3f}, {b:.3f}}}")
-        return "\n".join(lines)
+        fin = ""
+        if TikzConfig.STANDALONE:
+            fin += "\\end{document}"
+        output = preambule + "\n" + "\n".join(lines) + "\n" + fin
+        return output
 
     def _save(self, filename):
         content = self._to_tex(filename)

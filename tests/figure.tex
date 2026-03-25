@@ -1,10 +1,10 @@
+
 \begin{tikzpicture}
 \definecolor{c017306270173}{rgb}{0.173, 0.627, 0.173}
 \definecolor{c100004980055}{rgb}{1.000, 0.498, 0.055}
 \definecolor{c012204670706}{rgb}{0.122, 0.467, 0.706}
 \begin{axis}
 [/pgf/number format/use comma,
-axis on top,
 name=p0,
 grid=major,
 legend style={at={(0.97,0.97)},anchor=north east},
@@ -20,22 +20,28 @@ dashed] table [x=x,y=y] {datapoints/figure_2.dat};\addlegendentry{cos(x)}
 \end{axis}
 \begin{axis}
 [/pgf/number format/use comma,
-axis on top,
 name=p1,
 at={(p0.east)},
 anchor=west,
 grid=major,
 legend style={at={(0.5,0.97)},anchor=north },
+legend columns=2,
 width=8.0cm,
 height=6.666666666666667cm,
 xshift=1.0cm]
 \addplot [color={green},
 only marks,
 mark=*] table [x=x,y=y] {datapoints/figure_3.dat};\addlegendentry{noisy}
+\addlegendimage{line width=2pt,
+color={c012204670706}}
+\addlegendentry{pl1}
+\addlegendimage{color={c100004980055}}
+\addlegendentry{pl2}
+\addlegendimage{color={c017306270173}}
+\addlegendentry{pl3}
 \end{axis}
 \begin{axis}
 [/pgf/number format/use comma,
-axis on top,
 axis y line*=right,
 axis x line=none,
 at={(p1.south west)},
@@ -44,6 +50,7 @@ y label style={at={(1.1,0.5)}, rotate=180},
 width=8.0cm,
 height=6.666666666666667cm]
 \addplot [forget plot,
+line width=2pt,
 color={c012204670706}] table [x=x,y=y] {datapoints/figure_4.dat};
 \addplot [forget plot,
 color={c100004980055}] table [x=x,y=y] {datapoints/figure_5.dat};
@@ -52,7 +59,6 @@ color={c017306270173}] table [x=x,y=y] {datapoints/figure_6.dat};
 \end{axis}
 \begin{axis}
 [/pgf/number format/use comma,
-axis on top,
 name=p2,
 at={(p0.south)},
 anchor=north,
@@ -65,7 +71,6 @@ yshift=-1.5999999999999999cm]
 \end{axis}
 \begin{axis}
 [/pgf/number format/use comma,
-axis on top,
 name=p3,
 at={(p2.east)},
 anchor=west,
@@ -91,7 +96,6 @@ opacity=0.3] fill between [of=path1 and path2];
 \end{axis}
 \begin{axis}
 [/pgf/number format/use comma,
-axis on top,
 name=p4,
 at={(p2.south)},
 anchor=north,
@@ -104,8 +108,8 @@ fill,
 color={orange}] table [x=x,y=y] {datapoints/figure_11.dat};
 \end{axis}
 \begin{axis}
-[/pgf/number format/use comma,
-axis on top,
+[axis on top,
+/pgf/number format/use comma,
 name=p5,
 at={(p4.east)},
 anchor=west,

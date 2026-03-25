@@ -37,6 +37,7 @@ class _TikzConfig:
         self.MAX_POINTS_PER_FIGURE = 10000
         self.MAX_POINTS_PER_ELEMENT = 1000
 
+        self.STANDALONE = False
         self.USE_XCOLOR = True
 
         self.CBAR_X_OFFSET = 0.05
