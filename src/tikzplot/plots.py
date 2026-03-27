@@ -157,7 +157,7 @@ def savefig(filename):
     _current_figure._save(filename)
 
 def show():
-    _current_figure._save(f"{str(main_name()[1]).removesuffix(".py")}_{TikzConfig.SHOW_SAVENAME}{next_show_num()}.tex")
+    _current_figure._save(f"{str(main_name()[1]).removesuffix('.py')}_{TikzConfig.SHOW_SAVENAME}{next_show_num()}.tex")
     clf()
 
 def clf():

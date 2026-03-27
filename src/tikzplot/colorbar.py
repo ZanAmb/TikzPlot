@@ -184,7 +184,7 @@ class _Colorbar:
         tridim = isinstance(self._axis, Axes3)
         lines = []
         lines.append(f"colormap={self._generate_tex_colormap(self._cmap)},")
-        lines.append(f"colorbar{" horizontal" if self._horizontal else ""},")
+        lines.append(f"colorbar{' horizontal' if self._horizontal else ''},")
         lines.append(r"colorbar style={")
         if TikzConfig.USE_DECIMAL_COMMA:
             lines.append("/pgf/number format/use comma,")

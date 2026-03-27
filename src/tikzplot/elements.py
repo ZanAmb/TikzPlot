@@ -108,9 +108,9 @@ class BaseGraph:
                 if sel_ls:
                     opts.append(sel_ls)
         if "lw" in self._style:
-            opts.append(f"line width={self._style["lw"]}pt")
+            opts.append(f"line width={self._style['lw']}pt")
         if "linewidth" in self._style:
-            opts.append(f"line width={self._style["linewidth"]}pt")
+            opts.append(f"line width={self._style['linewidth']}pt")
         if "marker" in self._style:
             sel_mark = match_mark(self._style['marker'])
             if sel_mark:
@@ -151,7 +151,7 @@ class BaseGraph:
                 if self._yerr is not None:
                     opts.append("y dir=both")
                     opts.append("y explicit")
-                if self._zerr is not None:
+                if isinstance(self, Graph3) and self._zerr is not None:
                     opts.append("z dir=both")
                     opts.append("z explicit")
         keys = {}
@@ -275,7 +275,7 @@ class Graph(BaseGraph):
                 return f"\\addplot [forget plot,\n{style}] table [{table_opts}] {{{datapoints}}};"
             return ""
         elif TikzConfig.SAVE_DATAPOINTS or not (TikzConfig.SAVE_DATAPOINTS and not TikzConfig.UPDATE_STYLE_ONLY):
-            return f"""\\addplot [forget plot,\n{style}] {self._special};"""
+            return f"\\addplot [forget plot,\n{style}] {self._special};"
         else:
             return ""
     

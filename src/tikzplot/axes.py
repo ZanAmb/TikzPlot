@@ -175,7 +175,7 @@ class BaseAxes:
             settings.append("ybar")
         settings.append("fill")
         if "rwidth" in kwargs:
-            settings.append(f"bar width={widths.mean()*kwargs["rwidth"]}")
+            settings.append(f"bar width={widths.mean()*kwargs['rwidth']}")
         else:
             settings[0] += " interval"
         if "range" in kwargs:
@@ -568,7 +568,7 @@ class Axes(BaseAxes):
             _plt.yscale("log", base=base)
         _plt.axis("off")
         _plt.imshow(*args, **kwargs)
-        im_name = f"{str(main_name()[1]).removesuffix(".py")}_{TikzConfig.IMSHOW_SAVENAME}{_next_imshow_num()}.pdf"
+        im_name = f"{str(main_name()[1]).removesuffix('.py')}_{TikzConfig.IMSHOW_SAVENAME}{_next_imshow_num()}.pdf"
         _plt.savefig(im_name,bbox_inches='tight', pad_inches=0)
         return im_name
 
@@ -663,7 +663,7 @@ class Secondary(BaseAxes):
 
         self._axis_options["axis y line*"] = "right"
         self._axis_options["axis x line"] = "none"
-        self._axis_options["at"] = f"{{({primary._axis_options["name"]}.south west)}}"
+        self._axis_options["at"] = f"{{({primary._axis_options['name']}.south west)}}"
         self._axis_options["anchor"] = "south west"
         self._axis_options["y label style"] = r"{at={(1.1,0.5)}, rotate=180}"
 
