@@ -1,6 +1,7 @@
 from typing import Any, Iterable, Optional, Sequence, Tuple
 import numpy.typing as npt
 from .axes import Axes
+from .axes3d import Axes3
 
 ArrayLike = npt.ArrayLike
 
@@ -24,6 +25,7 @@ class Colorbar:
         self,
         im: Optional[Tuple[Axes, str, float, float]] = ...,
         *,
+        axis: Optional[Axes | Axes3] = ...,
         cmap: Optional[str] = ...,
         lower: Optional[float] = ...,
         upper: Optional[float] = ...,
@@ -32,7 +34,8 @@ class Colorbar:
         label: Optional[str] = ...,
         width: float = ...,
         horizontal: bool = ...,
-        rel_len: float = ...
+        rel_len: float = ...,
+        divisions: int = ...
     ) -> None:
         """
         Parameters
@@ -43,6 +46,9 @@ class Colorbar:
             - cmap : name of the colormap
             - lower : minimum value of the color scale
             - upper : maximum value of the color scale
+
+        axis: reference to axis, optional
+            Axis to which the color bar is plotted.
 
         cmap : str, optional
             Name of the colormap to use.
@@ -83,6 +89,8 @@ class Colorbar:
 
             Internally mapped to:
                 width or height = rel_len * parent axis dimension
+        divisions: int, optional
+            May be used with continuous colormaps do discretize number of colors, 0 for continuous.
         """
         ...
 

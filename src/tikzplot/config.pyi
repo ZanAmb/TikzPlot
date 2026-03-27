@@ -41,9 +41,22 @@ class _ConfigParams(TypedDict, total=False):
 
     STANDALONE: bool
     USE_XCOLOR: bool
+    SCHOOL_AXIS: bool
+    SCHOOL_AXIS_LABEL_MARGIN: float
 
     CBAR_X_OFFSET: float
     CBAR_Y_OFFSET: float
+    CBAR_X_MARGIN: float
+    CBAR_Y_MARGIN: float
+
+    CBAR3_Z_OFFSET: float
+    CBAR3_H_OFFSET: float
+
+    DEFAULT_3D_ROLL: float
+    DEFAULT_3D_AZIM: float
+    DEFAULT_3D_ELEV: float
+
+    
 
 
 class TikzConfig:

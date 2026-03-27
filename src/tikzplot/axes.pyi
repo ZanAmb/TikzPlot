@@ -46,7 +46,7 @@ class BaseAxes:
         ...
 
     def scatter(self, x: ArrayLike = ..., y: ArrayLike = ..., fmt: Optional[str] = ..., *,alpha: Optional[float] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ...,
-             marker: Optional[MarkerStyle] = ..., markersize: Optional[float] = ..., ms: Optional[float] = ...,  label:Optional[str]=...) -> None:
+             marker: Optional[MarkerStyle] = ..., markersize: Optional[float] = ..., s: Optional[float] = ...,  label:Optional[str]=...) -> None:
         """
         Draw a scatter plot to the selected axis.
         
@@ -70,7 +70,7 @@ class BaseAxes:
         marker: str, optional
             Marker type
 
-        markersize or ms: float, optional
+        markersize or s: float, optional
             Mark size in pt
         """
         ...
@@ -267,6 +267,11 @@ class BaseAxes:
             - two args: list/tuple, optional: element, label - assign labels to plots (use references of plots which are returned in plot commands). In case that a plot already has a label, both will be displayed. This is the only option to merge the legend entries for double-axis (twinx) plots.
         loc: int, str or tuple, optional
             Location of legend (as in matplotlib: 1 - upper right, 2 - upper left, ... or with tuple of relative coordinates).
+        """
+        ...
+    def set(self, **kwargs) -> None:
+        """
+        Set parameter (lims, labels, ticks, ticklabels, title)
         """
         ...
     

@@ -1,5 +1,8 @@
 import tikzplot.plots as plt
 import numpy as np
+from tikzplot import TikzConfig
+
+TikzConfig.modifyParam(SCHOOL_AXIS=True)
 
 x = np.linspace(1,10,20)
 y = x**2

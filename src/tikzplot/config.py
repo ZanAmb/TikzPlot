@@ -5,7 +5,7 @@ class _TikzConfig:
 
     def __init__(self):
 
-        self.USE_DECIMAL_COMMA = True
+        self.USE_DECIMAL_COMMA = False
 
         self.LEGEND_REL_X = 0.03
         self.LEGEND_REL_Y = 0.03
@@ -33,17 +33,26 @@ class _TikzConfig:
         self.IMSHOW_SAVENAME = "imshow"
 
         self.REDUCE_NUM_POINTS = True
-        self.REDUCE_METHOD = 1              # 0: remove based on index; 1: remove based on plot distance; 2: remove based on curvature
+        self.REDUCE_METHOD = 1              # 0: remove based on index; 1: remove based on plot distance; 2: remove based on curvature (good for line plots)
         self.MAX_POINTS_PER_FIGURE = 10000
         self.MAX_POINTS_PER_ELEMENT = 1000
 
         self.STANDALONE = False
         self.USE_XCOLOR = True
+        self.SCHOOL_AXIS = False
+        self.SCHOOL_AXIS_LABEL_MARGIN = 0.1
 
         self.CBAR_X_OFFSET = 0.05
         self.CBAR_Y_OFFSET = 0.2
         self.CBAR_X_MARGIN = 0.5
         self.CBAR_Y_MARGIN = 0.5
+
+        self.CBAR3_Z_OFFSET = 0.2   # for 3D vertical
+        self.CBAR3_H_OFFSET = 0.2    # for 3D horizontal
+
+        self.DEFAULT_3D_ROLL = 0
+        self.DEFAULT_3D_AZIM = 0
+        self.DEFAULT_3D_ELEV = 0
 
         self._config_file = Path.home() / ".tikz_userconf.json"
 

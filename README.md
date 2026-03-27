@@ -34,7 +34,7 @@ Some basic plot commands are already implemented with commonly used arguments:
 
 #### Figures
 - `plt.figure()` (currently only to give you figure object or to set `figsize`),
-- `plt.subplot()`, `plt.subplots()` (with `sharex/sharey` fully implemented),
+- `plt.subplot()`, `plt.subplots()` (with `sharex/sharey` fully implemented, projection `polar` and `3d` with basic support),
 - `set_size_inches()`.
 
 #### Styles
@@ -46,7 +46,8 @@ If axes and plot have different name for command with same effect, both are impl
 - `xticks()/yticks()`,
 - `ax.set_xticklabels()/ax.set_yticklabels()`,
 - `legend()` (basic position control),
-- `ax.twinx()`.
+- `ax.twinx()`,
+- `ax.set()`.
 
 #### Supported common **kwargs
 - `color/c` (all matplotlib formats, except color schemes which are not yet implemented),
@@ -71,5 +72,5 @@ Currently supported parameters are listed with their default values in `src/tikz
 
 ## More features comming soon...
 - basic color schemes,
-- 3D plots,
+- imporved 3D plots (currently only basic support: plot, errorbar, fill_between, scatter, plot_wireframe, plot_surface),
 - ... 

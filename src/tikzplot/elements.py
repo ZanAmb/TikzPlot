@@ -4,54 +4,36 @@ from pathlib import Path
 from .config import TikzConfig
 from .state import next_export_num, main_name
 from .colors import _tex_color
-class Graph:
+
+class BaseGraph:
     _COLOR_MAP = {'b':'blue', 'g':'teal', 'r':'red', 'c':'cyan', 'm':'magenta', 'y':'yellow', 'k':'black', 'w':'white', "orange":"orange", "green": "green", "cyan":"cyan", "peru": "brown", "lime": "lime", "gray": "gray", "magenta": "magetna", "purple": "violet"}
     _LINE_MAP = {"--": "dashed", ":": "dotted", "-.": "dashdotted", "-":"solid"}
     _MARKER_MAP = {'o':'*', ".": "*", 's':'square*', '^':'triangle', 'v':'triangle*', 'd':'diamond', '+':'+', 'x':'x', '*':'star'}
 
-    def __init__(self, axes, coordinates, settings=None, xerr=None, yerr=None, path_name=None, **style):
-        def __normalize_error(err, n):
-            if err is None:
-                return None, False
-            if isinstance(err, (int, float)):
-                return np.asarray([err] * n), False
-            if len(err) == n:
-                if hasattr(err[0], "__len__") and len(err[0]) == 2:
-                    return np.asarray(err), True
-
-                return np.asarray(err), False
-            raise ValueError("Invalid errorbar specification")
-        self._axes = axes
+    def __init__(self):
+        self._axes = None
         self._classic = False
-        if isinstance(coordinates, tuple):
-            self._classic = True
-            x,y=coordinates
-            self._x = np.asarray(x)
-            self._y = np.asarray(y)
-            mask = np.isfinite(self._x) & np.isfinite(self._y)
-            self._x = self._x[mask]
-            self._y = self._y[mask]
-            n = len(self._x)
-            self._xerr, self._x_asym = __normalize_error(xerr, n)
-            self._yerr, self._y_asym = __normalize_error(yerr, n)
-            if self._xerr is not None:
-                self._xerr = np.asarray(self._xerr)[mask]
-
-            if self._yerr is not None:
-                self._yerr = np.asarray(self._yerr)[mask]
-        else:
-            self._special = coordinates
-        self._style = style
+        self._style = None
         self._label = None
-        self._settings = settings
+        self._settings = None
         if self._settings == None: self._settings = []
 
-        self._ms_multiplier = 1
         self._opacity = 1
-        self._path_name = path_name
+        self._path_name = None
         self._has_color = False
         self._style_str = None
 
+    def _normalize_error(self, err, n):
+        if err is None:
+            return None, False
+        if isinstance(err, (int, float)):
+            return np.asarray([err] * n), False
+        if len(err) == n:
+            if hasattr(err[0], "__len__") and len(err[0]) == 2:
+                return np.asarray(err), True
+            return np.asarray(err), False
+        raise ValueError("Invalid errorbar specification")
+    
     def _style_string(self):
         if self._style_str != None:
             return self._style_str
@@ -156,8 +138,12 @@ class Graph:
         #if "onlayer" in self._style:
         #    opts.append(f"on layer={self._style["onlayer"]}")
 
+        if self._opacity < 1:
+            opts.append(f"opacity={self._opacity}")
+        if not self._has_color and self._classic:
+            opts.append(f"color={{{match_color(f'C{self._axes._get_defcol()}')}}}")
         if self._classic:
-            if self._xerr is not None or self._yerr is not None:
+            if self._xerr is not None or self._yerr is not None or (isinstance(self, Graph3) and self._zerr is not None):
                 opts.append("error bars/.cd")
                 if self._xerr is not None:
                     opts.append("x dir=both")
@@ -165,10 +151,9 @@ class Graph:
                 if self._yerr is not None:
                     opts.append("y dir=both")
                     opts.append("y explicit")
-        if self._opacity < 1:
-            opts.append(f"opacity={self._opacity}")
-        if not self._has_color and self._classic:
-            opts.append(f"color={{{match_color(f'C{self._axes._get_defcol()}')}}}")
+                if self._zerr is not None:
+                    opts.append("z dir=both")
+                    opts.append("z explicit")
         keys = {}
         for i in reversed(range(len(opts))):
             key = str(opts[i]).split("=")
@@ -179,6 +164,65 @@ class Graph:
             opts = self._settings + opts
         self._style_str = ",\n".join(str(o) for o in opts)
         return self._style_str
+    
+    def _save_data(self, points, filename):
+        path = Path(filename)
+        file_number = next_export_num()
+        current = path.parent
+        dir = current / TikzConfig.DATAPOINTS_DIR
+        dir.mkdir(parents=True, exist_ok=True)
+        file_name = dir / f"{str(path.stem)}_{file_number}.dat"
+        if not TikzConfig.UPDATE_STYLE_ONLY:
+            with file_name.open("w", encoding="utf-8") as f:
+                f.write(points)
+        return str(Path(TikzConfig.DATAPOINTS_DIR) / f"{str(path.stem)}_{file_number}.dat")
+    
+    def _try_set_pname(self, pname):
+        if self._path_name:
+            return self._path_name
+        self._path_name = pname
+        return pname
+    
+    def _num_points(self):
+        if self._classic:
+            return len(self._x)
+        return 0
+    
+    def _set_label(self, lab):
+        self._style["label"] = lab
+
+class Graph(BaseGraph):
+    def __init__(self, axes, coordinates, settings=None, xerr=None, yerr=None, path_name=None, **style):
+        super().__init__()
+        self._axes = axes
+        self._classic = False
+        if isinstance(coordinates, tuple):
+            self._classic = True
+            x,y=coordinates
+            self._x = np.asarray(x)
+            self._y = np.asarray(y)
+            mask = np.isfinite(self._x) & np.isfinite(self._y)
+            self._x = self._x[mask]
+            self._y = self._y[mask]
+            n = len(self._x)
+            self._xerr, self._x_asym = self._normalize_error(xerr, n)
+            self._yerr, self._y_asym = self._normalize_error(yerr, n)
+            if self._xerr is not None:
+                self._xerr = np.asarray(self._xerr)[mask]
+
+            if self._yerr is not None:
+                self._yerr = np.asarray(self._yerr)[mask]
+        else:
+            self._special = coordinates
+        self._style = style
+        self._label = None
+        self._settings = settings
+        if self._settings == None: self._settings = []
+
+        self._opacity = 1
+        self._path_name = path_name
+        self._has_color = False
+        self._style_str = None
 
     def _header(self):
         cols = ["x", "y"]
@@ -211,18 +255,6 @@ class Graph:
             rows.append(" ".join(str(v) for v in line))
         return "\n".join(rows)
     
-    def _save_data(self, points, filename):
-        path = Path(filename)
-        file_number = next_export_num()
-        current = path.parent
-        dir = current / TikzConfig.DATAPOINTS_DIR
-        dir.mkdir(parents=True, exist_ok=True)
-        file_name = dir / f"{str(path.stem)}_{file_number}.dat"
-        if not TikzConfig.UPDATE_STYLE_ONLY:
-            with file_name.open("w", encoding="utf-8") as f:
-                f.write(points)
-        return str(Path(TikzConfig.DATAPOINTS_DIR) / f"{str(path.stem)}_{file_number}.dat")
-    
     def _to_tex(self, filename):
         style = self._style_string()
 
@@ -247,7 +279,7 @@ class Graph:
         else:
             return ""
     
-    def _data_range(self, which):
+    def _data_range(self):
         xmin, xmax = min(self._x), max(self._x)
         ymin, ymax = min(self._y), max(self._y)
         return xmin, xmax, ymin, ymax
@@ -302,20 +334,17 @@ class Graph:
         if self._classic:
             return np.array_equal(np.asarray(x),self._x) and np.array_equal(np.asarray(y),self._y)
         return False
-
-    def _try_set_pname(self, pname):
-        if self._path_name:
-            return self._path_name
-        self._path_name = pname
-        return pname
     
-    def _num_points(self):
+    def _reduce_points(self, limit):
         if self._classic:
-            return len(self._x)
-        return 0
-    
-    def _reduce_points(self, limit, logx=False, logy=False):
-        if self._classic:
+            xm, xmode, xbase = self._axes._get_limit("xmin")
+            xM, _, _ = self._axes._get_limit("xmax")
+            ym, ymode, ybase = self._axes._get_limit("ymin")
+            yM, _, _ = self._axes._get_limit("ymax")
+            if xm == None: xm = self._get_erange("xmin")
+            if xM == None: xM = self._get_erange("xmax")
+            if ym == None: ym = self._get_erange("ymin")
+            if yM == None: yM = self._get_erange("ymax")
             l = len(self._x)
             if l > limit:
                 if TikzConfig.REDUCE_METHOD == 0:
@@ -327,14 +356,24 @@ class Graph:
                     if self._yerr is not None:
                         self._yerr = self._yerr[idx_keep]
                 elif TikzConfig.REDUCE_METHOD in [1,2]:
-                    if logx:
-                        vis_x = np.log(self._x)
+                    if xmode == "log":
+                        fac = xM / xm
+                        if fac > 0: fac = np.log(fac) / np.log(xbase)
+                        else: fac = 1
+                        vis_x = np.log(self._x) / fac
                     else:
-                        vis_x = self._x
-                    if logy:
-                        vis_y = np.log(self._y)
+                        fac = xM - xm
+                        if fac == 0: fac = 1
+                        vis_x = self._x / fac
+                    if ymode == "log":
+                        fac = yM / ym
+                        if fac > 0: fac = np.log(fac) / np.log(ybase)
+                        else: fac = 1
+                        vis_y = np.log(self._y) / fac
                     else:
-                        vis_y = self._y
+                        fac = yM - ym
+                        if fac == 0: fac = 1
+                        vis_y = self._y / fac
                     while len(self._x) > limit:
                         if TikzConfig.REDUCE_METHOD == 1:
                             dx1 = vis_x[1:-1] - vis_x[:-2]
@@ -359,5 +398,244 @@ class Graph:
                         if self._yerr is not None:
                             self._yerr = self._yerr[mask]
 
-    def _set_label(self, lab):
-        self._style["label"] = lab
+class Graph3(BaseGraph):
+    def __init__(self, axes, coordinates, settings=None, xerr=None, yerr=None, zerr=None, path_name=None, **style):
+        super().__init__()
+        self._axes = axes
+        self._classic = False
+        if isinstance(coordinates, tuple):
+            self._classic = True
+            x,y,z=coordinates
+            self._x = np.asarray(x)
+            self._y = np.asarray(y)
+            self._z = np.asarray(z)
+            mask = np.isfinite(self._x) & np.isfinite(self._y) & np.isfinite(self._z)
+            self._x = self._x[mask]
+            self._y = self._y[mask]
+            self._z = self._z[mask]
+            n = len(self._x)
+            self._xerr, self._x_asym = self._normalize_error(xerr, n)
+            self._yerr, self._y_asym = self._normalize_error(yerr, n)
+            self._zerr, self._z_asym = self._normalize_error(zerr, n)
+            if self._xerr is not None:
+                self._xerr = np.asarray(self._xerr)[mask]
+            if self._yerr is not None:
+                self._yerr = np.asarray(self._yerr)[mask]
+            if self._zerr is not None:
+                self._zerr = np.asarray(self._zerr)[mask]
+        else:
+            self._special = coordinates
+        self._style = style
+        self._label = None
+        self._settings = settings
+        if self._settings == None: self._settings = []
+
+        self._opacity = 1
+        self._path_name = path_name
+        self._has_color = False
+        self._style_str = None
+
+    def _header(self):
+        cols = ["x", "y", "z"]
+        if self._xerr is not None:
+            if self._x_asym:
+                cols += ["xerrminus", "xerrplus"]
+            else:
+                cols.append("xerror")
+        if self._yerr is not None:
+            if self._y_asym:
+                cols += ["yerrminus", "yerrplus"]
+            else:
+                cols.append("yerror")
+        if self._zerr is not None:
+            if self._z_asym:
+                cols += ["zerrminus", "zerrplus"]
+            else:
+                cols.append("zerror")
+        return " ".join(cols)
+
+    def _rows(self):    
+        rows = []
+        for i in range(len(self._x)):
+            line = [self._x[i], self._y[i], self._z[i]]
+            if self._xerr is not None:
+                if self._x_asym:
+                    line += list(self._xerr[i])
+                else:
+                    line.append(self._xerr[i])
+            if self._yerr is not None:
+                if self._y_asym:
+                    line += list(self._yerr[i])
+                else:
+                    line.append(self._yerr[i])
+            if self._zerr is not None:
+                if self._z_asym:
+                    line += list(self._zerr[i])
+                else:
+                    line.append(self._zerr[i])
+            rows.append(" ".join(str(v) for v in line))
+        return "\n".join(rows)
+    
+    def _to_tex(self, filename):
+        style = self._style_string()
+
+        if self._classic:
+            header = self._header()
+            rows = self._rows()
+            table_opts = "x=x,y=y,z=z"
+            if self._xerr is not None:
+                table_opts += ",x error=xerror"
+            if self._yerr is not None:
+                table_opts += ",y error=yerror"
+            if self._zerr is not None:
+                table_opts += ",z error=zerror"
+            datapoints = f"{header}\n{rows}\n"
+            if TikzConfig.SAVE_DATAPOINTS:
+                datapoints = self._save_data(datapoints, filename)
+            if not TikzConfig.SAVE_DATAPOINTS or (TikzConfig.SAVE_DATAPOINTS and not TikzConfig.UPDATE_DATA_ONLY):
+                if self._label and self._axes._legend_on:
+                    return f"\\addplot3 [{style}] table [{table_opts}] {{{datapoints}}};\\addlegendentry{{{self._label}}}"
+                return f"\\addplot3 [forget plot,\n{style}] table [{table_opts}] {{{datapoints}}};"
+            return ""
+        elif TikzConfig.SAVE_DATAPOINTS or not (TikzConfig.SAVE_DATAPOINTS and not TikzConfig.UPDATE_STYLE_ONLY):
+            return f"""\\addplot3 [forget plot,\n{style}] {self._special};"""
+        else:
+            return ""
+    
+    def _data_range(self):
+        xmin, xmax = min(self._x), max(self._x)
+        ymin, ymax = min(self._y), max(self._y)
+        zmin, zmax = min(self._z), max(self._z)
+        return xmin, xmax, ymin, ymax, zmin, zmax
+    
+    def _get_erange(self, which):
+        if which == "xmin":
+            return min(self._x)
+        if which == "xmax":
+            return max(self._x)
+        if which == "ymin":
+            return min(self._y)
+        if which == "ymax":
+            return max(self._y)
+        if which == "zmin":
+            return min(self._z)
+        if which == "zmax":
+            return max(self._z)
+    
+        
+    def _filter(self, which, value):
+        if which == "xmin":
+            mask = self._x >= value
+            idx_keep = np.where(self._x < value)[0]
+            if len(idx_keep) > 0:
+                idx_keep = idx_keep[-1]
+        elif which == "xmax":
+            mask = self._x <= value
+            idx_keep = np.where(self._x > value)[0]
+            if len(idx_keep) > 0:
+                idx_keep = idx_keep[0]
+        elif which == "ymin":
+            mask = self._y >= value
+            idx_keep = np.where(self._y < value)[0]
+            if len(idx_keep) > 0:
+                idx_keep = idx_keep[-1]
+        elif which == "ymax":
+            mask = self._y <= value
+            idx_keep = np.where(self._y > value)[0]
+            if len(idx_keep) > 0:
+                idx_keep = idx_keep[0]
+        elif which == "zmin":
+            mask = self._z >= value
+            idx_keep = np.where(self._z < value)[0]
+            if len(idx_keep) > 0:
+                idx_keep = idx_keep[-1]
+        elif which == "zmax":
+            mask = self._z <= value
+            idx_keep = np.where(self._z > value)[0]
+            if len(idx_keep) > 0:
+                idx_keep = idx_keep[0]
+    
+        else:
+            raise ValueError("Invalid filter type")
+    
+        mask[idx_keep] = True
+    
+        self._x = self._x[mask]
+        self._y = self._y[mask]
+        self._z = self._z[mask]
+    
+        if self._xerr is not None:
+            self._xerr = self._xerr[mask]
+    
+        if self._yerr is not None:
+            self._yerr = self._yerr[mask]
+
+        if self._zerr is not None:
+            self._zerr = self._zerr[mask]
+
+    def _check_equal(self, x,y,z):
+        if self._classic:
+            return np.array_equal(np.asarray(x),self._x) and np.array_equal(np.asarray(y),self._y) and np.array_equal(np.asarray(z),self._z)
+        return False
+    
+    def _reduce_points(self, limit, logx=False, logy=False, logz=False):
+        if self._classic:
+            l = len(self._x)
+            if l > limit:
+                if TikzConfig.REDUCE_METHOD == 0:
+                    idx_keep = np.linspace(0, l-1, limit, dtype=int)
+                    self._x = self._x[idx_keep]
+                    self._y = self._y[idx_keep]
+                    self._z = self._z[idx_keep]
+                    if self._xerr is not None:
+                        self._xerr = self._xerr[idx_keep]
+                    if self._yerr is not None:
+                        self._yerr = self._yerr[idx_keep]
+                    if self._zerr is not None:
+                        self._zerr = self._zerr[idx_keep]
+                elif TikzConfig.REDUCE_METHOD in [1,2]:
+                    if logx:
+                        vis_x = np.log(self._x)
+                    else:
+                        vis_x = self._x
+                    if logy:
+                        vis_y = np.log(self._y)
+                    else:
+                        vis_y = self._y
+                    if logz:
+                        vis_z = np.log(self._z)
+                    else:
+                        vis_z = self._z
+                    while len(self._x) > limit:
+                        if TikzConfig.REDUCE_METHOD == 1:
+                            dx1 = vis_x[1:-1] - vis_x[:-2]
+                            dy1 = vis_y[1:-1] - vis_y[:-2]
+                            dz1 = vis_z[1:-1] - vis_z[:-2]
+                            dx2 = vis_x[2:] - vis_x[1:-1]
+                            dy2 = vis_y[2:] - vis_y[1:-1]
+                            dz2 = vis_z[2:] - vis_z[1:-1]
+                            crit = np.hypot(np.hypot(dx1, dy1), dz1) + np.hypot(np.hypot(dx2, dy2), dz2)
+                        elif TikzConfig.REDUCE_METHOD == 2:
+                            x0, x1, x2 = vis_x[:-2], vis_x[1:-1], vis_x[2:]
+                            y0, y1, y2 = vis_y[:-2], vis_y[1:-1], vis_y[2:]
+                            z0, z1, z2 = vis_z[:-2], vis_z[1:-1], vis_z[2:]
+                            v1 = np.stack([x1 - x0, y1 - y0, z1 - z0], axis=-1)
+                            v2 = np.stack([x2 - x1, y2 - y1, z2 - z1], axis=-1)
+                            cross = np.cross(v1, v2)
+                            crit = np.linalg.norm(cross, axis=-1)
+                        idx_remove = np.argmin(crit)+1
+                        if idx_remove == len(crit): idx_remove -= 1
+                        mask = np.ones(len(self._x), dtype=bool)
+                        mask[idx_remove] = False
+                        self._x = self._x[mask]
+                        self._y = self._y[mask]
+                        self._z = self._z[mask]
+                        vis_x = vis_x[mask]
+                        vis_y = vis_y[mask]
+                        vis_z = vis_z[mask]
+                        if self._xerr is not None:
+                            self._xerr = self._xerr[mask]
+                        if self._yerr is not None:
+                            self._yerr = self._yerr[mask]
+                        if self._zerr is not None:
+                            self._zerr = self._zerr[mask]

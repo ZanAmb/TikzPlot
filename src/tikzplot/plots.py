@@ -23,7 +23,7 @@ def _ensure_axes():
         _current_figure = Figure()
 
     if _current_axes is None:
-        _current_axes = _current_figure._add_subplot(1, 1, 1)
+        _current_axes = _current_figure.add_subplot(1, 1, 1)
 
 def xlabel(label):
     _ensure_axes()
@@ -53,21 +53,21 @@ def legend(*args, **kwargs):
     _ensure_axes()
     _current_axes.legend(*args, **kwargs)
 
-def subplot(nrows, ncols, index, sharex=None, sharey=None):
+def subplot(nrows, ncols, index, sharex=None, sharey=None, projection=None, polar=False):
     global _current_axes
 
     if _current_figure is None:
         figure()
 
-    _current_axes = _current_figure._add_subplot(nrows, ncols, index, sharex, sharey)
+    _current_axes = _current_figure.add_subplot(nrows, ncols, index, sharex, sharey, projection, polar)
     return _current_axes
 
-def subplots(nrows=1, ncols=1, sharex=None, sharey=None,**kwargs):
+def subplots(nrows=1, ncols=1, sharex=None, sharey=None, subplot_kw=None, **kwargs):
 
     global _current_figure, _current_axes
 
     _current_figure = Figure()
-    axes = _current_figure._add_subplots(nrows, ncols, sharex, sharey)
+    axes = _current_figure._add_subplots(nrows, ncols, sharex, sharey, subplot_kw)
 
     if nrows * ncols == 1:
         _current_axes = axes[0]
@@ -143,11 +143,11 @@ def yticks(*args, **kwargs):
     _ensure_axes()
     _current_axes.set_yticks(*args, **kwargs)
 
-def xscale(self, *args, **kwargs):
+def xscale(*args, **kwargs):
     _ensure_axes()
     _current_axes.set_xscale(*args, **kwargs)
 
-def yscale(self, *args, **kwargs):
+def yscale( *args, **kwargs):
     _ensure_axes()
     _current_axes.set_yscale(*args, **kwargs)
 

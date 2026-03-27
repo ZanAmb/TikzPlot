@@ -1,145 +1,160 @@
 
 \begin{tikzpicture}
+\definecolor{c100000000160}{rgb}{1.000, 0.000, 0.160}
+\definecolor{c099705020000}{rgb}{0.997, 0.502, 0.000}
+\definecolor{c082110000000}{rgb}{0.821, 1.000, 0.000}
+\definecolor{c022510000087}{rgb}{0.225, 1.000, 0.087}
+\definecolor{c000010000538}{rgb}{0.000, 1.000, 0.538}
+\definecolor{c009007450812}{rgb}{0.090, 0.745, 0.812}
+\definecolor{c073707410133}{rgb}{0.737, 0.741, 0.133}
+\definecolor{c000007260941}{rgb}{0.000, 0.726, 0.941}
+\definecolor{c049804980498}{rgb}{0.498, 0.498, 0.498}
+\definecolor{c089004670761}{rgb}{0.890, 0.467, 0.761}
+\definecolor{c004201401000}{rgb}{0.042, 0.140, 1.000}
+\definecolor{c054903370294}{rgb}{0.549, 0.337, 0.294}
+\definecolor{c058004040741}{rgb}{0.580, 0.404, 0.741}
+\definecolor{c057900001000}{rgb}{0.579, 0.000, 1.000}
+\definecolor{c083901530157}{rgb}{0.839, 0.153, 0.157}
 \definecolor{c017306270173}{rgb}{0.173, 0.627, 0.173}
+\definecolor{c100000000750}{rgb}{1.000, 0.000, 0.750}
 \definecolor{c100004980055}{rgb}{1.000, 0.498, 0.055}
 \definecolor{c012204670706}{rgb}{0.122, 0.467, 0.706}
 \begin{axis}
 [/pgf/number format/use comma,
+grid=major,
 name=p0,
-grid=major,
-legend style={at={(0.97,0.97)},anchor=north east},
-xlabel={X axis},
-ylabel={Y axis},
-width=8.0cm,
-height=6.666666666666667cm,
-xshift=0cm]
-\addplot [color={blue},
-line width=1.5pt] table [x=x,y=y] {datapoints/figure_1.dat};\addlegendentry{sin(x)}
-\addplot [color={red},
-dashed] table [x=x,y=y] {datapoints/figure_2.dat};\addlegendentry{cos(x)}
-\end{axis}
-\begin{axis}
-[/pgf/number format/use comma,
-name=p1,
-at={(p0.east)},
-anchor=west,
-grid=major,
-legend style={at={(0.5,0.97)},anchor=north },
-legend columns=2,
-width=8.0cm,
-height=6.666666666666667cm,
-xshift=1.0cm]
-\addplot [color={green},
-only marks,
-mark=*] table [x=x,y=y] {datapoints/figure_3.dat};\addlegendentry{noisy}
-\addlegendimage{line width=2pt,
-color={c012204670706}}
-\addlegendentry{pl1}
-\addlegendimage{color={c100004980055}}
-\addlegendentry{pl2}
-\addlegendimage{color={c017306270173}}
-\addlegendentry{pl3}
-\end{axis}
-\begin{axis}
-[/pgf/number format/use comma,
-axis y line*=right,
-axis x line=none,
-at={(p1.south west)},
-anchor=south west,
-y label style={at={(1.1,0.5)}, rotate=180},
-width=8.0cm,
-height=6.666666666666667cm]
-\addplot [forget plot,
-line width=2pt,
-color={c012204670706}] table [x=x,y=y] {datapoints/figure_4.dat};
-\addplot [forget plot,
-color={c100004980055}] table [x=x,y=y] {datapoints/figure_5.dat};
-\addplot [forget plot,
-color={c017306270173}] table [x=x,y=y] {datapoints/figure_6.dat};
-\end{axis}
-\begin{axis}
-[/pgf/number format/use comma,
-name=p2,
-at={(p0.south)},
-anchor=north,
-ymode=log,
-grid=both,
-width=8.0cm,
-height=6.666666666666667cm,
-yshift=-1.5999999999999999cm]
-\addplot [color={violet}] table [x=x,y=y] {datapoints/figure_7.dat};\addlegendentry{$|\sin(x)|$}
-\end{axis}
-\begin{axis}
-[/pgf/number format/use comma,
-name=p3,
-at={(p2.east)},
-anchor=west,
-width=8.0cm,
-height=6.666666666666667cm,
-xshift=1.0cm]
-\addplot [solid,
-color={black},
-error bars/.cd,
-y dir=both,
-y explicit] table [x=x,y=y,y error=yerror] {datapoints/figure_8.dat};\addlegendentry{data}
-\addplot [forget plot,
-name path=path1,
-opacity=0,
-color={c012204670706}] table [x=x,y=y] {datapoints/figure_9.dat};
-\addplot [forget plot,
-name path=path2,
-opacity=0,
-color={c100004980055}] table [x=x,y=y] {datapoints/figure_10.dat};
-\addplot [forget plot,
-color={gray},
-opacity=0.3] fill between [of=path1 and path2];
-\end{axis}
-\begin{axis}
-[/pgf/number format/use comma,
-name=p4,
-at={(p2.south)},
-anchor=north,
-width=8.0cm,
-height=6.666666666666667cm,
-yshift=-1.0cm]
-\addplot [forget plot,
-ybar interval,
-fill,
-color={orange}] table [x=x,y=y] {datapoints/figure_11.dat};
-\end{axis}
-\begin{axis}
-[axis on top,
-/pgf/number format/use comma,
-name=p5,
-at={(p4.east)},
-anchor=west,
-enlargelimits=false,
-grid=major,
-width=8.0cm,
-height=6.666666666666667cm,
-xshift=1.0cm,
+xmin=0,
+xmax=10,
+xlabel={$x$},
+ymin=1,
+ymax=9,
+ylabel={$\lambda$},
+zmin=0,
+zmax=0.35,
+zlabel={probability},
+width=12.0cm,
+height=10.0cm,
+xshift=0cm,
 colormap={urgb}{
-    rgb=(0.2670, 0.0049, 0.3294)
-    rgb=(0.2297, 0.3224, 0.5457)
-    rgb=(0.1276, 0.5669, 0.5506)
-    rgb=(0.3692, 0.7889, 0.3829)
-    rgb=(0.9932, 0.9062, 0.1439)
+    rgb(0.0)=(1.0000, 0.0000, 0.1600) rgb(0.1101111111111111)=(1.0000, 0.0000, 0.1600)
+    rgb(0.1111111111111111)=(0.9969, 0.5025, 0.0000) rgb(0.2212222222222222)=(0.9969, 0.5025, 0.0000)
+    rgb(0.2222222222222222)=(0.8214, 1.0000, 0.0000) rgb(0.3323333333333333)=(0.8214, 1.0000, 0.0000)
+    rgb(0.3333333333333333)=(0.2252, 1.0000, 0.0870) rgb(0.4434444444444444)=(0.2252, 1.0000, 0.0870)
+    rgb(0.4444444444444444)=(0.0000, 1.0000, 0.5376) rgb(0.5545555555555556)=(0.0000, 1.0000, 0.5376)
+    rgb(0.5555555555555556)=(0.0000, 0.7260, 0.9412) rgb(0.6656666666666666)=(0.0000, 0.7260, 0.9412)
+    rgb(0.6666666666666666)=(0.0424, 0.1404, 1.0000) rgb(0.7767777777777777)=(0.0424, 0.1404, 1.0000)
+    rgb(0.7777777777777777)=(0.5786, 0.0000, 1.0000) rgb(0.8878888888888888)=(0.5786, 0.0000, 1.0000)
+    rgb(0.8888888888888888)=(1.0000, 0.0000, 0.7500) rgb(0.9999999999999999)=(1.0000, 0.0000, 0.7500)
 },
 colorbar,
 colorbar style={
 /pgf/number format/use comma,
 width=0.3cm,
 anchor=west,
-at={(p5.east)},
-xshift=0.05cm,
-height=0.8*\pgfkeysvalueof{/pgfplots/parent axis height},
-title={$Z$},
-title style={at={(4,0.5)}, anchor=base, yshift=-7pt, rotate=-90},
-ytick={-0.5,0,0.5},
+at={(p0.east)},
+xshift=0.2cm,
+height=0.5*\pgfkeysvalueof{/pgfplots/parent axis height},
 },
-point meta min={-0.8901178391006421},
-point meta max={0.8910716463807059}]
-\addplot [forget plot,
-] graphics [xmin=-3, xmax=3, ymin=-3, ymax=3] {test7_imshow1.pdf};
+point meta min={1},
+point meta max={10}]
+\addplot3 [forget plot,
+name path=path1,
+opacity=0,
+color={c012204670706}] table [x=x,y=y,z=z] {datapoints/figure_1.dat};
+\addplot3 [forget plot,
+name path=path2,
+opacity=0,
+color={c100004980055}] table [x=x,y=y,z=z] {datapoints/figure_2.dat};
+\addplot3 [forget plot,
+color={c100000000750},
+opacity=0.5] fill between [of=path1 and path2];
+\addplot3 [forget plot,
+name path=path3,
+opacity=0,
+color={c017306270173}] table [x=x,y=y,z=z] {datapoints/figure_3.dat};
+\addplot3 [forget plot,
+name path=path4,
+opacity=0,
+color={c083901530157}] table [x=x,y=y,z=z] {datapoints/figure_4.dat};
+\addplot3 [forget plot,
+color={c057900001000},
+opacity=0.5] fill between [of=path3 and path4];
+\addplot3 [forget plot,
+name path=path5,
+opacity=0,
+color={c058004040741}] table [x=x,y=y,z=z] {datapoints/figure_5.dat};
+\addplot3 [forget plot,
+name path=path6,
+opacity=0,
+color={c054903370294}] table [x=x,y=y,z=z] {datapoints/figure_6.dat};
+\addplot3 [forget plot,
+color={c004201401000},
+opacity=0.5] fill between [of=path5 and path6];
+\addplot3 [forget plot,
+name path=path7,
+opacity=0,
+color={c089004670761}] table [x=x,y=y,z=z] {datapoints/figure_7.dat};
+\addplot3 [forget plot,
+name path=path8,
+opacity=0,
+color={c049804980498}] table [x=x,y=y,z=z] {datapoints/figure_8.dat};
+\addplot3 [forget plot,
+color={c000007260941},
+opacity=0.5] fill between [of=path7 and path8];
+\addplot3 [forget plot,
+name path=path9,
+opacity=0,
+color={c073707410133}] table [x=x,y=y,z=z] {datapoints/figure_9.dat};
+\addplot3 [forget plot,
+name path=path10,
+opacity=0,
+color={c009007450812}] table [x=x,y=y,z=z] {datapoints/figure_10.dat};
+\addplot3 [forget plot,
+color={c000010000538},
+opacity=0.5] fill between [of=path9 and path10];
+\addplot3 [forget plot,
+name path=path11,
+opacity=0,
+color={c012204670706}] table [x=x,y=y,z=z] {datapoints/figure_11.dat};
+\addplot3 [forget plot,
+name path=path12,
+opacity=0,
+color={c100004980055}] table [x=x,y=y,z=z] {datapoints/figure_12.dat};
+\addplot3 [forget plot,
+color={c022510000087},
+opacity=0.5] fill between [of=path11 and path12];
+\addplot3 [forget plot,
+name path=path13,
+opacity=0,
+color={c017306270173}] table [x=x,y=y,z=z] {datapoints/figure_13.dat};
+\addplot3 [forget plot,
+name path=path14,
+opacity=0,
+color={c083901530157}] table [x=x,y=y,z=z] {datapoints/figure_14.dat};
+\addplot3 [forget plot,
+color={c082110000000},
+opacity=0.5] fill between [of=path13 and path14];
+\addplot3 [forget plot,
+name path=path15,
+opacity=0,
+color={c058004040741}] table [x=x,y=y,z=z] {datapoints/figure_15.dat};
+\addplot3 [forget plot,
+name path=path16,
+opacity=0,
+color={c054903370294}] table [x=x,y=y,z=z] {datapoints/figure_16.dat};
+\addplot3 [forget plot,
+color={c099705020000},
+opacity=0.5] fill between [of=path15 and path16];
+\addplot3 [forget plot,
+name path=path17,
+opacity=0,
+color={c089004670761}] table [x=x,y=y,z=z] {datapoints/figure_17.dat};
+\addplot3 [forget plot,
+name path=path18,
+opacity=0,
+color={c049804980498}] table [x=x,y=y,z=z] {datapoints/figure_18.dat};
+\addplot3 [forget plot,
+color={c100000000160},
+opacity=0.5] fill between [of=path17 and path18];
 \end{axis}
 \end{tikzpicture}

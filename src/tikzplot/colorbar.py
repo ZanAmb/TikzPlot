@@ -1,5 +1,6 @@
 import numpy as _np
-from .axes import Graph
+from .elements import Graph
+from .axes3d import Axes3
 from .config import TikzConfig
 
 class _Colorbar:
@@ -14,10 +15,13 @@ class _Colorbar:
         self._width = 0.3
         self._horizontal = False
         self._rel_len = 1
+        self._divs = 0          # 0 for contiuous
 
         if im is not None:
             self._axis, self._cmap, self._lower, self._upper = im
 
+        if "axis" in kwargs:
+            self._axis = kwargs["axis"]
         if "cmap" in kwargs:
             self._cmap = kwargs["cmap"]
         if "lower" in kwargs:
@@ -36,7 +40,10 @@ class _Colorbar:
             self._horizontal = True
         if "rel_len" in kwargs:
             self._rel_len = kwargs["rel_len"]
-        self._axis._show_colorbar(str(self))
+        if "divisions" in kwargs:
+            self._divs = kwargs["divisions"]
+        if self._axis:
+            self._axis._show_colorbar(str(self))
 
     _discrete = {'Pastel1':9, 'Pastel2':8, 'Paired':12, 'Accent':8, 'Dark2':8, 'Set1': 9, 'Set2':8, 'Set3':12, 'tab10':10, 'tab20':20, 'tab20b':20, 'tab20c':20}
     _dictionary = {
@@ -131,6 +138,21 @@ class _Colorbar:
 
         
 }
+    
+    def _get_samples(self, colors, n):
+        if n == len(colors):
+            return colors
+        
+        colors_arr = _np.array(colors)
+        x_orig = _np.linspace(0, 1, len(colors))
+        x_new = _np.linspace(0, 1, n)
+        
+        r = _np.interp(x_new, x_orig, colors_arr[:, 0])
+        g = _np.interp(x_new, x_orig, colors_arr[:, 1])
+        b = _np.interp(x_new, x_orig, colors_arr[:, 2])
+        
+        return list(zip(r, g, b))
+    
     def _generate_tex_colormap(self, cmap_name):
         rev = False
         if cmap_name.endswith("_r"):
@@ -143,18 +165,23 @@ class _Colorbar:
         output = [r"{urgb}{"]
         if cmap_name in self._discrete:
             n = self._discrete[cmap_name]
-            lims = _np.linspace(0,1,n+1, endpoint=True)
-            lims[-1] += 0.001
-            for i in range(n):
-                r,g,b = colors[i]
-                output.append(f"    rgb({lims[i]})=({r:.4f}, {g:.4f}, {b:.4f}) rgb({lims[i+1]-0.001})=({r:.4f}, {g:.4f}, {b:.4f})")
-        else:
+            self._divs = n
+        elif self._divs > 0:
+            colors = self._get_samples(colors, self._divs)
+        if self._divs == 0:
             for r, g, b in colors:
                 output.append(f"    rgb=({r:.4f}, {g:.4f}, {b:.4f})")
+        else:
+            lims = _np.linspace(0,1, self._divs+1, endpoint=True)
+            lims[-1] += 0.001
+            for i in range(self._divs):
+                r,g,b = colors[i]
+                output.append(f"    rgb({lims[i]})=({r:.4f}, {g:.4f}, {b:.4f}) rgb({lims[i+1]-0.001})=({r:.4f}, {g:.4f}, {b:.4f})")
         output.append("}")        
         return "\n".join(output)
     
     def __str__(self):
+        tridim = isinstance(self._axis, Axes3)
         lines = []
         lines.append(f"colormap={self._generate_tex_colormap(self._cmap)},")
         lines.append(f"colorbar{" horizontal" if self._horizontal else ""},")
@@ -165,12 +192,12 @@ class _Colorbar:
             lines.append(f"height={self._width}cm,")
             lines.append(f"anchor=north,")
             lines.append(f"at={{(p{self._axis._get_index()}.south)}},")
-            lines.append(f"yshift=-{TikzConfig.CBAR_Y_OFFSET}cm,")
+            lines.append(f"yshift=-{TikzConfig.CBAR_Y_OFFSET * (not tridim) + TikzConfig.CBAR3_Z_OFFSET * tridim}cm,")
         else:
             lines.append(f"width={self._width}cm,")
             lines.append(f"anchor=west,")
             lines.append(f"at={{(p{self._axis._get_index()}.east)}},")
-            lines.append(f"xshift={TikzConfig.CBAR_X_OFFSET}cm,")
+            lines.append(f"xshift={TikzConfig.CBAR_X_OFFSET * (not tridim) + + TikzConfig.CBAR3_H_OFFSET * tridim}cm,")
         if self._rel_len:
             lines.append(f"{'width' if self._horizontal else 'height'}={self._rel_len}*\\pgfkeysvalueof{{/pgfplots/parent axis {'width' if self._horizontal else 'height'}}},")
         if self._label:
@@ -206,13 +233,17 @@ class _Colorbar:
         n_colors = len(colors)
         if n_colors == 1:
             return colors[0]
-        float_idx = norm_val * (n_colors - 1)
-        idx_low = int(_np.floor(float_idx))
-        idx_high = int(_np.ceil(float_idx))
-        weight = float_idx - idx_low
-        c_low = _np.array(colors[idx_low])
-        c_high = _np.array(colors[idx_high])
-        rgb = (1 - weight) * c_low + weight * c_high
+        elif self._divs == 0:
+            float_idx = norm_val * (n_colors - 1)
+            idx_low = int(_np.floor(float_idx))
+            idx_high = int(_np.ceil(float_idx))
+            weight = float_idx - idx_low
+            c_low = _np.array(colors[idx_low])
+            c_high = _np.array(colors[idx_high])
+            rgb = (1 - weight) * c_low + weight * c_high
+        else:
+            idx = int(norm_val * self._divs)
+            rgb = self._get_samples(colors, self._divs)[idx]
         return tuple(rgb)
     
 Colorbar = _Colorbar

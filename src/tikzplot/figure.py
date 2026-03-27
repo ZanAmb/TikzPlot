@@ -1,6 +1,7 @@
 import numpy as np
 
 from .axes import Axes
+from .axes3d import Axes3
 from .config import TikzConfig
 
 class Figure:
@@ -28,8 +29,12 @@ class Figure:
 
         self._globals = set()
 
-    def _add_subplot(self, nrows, ncols, index, sharex=None, sharey=None):
-        ax = Axes(nrows, ncols, index, self)
+    def add_subplot(self, nrows=1, ncols=1, index=1, sharex=None, sharey=None, projection=None, polar=False):
+        if projection=="3d":
+            ax = Axes3(nrows, ncols, index, self)
+        else:
+            pol = projection=="polar" or polar
+            ax = Axes(nrows, ncols, index, self, pol)
         self._nrows = nrows
         self._ncols = ncols
         self._axes.append(ax)
@@ -39,14 +44,18 @@ class Figure:
             self._sharey = sharey
         return ax    
     
-    def _add_subplots(self, nrows, ncols, sharex=None, sharey=None):
+    def _add_subplots(self, nrows, ncols, sharex=None, sharey=None, subplot_kw=None):
         grid = []
         if sharex:
             self._sharex = sharex
         if sharey:
             self._sharey = sharey
         for i in range(1, nrows * ncols + 1):
-            ax = self._add_subplot(nrows, ncols, i, sharex, sharey)
+            if subplot_kw:
+                if "projection" in subplot_kw:
+                    ax = self.add_subplot(nrows, ncols, i, sharex, sharey, projection=subplot_kw["projection"])
+            else:
+                ax = self.add_subplot(nrows, ncols, i, sharex, sharey)
             grid.append(ax)
         return grid
     
@@ -217,16 +226,7 @@ class Figure:
         nrows = self._axes[0]._get_nrows()
         ncols = self._axes[0]._get_ncols()
         for ax in self._axes:
-            lines.append("\\begin{axis}")
-            lines.append(f"[{ax._axis_option_string()}]")
-            lines.append(ax._content_tex(filename))
-            lines.append("\\end{axis}")
-            if ax._secondary_y is not None:
-                ax_sec_y = ax._secondary_y
-                lines.append("\\begin{axis}")
-                lines.append(f"[{ax_sec_y._axis_option_string()}]")
-                lines.append(ax_sec_y._content_tex(filename))
-                lines.append("\\end{axis}")
+            lines += ax._to_tex(filename)
         lines.append("\\end{tikzpicture}")
         for c in self._col_dict:
             r,g,b=self._col_dict[c]

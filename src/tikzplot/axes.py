@@ -26,7 +26,7 @@ class BaseAxes:
     def _check_kwargs(self, func, allowed, **kwargs):
         blacklist = set(kwargs) - allowed
         for b in blacklist:
-            print(f"Ignoring unknown kwarg for {func}: {b}")
+            raise Warning(f"Ignoring unknown kwarg for {func}: {b}")
         return {k: v for k, v in kwargs.items() if k in allowed}
 
     def plot(self, *args, **kwargs):
@@ -43,8 +43,11 @@ class BaseAxes:
             return self._plot(x,y,fmt=fmt, **kwargs)
 
     def scatter(self, x, y, *args, **kwargs):
-        kws = {"fmt", "alpha", "color", "c", "marker", "markersize", "ms", "label"}
+        kws = {"fmt", "alpha", "color", "c", "marker", "markersize", "s", "label"}
         kwargs = self._check_kwargs("scatter", kws, **kwargs)
+
+        if "s" in kwargs:
+            kwargs["ms"] = kwargs.pop("s")
 
         return self._plot(x, y, **kwargs, ls="")
 
@@ -325,9 +328,22 @@ class BaseAxes:
                 e._filter(which, self._axis_options[which])
             return (self._axis_options[which], True, mode)
         if "min" in which:
-            return (min([e.get_erange(which) for e in self._elements]), False, mode)
-        return (max([e.get_erange(which) for e in self._elements]), False, mode)
+            return (min([e._get_erange(which) for e in self._elements]), False, mode)
+        return (max([e._get_erange(which) for e in self._elements]), False, mode)
     
+    def _get_limit(self, which):
+        arg = f"{which[0]}mode"
+        mode = "lin"
+        base = 10
+        if arg in self._axis_options:
+            mode = self._axis_options[arg]
+            arg = f"log basis {which[0]}"
+            if arg in self._axis_options:
+                base = self._axis_options[arg]
+        if which in self._axis_options:
+            return self._axis_options[which], mode, base
+        else: return None, mode, base
+
     def _set_range(self, which, value):
         self._axis_options[which] = value
         for e in self._elements:
@@ -337,20 +353,21 @@ class BaseAxes:
         return [e._num_points() for e in self._elements]
     
     def _reduce_points(self, limit):
-        logx, logy = False, False
-        if "xmode" in self._axis_options and self._axis_options["xmode"] == "log":
-            logx = True
-        if "ymode" in self._axis_options and self._axis_options["ymode"] == "log":
-            logy = True
         for e in self._elements:
-            e._reduce_points(limit, logx, logy)
+            e._reduce_points(limit)
 
     def _add_col(self, r,g,b):
         self._fig._add_col(r,g,b)
 
+    def set(self, **kwargs):
+        defined = {"ylim": self.set_ylim, "ylabel": self.set_ylabel, "yscale": self.set_yscale, "yticklabels": self.set_yticklabels, "yticks": self.set_yticks}
+        for attr in defined:
+            if attr in kwargs:
+                defined[attr](kwargs.pop(attr))
+
 class Axes(BaseAxes):
 
-    def __init__(self, nrows, ncols, index, fig):
+    def __init__(self, nrows, ncols, index, fig, polar):
         super().__init__()
         self._left = False
         self._neigh = None
@@ -367,6 +384,7 @@ class Axes(BaseAxes):
         self._defcol_counter = 0
         self._colorbar = ""
         self._cbar_h = False
+        self._polar = polar
 
         def _posit_string(): # returns neighbour, neighbour corner, anchor
             i = self._index
@@ -532,6 +550,8 @@ class Axes(BaseAxes):
             self._axis_options["xticklabels"]=r"{}"
 
     def twinx(self):
+        if self._polar:
+            raise Exception("Cannot create twinx() on polar plot.")
         self._secondary_y = Secondary(self)
         return self._secondary_y
     
@@ -573,6 +593,8 @@ class Axes(BaseAxes):
         axis_opt_str = ""
         if self._axis_args:
             axis_opt_str += ",\n".join(self._axis_args)
+        if TikzConfig.SCHOOL_AXIS:
+            axis_opt_str += f",\n axis lines=middle,\n xlabel style={{at={{(ticklabel* cs:{1+TikzConfig.SCHOOL_AXIS_LABEL_MARGIN})}},anchor=north}},\n ylabel style={{at={{(ticklabel* cs:{1+TikzConfig.SCHOOL_AXIS_LABEL_MARGIN})}},anchor=east}},"
         if self._axis_options:
             if axis_opt_str: axis_opt_str += ",\n"
             axis_opt_str += ",\n".join(f"{k}={v}" for k, v in self._axis_options.items())
@@ -606,6 +628,33 @@ class Axes(BaseAxes):
         self._cbar_h = horizontal
     def _get_index(self):
         return self._index
+    
+    def _to_tex(self, filename):
+        lines = []
+        if self._polar:
+            lines.append("\\begin{polaraxis}")
+        else:
+            lines.append("\\begin{axis}")
+        lines.append(f"[{self._axis_option_string()}]")
+        lines.append(self._content_tex(filename))
+        if self._polar:
+            lines.append("\\begin{polaraxis}")
+        else:
+            lines.append("\\end{axis}")
+        if self._secondary_y is not None:
+            lines.append("\\begin{axis}")
+            lines.append(f"[{self._secondary_y._axis_option_string()}]")
+            lines.append(self._secondary_y._content_tex(filename))
+            lines.append("\\end{axis}")
+        return lines
+
+    def set(self, **kwargs):
+        defined = {"title": self.set_title, "xlim": self.set_xlim, "xlabel": self.set_xlabel, "xscale": self.set_xscale, "xticklabels": self.set_xticklabels, "xticks": self.set_xticks}
+        for attr in defined:
+            if attr in kwargs:
+                defined[attr](kwargs.pop(attr))
+
+        super().set(**kwargs)
     
 class Secondary(BaseAxes):
     def __init__(self, primary):
