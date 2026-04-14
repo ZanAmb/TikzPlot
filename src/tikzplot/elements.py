@@ -491,7 +491,7 @@ class Graph3(BaseGraph):
                 table_opts += ",z error=zerror"
             datapoints = f"{header}\n{rows}\n"
             if TikzConfig.SAVE_DATAPOINTS:
-                datapoints = self._save_data(datapoints, filename)
+                datapoints = self._save_data(datapoints, filename).replace(r"\\", r"/")
             if not TikzConfig.SAVE_DATAPOINTS or (TikzConfig.SAVE_DATAPOINTS and not TikzConfig.UPDATE_DATA_ONLY):
                 if self._label and self._axes._legend_on:
                     return f"\\addplot3 [{style}] table [{table_opts}] {{{datapoints}}};\\addlegendentry{{{self._label}}}"

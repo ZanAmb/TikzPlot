@@ -583,7 +583,7 @@ class Axes(BaseAxes):
         else:
             self._axis_options["xshift"] = f"{self._fig._get_spacing(self._row, self._col)}cm"
         if self._imshow:
-            im_name = self._export_imshow(*self._imshow[0], **self._imshow[1])
+            im_name = self._export_imshow(*self._imshow[0], **self._imshow[1]).replace(r"\\", r"/")
             dims = _np.shape(self._imshow[0][0])
             bounds = [0, dims[1], 0, dims[0]]
             if "extent" in self._imshow[1]:
