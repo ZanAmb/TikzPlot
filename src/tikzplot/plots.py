@@ -88,6 +88,9 @@ def subplots(nrows=1, ncols=1, sharex=None, sharey=None, subplot_kw=None, **kwar
         grid = grid[0]
     elif grid.shape[1] == 1:
         grid = grid[:,0]
+
+    if "figsize" in kwargs:
+        _current_figure.set_size_inches(kwargs["figsize"])
     return _current_figure, grid
 
 def plot(*args, **kwargs):

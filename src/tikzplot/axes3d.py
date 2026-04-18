@@ -4,6 +4,7 @@ import matplotlib.pyplot as _plt
 from .elements import Graph3
 from .config import TikzConfig
 from .state import _next_imshow_num, main_name
+from .latex_special import tex_text
 
 class Axes3:
     def __init__(self, nrows, ncols, index, fig):
@@ -45,9 +46,9 @@ class Axes3:
             self._neigh = i - 1
             return self._neigh, "east", "west"
 
-        self._axis_options["name"] = f"p{index-1}"
+        self._axis_options["alias" if TikzConfig.USE_GROUPPLOTS else "name"] = f"p{index-1}"
         pos = _posit_string()
-        if pos is not None:
+        if pos is not None and not TikzConfig.USE_GROUPPLOTS:
             self._axis_options["at"] = f"{{(p{self._neigh}.{pos[1]})}}"
             self._axis_options["anchor"] = pos[2]
 
@@ -194,16 +195,16 @@ class Axes3:
         return self._plot(centers, counts, settings=settings, **kwargs)"""
 
     def set_title(self, title):
-        self._axis_options["title"] = f"{{{title}}}"
+        self._axis_options["title"] = f"{{{tex_text(title)}}}"
     
     def set_xlabel(self, label):
-        self._axis_options["xlabel"] = f"{{{label}}}"
+        self._axis_options["xlabel"] = f"{{{tex_text(label)}}}"
 
     def set_ylabel(self, label):
-        self._axis_options["ylabel"] = f"{{{label}}}"
+        self._axis_options["ylabel"] = f"{{{tex_text(label)}}}"
 
     def set_zlabel(self, label):
-        self._axis_options["zlabel"] = f"{{{label}}}"
+        self._axis_options["zlabel"] = f"{{{tex_text(label)}}}"
 
     def set_xlim(self, *args, **kwargs):
         left = None
@@ -306,7 +307,7 @@ class Axes3:
             s_ticks = map(str, ticks)
             self._axis_options["xtick"]=f"{{{','.join(s_ticks)}}}"
             if labels and len(labels)==len(ticks):
-                self._axis_options["xticklabels"]=f"{{{','.join(labels)}}}"
+                self._axis_options["xticklabels"]=f"{{{tex_text(','.join(labels))}}}"
             elif labels is not None and len(labels) == 0:
                 self._axis_options["xticklabels"]=r"{}"
         else:
@@ -318,7 +319,7 @@ class Axes3:
             s_ticks = map(str, ticks)
             self._axis_options["ytick"]=f"{{{','.join(s_ticks)}}}"
             if labels and len(labels)==len(ticks):
-                self._axis_options["yticklabels"]=f"{{{','.join(labels)}}}"
+                self._axis_options["yticklabels"]=f"{{{tex_text(','.join(labels))}}}"
             elif labels is not None and len(labels) == 0:
                 self._axis_options["yticklabels"]=r"{}"
         else:
@@ -330,7 +331,7 @@ class Axes3:
             s_ticks = map(str, ticks)
             self._axis_options["ztick"]=f"{{{','.join(s_ticks)}}}"
             if labels and len(labels)==len(ticks):
-                self._axis_options["zticklabels"]=f"{{{','.join(labels)}}}"
+                self._axis_options["zticklabels"]=f"{{{tex_text(','.join(labels))}}}"
             elif labels is not None and len(labels) == 0:
                 self._axis_options["zticklabels"]=r"{}"
         else:
@@ -339,19 +340,19 @@ class Axes3:
 
     def set_xticklabels(self, labels):
         if labels:
-            self._axis_options["xticklabels"]=f"{{{','.join(labels)}}}"
+            self._axis_options["xticklabels"]=f"{{{tex_text(','.join(labels))}}}"
         else:
             self._axis_options["xticklabels"]=r"{}"
 
     def set_yticklabels(self, labels):
         if labels:
-            self._axis_options["yticklabels"]=f"{{{','.join(labels)}}}"
+            self._axis_options["yticklabels"]=f"{{{tex_text(','.join(labels))}}}"
         else:
             self._axis_options["yticklabels"]=r"{}"
     
     def set_zticklabels(self, labels):
         if labels:
-            self._axis_options["zticklabels"]=f"{{{','.join(labels)}}}"
+            self._axis_options["zticklabels"]=f"{{{tex_text(','.join(labels))}}}"
         else:
             self._axis_options["zticklabels"]=r"{}"
 
@@ -402,7 +403,7 @@ class Axes3:
                 print("Legend: more labels than elements")
             else:
                 for i in range(len(labs)):
-                    self._elements[i]._set_label(labs[i])
+                    self._elements[i]._set_label(tex_text(labs[i]))
 
     def view_init(self, elev=None, azim=None, roll=None):
         if elev == None:
@@ -423,7 +424,7 @@ class Axes3:
             return ""
         for i in range(len(axs)):
             output += f"\n\\addlegendimage{{{axs[i]._style_string()}}}"
-            output += f"\n\\addlegendentry{{{labs[i]}}}"
+            output += f"\n\\addlegendentry{{{tex_text(labs[i])}}}"
         return output
         
     def _content_tex(self, filename):
@@ -503,10 +504,11 @@ class Axes3:
             self._axis_options["width"] = self._width
         if self._height:
             self._axis_options["height"] = self._height
-        if self._left:
-            self._axis_options["yshift"] = f"-{self._fig._get_spacing(self._row, self._col)}cm"
-        else:
-            self._axis_options["xshift"] = f"{self._fig._get_spacing(self._row, self._col)}cm"
+        if not TikzConfig.USE_GROUPPLOTS:
+            if self._left:
+                self._axis_options["yshift"] = f"-{self._fig._get_spacing(self._row, self._col)}cm"
+            else:
+                self._axis_options["xshift"] = f"{self._fig._get_spacing(self._row, self._col)}cm"
         axis_opt_str = ""
         if self._axis_args:
             axis_opt_str += ",\n".join(self._axis_args)
@@ -546,11 +548,16 @@ class Axes3:
     
     def _to_tex(self, filename):
         lines = []
-        lines.append("\\begin{axis}")
-        lines.append(f"[{self._axis_option_string()}]")
-        lines.append(self._content_tex(filename))
-        lines.append("\\end{axis}")
-        return lines
+        if TikzConfig.USE_GROUPPLOTS:
+            lines.append("\\nextgroupplot")
+            lines.append(f"[{self._axis_option_string()}]")
+            lines.append(self._content_tex(filename))
+        else:
+            lines.append("\\begin{axis}")
+            lines.append(f"[{self._axis_option_string()}]")
+            lines.append(self._content_tex(filename))
+            lines.append("\\end{axis}")
+        return lines, []
     
     def set(self, **kwargs):
         defined = {"title": self.set_title, "xlim": self.set_xlim, "xlabel": self.set_xlabel, "xscale": self.set_xscale, "xticklabels": self.set_xticklabels, "xticks": self.set_xticks, "ylim": self.set_ylim, "ylabel": self.set_ylabel, "yscale": self.set_yscale, "yticklabels": self.set_yticklabels, "yticks": self.set_yticks, "zlim": self.set_zlim, "zlabel": self.set_zlabel, "zscale": self.set_zscale, "zticklabels": self.set_zticklabels, "zticks": self.set_zticks}

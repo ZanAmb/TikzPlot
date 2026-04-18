@@ -39,6 +39,7 @@ class _TikzConfig:
 
         self.STANDALONE = False
         self.USE_XCOLOR = True
+        self.USE_GROUPPLOTS = True
         self.SCHOOL_AXIS = False
         self.SCHOOL_AXIS_LABEL_MARGIN = 0.1
 

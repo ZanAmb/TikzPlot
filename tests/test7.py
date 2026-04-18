@@ -38,7 +38,7 @@ ax2 = ax.twinx()
 p1 = ax2.plot([0,10],[0,0], lw=2)
 p2 = ax2.plot([0,10],[-1,1])
 p3 = ax2.plot([0,10],[1,-1])
-
+ax2.set_ylabel(r"$y$-axis 2")
 ax.legend([p1,p2, p3], ["pl1", "pl2", "pl3"], loc=9, ncols = 2)
 # =========================
 # (3) Log scale
@@ -47,6 +47,7 @@ ax = axs[1, 0]
 ax.semilogy(x, np.abs(y) + 1e-2, color="purple", label="sin")
 ax.grid(which="both")
 ax.legend(["$|\\sin(x)|$"])
+ax.set_title("Semilog Y")
 
 # =========================
 # (4) Errorbar + fill_between

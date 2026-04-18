@@ -222,11 +222,24 @@ class Figure:
             preambule += "\\begin{document}\n"
             
         lines = [g for g in self._globals]
+        lines2 = []
         lines.append("\\begin{tikzpicture}")
         nrows = self._axes[0]._get_nrows()
         ncols = self._axes[0]._get_ncols()
+        if TikzConfig.USE_GROUPPLOTS:
+            self._compute_group_spacing()
+            if len(self._spacings[0]) > 0 and len(self._spacings[1]) > 0:
+                lines.append(f"\\begin{{groupplot}}[group style={{group size={ncols} by {nrows}, horizontal sep={max(self._spacings[1])}cm, vertical sep={max(self._spacings[0])}cm}}]")
+            else:
+                lines.append(f"\\begin{{groupplot}}[group style={{group size={ncols} by {nrows}}}]")
         for ax in self._axes:
-            lines += ax._to_tex(filename)
+            prim, sec = ax._to_tex(filename)
+            lines += prim
+            if sec:
+                lines2 += sec
+        if TikzConfig.USE_GROUPPLOTS:
+            lines.append("\\end{groupplot}")
+        lines += lines2
         lines.append("\\end{tikzpicture}")
         for c in self._col_dict:
             r,g,b=self._col_dict[c]
@@ -240,7 +253,7 @@ class Figure:
     def _save(self, filename):
         content = self._to_tex(filename)
         if not TikzConfig.SAVE_DATAPOINTS or (TikzConfig.SAVE_DATAPOINTS and not TikzConfig.UPDATE_DATA_ONLY):
-            with open(filename, "w") as f:
+            with open(filename, "w", encoding="utf-8") as f:
                 f.write(content)
 
     def _get_width(self):

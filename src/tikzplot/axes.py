@@ -4,6 +4,7 @@ import matplotlib.pyplot as _plt
 from .elements import Graph
 from .config import TikzConfig
 from .state import _next_imshow_num, main_name
+from .latex_special import tex_text
 
 class BaseAxes:
     def __init__(self):
@@ -189,7 +190,7 @@ class BaseAxes:
         return self._plot(centers, counts, settings=settings, **kwargs)
 
     def set_ylabel(self, label):
-        self._axis_options["ylabel"] = f"{{{label}}}"
+        self._axis_options["ylabel"] = f"{{{tex_text(label)}}}"
 
     def set_ylim(self, *args, **kwargs):
         bottom = None
@@ -228,7 +229,7 @@ class BaseAxes:
             s_ticks = map(str, ticks)
             self._axis_options["ytick"]=f"{{{','.join(s_ticks)}}}"
             if labels and len(labels)==len(ticks):
-                self._axis_options["yticklabels"]=f"{{{','.join(labels)}}}"
+                self._axis_options["yticklabels"]=f"{{{tex_text(','.join(labels))}}}"
             elif labels is not None and len(labels) == 0:
                 self._axis_options["yticklabels"]=r"{}"
         else:
@@ -237,7 +238,7 @@ class BaseAxes:
 
     def set_yticklabels(self, labels):
         if labels:
-            self._axis_options["yticklabels"]=f"{{{','.join(labels)}}}"
+            self._axis_options["yticklabels"]=f"{{{tex_text(','.join(labels))}}}"
         else:
             self._axis_options["yticklabels"]=r"{}"
 
@@ -288,7 +289,7 @@ class BaseAxes:
                 print("Legend: more labels than elements")
             else:
                 for i in range(len(labs)):
-                    self._elements[i]._set_label(labs[i])
+                    self._elements[i]._set_label(tex_text(labs[i]))
 
     def _add_legend_entries(self):
         if self._add_legend == "": return ""
@@ -299,7 +300,7 @@ class BaseAxes:
             return ""
         for i in range(len(axs)):
             output += f"\n\\addlegendimage{{{axs[i]._style_string()}}}"
-            output += f"\n\\addlegendentry{{{labs[i]}}}"
+            output += f"\n\\addlegendentry{{{tex_text(labs[i])}}}"
         return output
         
     def _content_tex(self, filename):
@@ -397,9 +398,9 @@ class Axes(BaseAxes):
             self._neigh = i - 1
             return self._neigh, "east", "west"
 
-        self._axis_options["name"] = f"p{index-1}"
+        self._axis_options["alias" if TikzConfig.USE_GROUPPLOTS else "name"] = f"p{index-1}"
         pos = _posit_string()
-        if pos is not None:
+        if pos is not None and not TikzConfig.USE_GROUPPLOTS:
             self._axis_options["at"] = f"{{(p{self._neigh}.{pos[1]})}}"
             self._axis_options["anchor"] = pos[2]
 
@@ -478,10 +479,10 @@ class Axes(BaseAxes):
         return (self, cmap, m, M)
     
     def set_xlabel(self, label):
-        self._axis_options["xlabel"] = f"{{{label}}}"
+        self._axis_options["xlabel"] = f"{{{tex_text(label)}}}"
 
     def set_title(self, title):
-        self._axis_options["title"] = f"{{{title}}}"
+        self._axis_options["title"] = f"{{{tex_text(title)}}}"
 
     def grid(self, visible=True, which="major"):
 
@@ -536,7 +537,7 @@ class Axes(BaseAxes):
             s_ticks = map(str, ticks)
             self._axis_options["xtick"]=f"{{{','.join(s_ticks)}}}"
             if labels and len(labels)==len(ticks):
-                self._axis_options["xticklabels"]=f"{{{','.join(labels)}}}"
+                self._axis_options["xticklabels"]=f"{{{tex_text(','.join(labels))}}}"
             elif labels is not None and len(labels) == 0:
                 self._axis_options["xticklabels"]=r"{}"
         else:
@@ -545,7 +546,7 @@ class Axes(BaseAxes):
 
     def set_xticklabels(self, labels):
         if labels:
-            self._axis_options["xticklabels"]=f"{{{','.join(labels)}}}"
+            self._axis_options["xticklabels"]=f"{{{tex_text(','.join(labels))}}}"
         else:
             self._axis_options["xticklabels"]=r"{}"
 
@@ -578,10 +579,11 @@ class Axes(BaseAxes):
             self._axis_options["width"] = self._width
         if self._height:
             self._axis_options["height"] = self._height
-        if self._left:
-            self._axis_options["yshift"] = f"-{self._fig._get_spacing(self._row, self._col)}cm"
-        else:
-            self._axis_options["xshift"] = f"{self._fig._get_spacing(self._row, self._col)}cm"
+        if not TikzConfig.USE_GROUPPLOTS:
+            if self._left:
+                self._axis_options["yshift"] = f"-{self._fig._get_spacing(self._row, self._col)}cm"
+            else:
+                self._axis_options["xshift"] = f"{self._fig._get_spacing(self._row, self._col)}cm"
         if self._imshow:
             im_name = self._export_imshow(*self._imshow[0], **self._imshow[1]).replace(r"\\", r"/")
             dims = _np.shape(self._imshow[0][0])
@@ -631,22 +633,25 @@ class Axes(BaseAxes):
     
     def _to_tex(self, filename):
         lines = []
+        lines2 = []
+        if TikzConfig.USE_GROUPPLOTS:
+            lines.append("\\nextgroupplot")
         if self._polar:
             lines.append("\\begin{polaraxis}")
-        else:
+        elif not TikzConfig.USE_GROUPPLOTS:
             lines.append("\\begin{axis}")
         lines.append(f"[{self._axis_option_string()}]")
         lines.append(self._content_tex(filename))
         if self._polar:
             lines.append("\\begin{polaraxis}")
-        else:
+        elif not TikzConfig.USE_GROUPPLOTS:
             lines.append("\\end{axis}")
         if self._secondary_y is not None:
-            lines.append("\\begin{axis}")
-            lines.append(f"[{self._secondary_y._axis_option_string()}]")
-            lines.append(self._secondary_y._content_tex(filename))
-            lines.append("\\end{axis}")
-        return lines
+            lines2.append("\\begin{axis}")
+            lines2.append(f"[{self._secondary_y._axis_option_string()}]")
+            lines2.append(self._secondary_y._content_tex(filename))
+            lines2.append("\\end{axis}")
+        return lines, lines2
 
     def set(self, **kwargs):
         defined = {"title": self.set_title, "xlim": self.set_xlim, "xlabel": self.set_xlabel, "xscale": self.set_xscale, "xticklabels": self.set_xticklabels, "xticks": self.set_xticks}
@@ -663,7 +668,7 @@ class Secondary(BaseAxes):
 
         self._axis_options["axis y line*"] = "right"
         self._axis_options["axis x line"] = "none"
-        self._axis_options["at"] = f"{{({primary._axis_options['name']}.south west)}}"
+        self._axis_options["at"] = f"{{({primary._axis_options['alias' if 'alias' in primary._axis_options else 'name']}.south west)}}"
         self._axis_options["anchor"] = "south west"
         self._axis_options["y label style"] = r"{at={(1.1,0.5)}, rotate=180}"
 
