@@ -41,6 +41,10 @@ def grid(*args, **kwargs):
         _ensure_axes()
         _current_axes.grid(*args, **kwargs)
 
+def minorticks_num(num):
+    _ensure_axes()
+    _current_axes.set_minorticks_num(num)
+
 def xlim(*args, **kwargs):
     _ensure_axes()
     _current_axes.set_xlim(*args, **kwargs)

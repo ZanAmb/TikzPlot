@@ -213,6 +213,8 @@ class _Colorbar:
                 lines.append(f"{'x' if self._horizontal else 'y'}ticklabels={{{','.join(str(a) for a in self._tick_labels)}}},")
         if self._tick_labels == []:
             lines.append(f"{'x' if self._horizontal else 'y'}ticklabels=\\empty,")
+            if self._divs > 0:
+                lines.append(f"{'x' if self._horizontal else 'y'}tick =\\empty,")
         lines.append(r"},")
         lines.append(f"point meta min={{{self._lower}}},")
         lines.append(f"point meta max={{{self._upper}}}")

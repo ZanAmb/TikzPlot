@@ -39,7 +39,7 @@ ax3.plot(xs, np.sin(xs), "r--", label="sin")
 ax2.plot(xs, np.cos(xs), label="cos")
 ax2.plot(xs, np.cos(xs+1), label="cos2")
 
-fig.set_size_inches(8,6)
+fig.set_size_inches(6,5)
 
 ax4.stem(xs,xs, "r.")
 

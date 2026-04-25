@@ -14,6 +14,7 @@ Instead of using `import matplotlib.pyplot (as plt)`, use `import tikzplot.plots
 - `\usepackage{pgfplots}`
 - `\pgfplotsset{compat=1.18}`
 - `\usepgfplotslibrary{fillbetween}` (if you use fill-between plots),
+- `\usepgfplotslibrary{grouppots}` (recommended for best results, enabled by default, may be avoided by setting TikzConfig USE_GROUPPLOTS=False),
 - `\usepackage{xcolor}` (recommended for best colors, works without but needs change of TikzConfig USE_XCOLOR=False).
 
 Then use the generated file as `\input{example_graph.tex}`.

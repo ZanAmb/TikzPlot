@@ -484,21 +484,36 @@ class Axes(BaseAxes):
     def set_title(self, title):
         self._axis_options["title"] = f"{{{tex_text(title)}}}"
 
-    def grid(self, visible=True, which="major"):
+    def grid(self, visible=True, which="major", **kwargs):
 
         if not visible:
             self._axis_options["grid"] = "none"
             return
-
+        selector = which + " "
         if which == "major":
-            self._axis_options["grid"] = "major"
+            if "grid" in self._axis_options and self._axis_options["grid"] == "minor":
+                self._axis_options["grid"] = "both"
+            else:
+                self._axis_options["grid"] = "major"
 
         elif which == "minor":
-            self._axis_options["minor grid style"] = "{dotted}"
-            self._axis_options["grid"] = "both"
+            if "grid" in self._axis_options and self._axis_options["grid"] == "major":
+                self._axis_options["grid"] = "both"
+            else:
+                self._axis_options["grid"] = "minor"
 
         elif which == "both":
             self._axis_options["grid"] = "both"
+            selector = ""
+        
+        if kwargs:
+            accepted_kwargs = {"color", "c", "linestyle", "ls", "linewidth", "lw", "alpha"}
+            kwargs = self._check_kwargs("grid", accepted_kwargs, **kwargs)
+            g = Graph(self, None, None, None, None, **kwargs)._style_string()
+            self._axis_options[f"{selector}grid style"] = f"{{{g}}}"
+    
+    def set_minorticks_num(self, num):
+        self._axis_options["minor tick num"] = num
 
     def set_xlim(self, *args, **kwargs):
         left = None
@@ -596,7 +611,9 @@ class Axes(BaseAxes):
         if self._axis_args:
             axis_opt_str += ",\n".join(self._axis_args)
         if TikzConfig.SCHOOL_AXIS:
-            axis_opt_str += f",\n axis lines=middle,\n xlabel style={{at={{(ticklabel* cs:{1+TikzConfig.SCHOOL_AXIS_LABEL_MARGIN})}},anchor=north}},\n ylabel style={{at={{(ticklabel* cs:{1+TikzConfig.SCHOOL_AXIS_LABEL_MARGIN})}},anchor=east}},"
+            axis_opt_str += f",\n axis lines=middle,\n xlabel style={{at={{(ticklabel* cs:{1+TikzConfig.SCHOOL_AXIS_LABEL_MARGIN})}},anchor=north}},\n ylabel style={{at={{(ticklabel* cs:{1+TikzConfig.SCHOOL_AXIS_LABEL_MARGIN})}},anchor=east}}"
+        if TikzConfig.USE_GROUPPLOTS:
+            axis_opt_str += f",\n set layers,\n axis line style={{on layer=axis foreground}}"
         if self._axis_options:
             if axis_opt_str: axis_opt_str += ",\n"
             axis_opt_str += ",\n".join(f"{k}={v}" for k, v in self._axis_options.items())

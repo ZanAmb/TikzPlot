@@ -14,6 +14,6 @@ ax3.plot(y,y)
 ax4.plot(y,x)
 ax1.set_xlabel(r"$x$")
 ax1.set_ylabel(r"$y$")
-ax2.grid()
+ax2.grid(which="both")
 
 plt.savefig("figure.tex")

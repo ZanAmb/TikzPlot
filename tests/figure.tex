@@ -6,6 +6,8 @@
 \begin{groupplot}[group style={group size=2 by 3, horizontal sep=1.0cm, vertical sep=2.2cm}]
 \nextgroupplot
 [/pgf/number format/use comma,
+ set layers,
+ axis line style={on layer=axis foreground},
 alias=p0,
 grid=major,
 legend style={at={(0.97,0.97)},anchor=north east},
@@ -19,6 +21,8 @@ line width=1.5pt] table [x=x,y=y] {datapoints/figure_1.dat};\addlegendentry{sin(
 dashed] table [x=x,y=y] {datapoints/figure_2.dat};\addlegendentry{cos(x)}
 \nextgroupplot
 [/pgf/number format/use comma,
+ set layers,
+ axis line style={on layer=axis foreground},
 alias=p1,
 grid=major,
 legend style={at={(0.5,0.97)},anchor=north },
@@ -37,6 +41,8 @@ color={c012204670706}}
 \addlegendentry{pl3}
 \nextgroupplot
 [/pgf/number format/use comma,
+ set layers,
+ axis line style={on layer=axis foreground},
 alias=p2,
 ymode=log,
 grid=both,
@@ -46,6 +52,8 @@ height=6.666666666666667cm]
 \addplot [color={violet}] table [x=x,y=y] {datapoints/figure_7.dat};\addlegendentry{$|\sin(x)|$}
 \nextgroupplot
 [/pgf/number format/use comma,
+ set layers,
+ axis line style={on layer=axis foreground},
 alias=p3,
 xmin=0,
 xmax=10,
@@ -71,6 +79,8 @@ color={gray},
 opacity=0.3] fill between [of=path1 and path2];
 \nextgroupplot
 [/pgf/number format/use comma,
+ set layers,
+ axis line style={on layer=axis foreground},
 alias=p4,
 width=8.0cm,
 height=6.666666666666667cm]
@@ -81,6 +91,8 @@ color={orange}] table [x=x,y=y] {datapoints/figure_11.dat};
 \nextgroupplot
 [/pgf/number format/use comma,
 axis on top,
+ set layers,
+ axis line style={on layer=axis foreground},
 alias=p5,
 enlargelimits=false,
 grid=major,

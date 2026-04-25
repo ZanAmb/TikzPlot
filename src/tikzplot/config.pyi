@@ -41,6 +41,7 @@ class _ConfigParams(TypedDict, total=False):
 
     STANDALONE: bool
     USE_XCOLOR: bool
+    USE_GROUPPLOTS: bool
     SCHOOL_AXIS: bool
     SCHOOL_AXIS_LABEL_MARGIN: float
 

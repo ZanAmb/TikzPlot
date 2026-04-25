@@ -382,11 +382,36 @@ class Axes(BaseAxes):
         Set plot title.
         """
         ...
-    def grid(self, visible: bool = True, which: Literal["major","minor","both"] = "major") -> None: 
+    def grid(self, visible: bool = True, which: Literal["major","minor","both"] = "major", alpha: Optional[float] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ...,
+             linestyle: Optional[LineStyle] = ..., ls: Optional[LineStyle] = ..., linewidth: Optional[float]= ..., lw: Optional[float] = ...) -> None: 
         """
         Set grid.
+
+        Parameters
+        ----------
+        visible: bool, default True
+            Show grid
+        which: {"major", "minor", "both"}, default "major"
+            Grid selector
+        alpha: float, optional
+            Opacity
+        color or c: all matplotlib color formats (without X11/xkcd), optional
+            Grid color: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+        linestyle or ls: str, optional
+            Grid line style
+        linewidth or lw: float, optional
+            Grid line width in pt
         """
+    def set_minorticks_on(self, num: int) -> None:
         ...
+        """
+        Set number of minor ticks between major ticks.
+        
+        Parameters
+        ----------
+        num: int
+            Number of minor ticks between major ticks.
+        """
     def set_xlim(self, *args: Any, left: Optional[float] = ..., right: Optional[float] = ...) -> None: 
         """
         Set x-axis limit(-s). Set as tuple or as kwargs (left, right).

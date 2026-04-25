@@ -215,6 +215,8 @@ class Figure:
             preambule += "\\documentclass[tikz,border=2pt]{standalone}\n"
             preambule += "\\usepackage{tikz}\n"
             preambule += "\\usepackage{pgfplots}\n"
+            if TikzConfig.USE_GROUPPLOTS:
+                preambule += "\\usepgfplotslibrary{groupplots}\n"
             preambule += "\\usepgfplotslibrary{fillbetween}\n"
             preambule += "\\pgfplotsset{compat=1.18}\n"
             if TikzConfig.USE_XCOLOR:
