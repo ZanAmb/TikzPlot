@@ -80,8 +80,14 @@ class Figure:
         r = grid[:, :, 1]
         t = grid[:, :, 2]
         b = grid[:, :, 3]
-        row_spacing = np.max(b[:-1, :], axis=1) + np.max(t[1:, :], axis=1)
-        col_spacing = np.max(r[:, :-1], axis=0) + np.max(l[:, 1:], axis=0)
+        if self._nrows > 1:
+             row_spacing = np.max(b[:-1, :], axis=1) + np.max(t[1:, :], axis=1)
+        else:
+            row_spacing = [0]
+        if self._ncols > 1:
+            col_spacing = np.max(r[:, :-1], axis=0) + np.max(l[:, 1:], axis=0)
+        else:
+            col_spacing =  [0]
         self._spacings = row_spacing, col_spacing
 
     def _get_spacing(self, row, col):
@@ -98,7 +104,7 @@ class Figure:
         shared_x = []
         shared_y = []
         if self._sharex and self._sharex != "none":
-            if self._sharex == "all":
+            if self._sharex == "all" or self._sharex == True:
                 shared_x = [self._axes]
             if self._sharex == "row":
                 shared_x = [[] for _ in range(self._nrows)]
@@ -109,7 +115,7 @@ class Figure:
                 for ax in self._axes:
                     shared_x[ax._get_col()].append(ax)
         if self._sharey and self._sharey != "none":
-            if self._sharey == "all":
+            if self._sharey == "all" or self._sharey == True:
                 shared_y = [self._axes]
             if self._sharey == "row":
                 shared_y = [[] for _ in range(self._nrows)]
@@ -218,7 +224,7 @@ class Figure:
             if TikzConfig.USE_GROUPPLOTS:
                 preambule += "\\usepgfplotslibrary{groupplots}\n"
             preambule += "\\usepgfplotslibrary{fillbetween}\n"
-            preambule += "\\pgfplotsset{compat=1.18}\n"
+            preambule += f"\\pgfplotsset{{compat={TikzConfig.TIKZ_COMPAT}}}\n"
             if TikzConfig.USE_XCOLOR:
                 preambule += "\\usepackage{xcolor}\n"
             preambule += "\\begin{document}\n"

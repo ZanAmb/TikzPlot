@@ -232,6 +232,7 @@ class BaseAxes:
                 self._axis_options["yticklabels"]=f"{{{tex_text(','.join(labels))}}}"
             elif labels is not None and len(labels) == 0:
                 self._axis_options["yticklabels"]=r"{}"
+                self._yticks = False
         else:
             self._axis_options["yticks"]=r"{}"
             self._yticks = False
@@ -241,6 +242,7 @@ class BaseAxes:
             self._axis_options["yticklabels"]=f"{{{tex_text(','.join(labels))}}}"
         else:
             self._axis_options["yticklabels"]=r"{}"
+            self._yticks = False
 
     _LEGEND_LOC_MAP = ["best", "upper right", "upper left", "lower_left", "lower right", "right", "center left", "center right", "lower center", "upper center", "center"]
     _ANCHOR_MAP = {"top": "north", "bottom": "south", "upper": "north", "lower": "south", "left": "west", "right": "east", "center": "center"}
@@ -276,7 +278,6 @@ class BaseAxes:
                 legend_string.append(r"at={(" + f"{lx},{ly}" + r")}")
             if len(posit):
                 legend_string.append(r"anchor=" + posit)
-            else: print(posit)
             self._axis_options["legend style"] = f"{{{','.join(legend_string)}}}"
         self._legend_on = True
         if "ncols" in kwargs:
@@ -459,9 +460,9 @@ class Axes(BaseAxes):
         lss = _pad_or_truncate(_to_list(linestyles), len(xs))
         for i in range(len(xs)):
             if i == 0 and "label" in kwargs:
-                return self._plot([xs[i]]*2, [ymins[i], ymaxs[i]], None, None, None, c=colorss[i], ls=lss[i], label=kwargs["label"])
+                self._plot([xs[i]]*2, [ymins[i], ymaxs[i]], None, None, None, c=colorss[i], ls=lss[i], label=kwargs["label"])
             else:
-                return self._plot([xs[i]]*2, [ymins[i], ymaxs[i]], None, None, None, c=colorss[i], ls=lss[i])
+                self._plot([xs[i]]*2, [ymins[i], ymaxs[i]], None, None, None, c=colorss[i], ls=lss[i])
 
     def imshow(self, *args, **kwargs):
         #kws = {"fmt", "alpha", "color", "c", "linestyle", "ls", "linewidth", "lw", "marker", "markersize", "ms", "label"}
@@ -555,6 +556,7 @@ class Axes(BaseAxes):
                 self._axis_options["xticklabels"]=f"{{{tex_text(','.join(labels))}}}"
             elif labels is not None and len(labels) == 0:
                 self._axis_options["xticklabels"]=r"{}"
+                self._xticks = False
         else:
             self._axis_options["xticks"]=r"{}"
             self._xticks = False
@@ -564,6 +566,7 @@ class Axes(BaseAxes):
             self._axis_options["xticklabels"]=f"{{{tex_text(','.join(labels))}}}"
         else:
             self._axis_options["xticklabels"]=r"{}"
+            self._xticks = False
 
     def twinx(self):
         if self._polar:
@@ -622,10 +625,10 @@ class Axes(BaseAxes):
 
     
     def _margins(self):
-        left = TikzConfig.LEFT_PADDING * self._yticks + TikzConfig.Y_LABEL_PADDING * ("ylabel" in self._axis_options)
+        left = TikzConfig.LEFT_PADDING + TikzConfig.YTICK_PADDING * self._yticks + TikzConfig.Y_LABEL_PADDING * ("ylabel" in self._axis_options)
         right = TikzConfig.RIGHT_PADDING + TikzConfig.CBAR_X_MARGIN * (self._colorbar != "" and not self._cbar_h)
         top = TikzConfig.TOP_PADDING + TikzConfig.TITLE_PADDING * ("title" in self._axis_options)
-        bottom = TikzConfig.BOTTOM_PADDING * self._xticks + TikzConfig.X_LABEL_PADDING * ("xlabel" in self._axis_options) + TikzConfig.CBAR_Y_MARGIN * (self._colorbar != "" and self._cbar_h)
+        bottom = TikzConfig.BOTTOM_PADDING  + TikzConfig.XTICK_PADDING * self._xticks + TikzConfig.X_LABEL_PADDING * ("xlabel" in self._axis_options) + TikzConfig.CBAR_Y_MARGIN * (self._colorbar != "" and self._cbar_h)
         if self._secondary_y is not None:
             right += self._secondary_y._padding()
 
@@ -705,7 +708,7 @@ class Secondary(BaseAxes):
         return axis_opt_str
     
     def _padding(self):
-        return TikzConfig.SEC_Y_PADDING + TikzConfig.SEC_Y_LABEL_PADDING * ("ylabel" in self._axis_options)
+        return TikzConfig.SEC_Y_PADDING + TikzConfig.YTICK_PADDING * self._yticks + TikzConfig.SEC_Y_LABEL_PADDING * ("ylabel" in self._axis_options)
     
     def _get_defcol(self):
         return self._primary._get_defcol()

@@ -10,15 +10,17 @@ class _TikzConfig:
         self.LEGEND_REL_X = 0.03
         self.LEGEND_REL_Y = 0.03
 
-        self.LEFT_PADDING = 0.8
-        self.RIGHT_PADDING = 0.2
-        self.TOP_PADDING = 0.2
-        self.BOTTOM_PADDING = 0.8
+        self.LEFT_PADDING = 0.1
+        self.RIGHT_PADDING = 0.1
+        self.TOP_PADDING = 0.1
+        self.BOTTOM_PADDING = 0.1
         self.Y_LABEL_PADDING = 0.6
         self.SEC_Y_PADDING = 0.8
         self.SEC_Y_LABEL_PADDING = 0.6
         self.TITLE_PADDING = 0.6
         self.X_LABEL_PADDING = 0.6
+        self.XTICK_PADDING = 0.7
+        self.YTICK_PADDING = 0.7
 
         self.DEFAULT_WIDTH = 12
         self.DEFAULT_HEIGHT = 10
@@ -38,6 +40,7 @@ class _TikzConfig:
         self.MAX_POINTS_PER_ELEMENT = 1000
 
         self.STANDALONE = False
+        self.TIKZ_COMPAT = 1.18 # only for standalone, used to change the setting in preambule, but does not guarantee the compatibility of the generated code wito older versions of pgfplots.
         self.USE_XCOLOR = True
         self.USE_GROUPPLOTS = True
         self.SCHOOL_AXIS = False

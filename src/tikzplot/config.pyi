@@ -40,6 +40,7 @@ class _ConfigParams(TypedDict, total=False):
     MAX_POINTS_PER_ELEMENT: int
 
     STANDALONE: bool
+    TIKZ_COMPAT: float
     USE_XCOLOR: bool
     USE_GROUPPLOTS: bool
     SCHOOL_AXIS: bool

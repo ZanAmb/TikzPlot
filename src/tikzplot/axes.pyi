@@ -267,6 +267,8 @@ class BaseAxes:
             - two args: list/tuple, optional: element, label - assign labels to plots (use references of plots which are returned in plot commands). In case that a plot already has a label, both will be displayed. This is the only option to merge the legend entries for double-axis (twinx) plots.
         loc: int, str or tuple, optional
             Location of legend (as in matplotlib: 1 - upper right, 2 - upper left, ... or with tuple of relative coordinates).
+
+        ncols: int, optional: number of columns in legend, default 1
         """
         ...
     def set(self, **kwargs) -> None:

@@ -169,3 +169,7 @@ def show():
 
 def clf():
     _current_figure.clear()
+
+def gca():
+    _ensure_axes()
+    return _current_axes

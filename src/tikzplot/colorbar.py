@@ -154,16 +154,21 @@ class _Colorbar:
         return list(zip(r, g, b))
     
     def _generate_tex_colormap(self, cmap_name):
-        rev = False
-        if cmap_name.endswith("_r"):
-            rev = True
-            cmap_name = cmap_name.removesuffix("_r")
-        if cmap_name not in self._dictionary:
-            raise Exception(f"% Error: {cmap_name} not found in _dictionary")
-        colors = self._dictionary[cmap_name]
-        if rev: colors=list(reversed(colors))
+        if isinstance(cmap_name, str):
+            rev = False
+            if cmap_name.endswith("_r"):
+                rev = True
+                cmap_name = cmap_name.removesuffix("_r")
+            if cmap_name not in self._dictionary:
+                raise Exception(f"% Error: {cmap_name} not found in _dictionary")
+            colors = self._dictionary[cmap_name]
+            if rev: colors=list(reversed(colors))
+        elif isinstance(cmap_name, list):
+            colors = cmap_name
+        else:
+            raise Exception(f"% Error: cmap_name must be a string or a list of colors")
         output = [r"{urgb}{"]
-        if cmap_name in self._discrete:
+        if isinstance(cmap_name, str) and cmap_name in self._discrete:
             n = self._discrete[cmap_name]
             self._divs = n
         elif self._divs > 0:
@@ -224,12 +229,17 @@ class _Colorbar:
     def color(self, value):
         norm_val = (value - self._lower) / (self._upper - self._lower)
         norm_val = _np.clip(norm_val, 0, 1)
-        cmap_name = self._cmap
         is_reversed = False
-        if cmap_name.endswith("_r"):
-            is_reversed = True
-            cmap_name = cmap_name.removesuffix("_r")
-        colors = self._dictionary[cmap_name]
+        if isinstance(self._cmap, str):
+            cmap_name = self._cmap
+            if cmap_name.endswith("_r"):
+                is_reversed = True
+                cmap_name = cmap_name.removesuffix("_r")
+            colors = self._dictionary[cmap_name]
+        elif isinstance(self._cmap, list):
+            colors = self._cmap
+        else:
+            raise Exception(f"% Error: cmap_name must be a string or a list of colors")
         if is_reversed:
             colors = list(reversed(colors))
         n_colors = len(colors)
