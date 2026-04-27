@@ -3,7 +3,7 @@ import matplotlib.pyplot as _plt
 
 from .elements import Graph3
 from .config import TikzConfig
-from .state import _next_imshow_num, main_name
+#from .state import _next_imshow_num, main_name
 from .latex_special import tex_text
 
 class Axes3:

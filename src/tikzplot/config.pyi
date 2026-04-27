@@ -3,7 +3,7 @@
 from typing import Any, Dict
 from pathlib import Path
 
-from typing import TypedDict, Unpack
+from typing import TypedDict, Unpack, Any, ClassVar, Protocol
 
 class _ConfigParams(TypedDict, total=False):
     USE_DECIMAL_COMMA: bool
@@ -92,3 +92,4 @@ class TikzConfig:
             Key-value pairs of configuration parameters to update.
         """
         ...
+

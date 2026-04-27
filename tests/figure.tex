@@ -3,7 +3,7 @@
 \definecolor{c017306270173}{rgb}{0.173, 0.627, 0.173}
 \definecolor{c100004980055}{rgb}{1.000, 0.498, 0.055}
 \definecolor{c012204670706}{rgb}{0.122, 0.467, 0.706}
-\begin{groupplot}[group style={group size=2 by 3, horizontal sep=1.0cm, vertical sep=2.2cm}]
+\begin{groupplot}[group style={group size=2 by 3, horizontal sep=0.8999999999999999cm, vertical sep=2.0999999999999996cm}]
 \nextgroupplot
 [/pgf/number format/use comma,
  set layers,
@@ -89,8 +89,8 @@ ybar interval,
 fill,
 color={orange}] table [x=x,y=y] {datapoints/figure_11.dat};
 \nextgroupplot
-[/pgf/number format/use comma,
-axis on top,
+[axis on top,
+/pgf/number format/use comma,
  set layers,
  axis line style={on layer=axis foreground},
 alias=p5,
