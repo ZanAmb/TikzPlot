@@ -11,9 +11,9 @@ Alternativley, download this package and install using: `pip install [path]`, wh
 Instead of using `import matplotlib.pyplot (as plt)`, use `import tikzplot.plots (as plt)`.
 
 ## LaTeX requirements
-- `\usepackage{tikz}`
-- `\usepackage{pgfplots}`
-- `\pgfplotsset{compat=1.18}`
+- `\usepackage{tikz}`,
+- `\usepackage{pgfplots}`,
+- `\pgfplotsset{compat=1.18}` (may be lower, but compilation is not guaranteed),
 - `\usepgfplotslibrary{fillbetween}` (if you use fill-between plots),
 - `\usepgfplotslibrary{groupplots}` (recommended for best results, enabled by default, may be avoided by setting TikzConfig USE_GROUPPLOTS=False),
 - `\usepackage{xcolor}` (recommended for best colors, works without but needs change of TikzConfig USE_XCOLOR=False).

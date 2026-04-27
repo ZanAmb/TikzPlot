@@ -156,6 +156,8 @@ class BaseAxes:
              label:Optional[str]=...) -> None: 
         """
         Draw a stem plot to the selected axis.
+        Parameters
+        ----------
         locs, heads: ArrayLike
             Datapoints for plot, (x,y) for vertical, (y,x) for horizontal
 
@@ -404,7 +406,7 @@ class Axes(BaseAxes):
         linewidth or lw: float, optional
             Grid line width in pt
         """
-    def set_minorticks_on(self, num: int) -> None:
+    def set_minorticks_num(self, num: int) -> None:
         ...
         """
         Set number of minor ticks between major ticks.

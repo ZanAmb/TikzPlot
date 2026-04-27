@@ -32,10 +32,10 @@ class Colorbar:
         ticks: Optional[Sequence[ float]] = ...,
         tick_labels: Optional[Sequence[str | float]] = ...,
         label: Optional[str] = ...,
-        width: float = ...,
-        horizontal: bool = ...,
-        rel_len: float = ...,
-        divisions: int = ...
+        width: Optional[float] = ...,
+        horizontal: Optional[bool] = ...,
+        rel_len: Optional[float] = ...,
+        divisions: Optional[int] = ...
     ) -> None:
         """
         Parameters

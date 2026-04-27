@@ -20,6 +20,8 @@ class _ConfigParams(TypedDict, total=False):
     SEC_Y_LABEL_PADDING: float
     TITLE_PADDING: float
     X_LABEL_PADDING: float
+    XTICK_PADDING: float
+    YTICK_PADDING: float
 
     DEFAULT_WIDTH: float
     DEFAULT_HEIGHT: float

@@ -55,6 +55,10 @@ def subplots(
         - Single Axes if nrows*ncols == 1
         - 1D array if one dimension is 1
         - 2D array otherwise
+    figsize : tuple, optional
+        Figure size in inches (width, height).
+    sharex, sharey : Axes, optional
+        Specify if row, column or all subplots should share x or y axis.
     """
     ...
 
@@ -204,7 +208,36 @@ def plot(
         Mark size in pt
     """
     ...
-
+def errorbar(self, x: ArrayLike = ..., y: ArrayLike = ..., yerr: Optional[ArrayLike | float] = ..., xerr: Optional[ArrayLike | float] = ..., fmt: Optional[str] = ..., *, alpha: Optional[float] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ...,
+             linestyle: Optional[LineStyle] = ..., ls: Optional[LineStyle] = ..., linewidth: Optional[float]= ..., lw: Optional[float] = ...,
+             marker: Optional[MarkerStyle] = ..., markersize: Optional[float] = ..., ms: Optional[float] = ...,  label:Optional[str]=...) -> None:
+    """
+    Draw a plot with errrorbars to the selected axis.
+    Parameters
+    ----------
+    x,y : ArrayLike or float
+        Datapoints
+    yerr, xerr: ArrayLike or float
+        Datapoint error (constant, symmetric, asymmetric)
+    fmt: str, optional
+        Style
+    alpha: float, optional
+        Opacity
+    color or c: all matplotlib color formats (without X11/xkcd), optional
+        color of line and markers: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+    label: str, optional
+        Legned entry
+    linestyle or ls: str, optional
+        Line style
+    linewidth or lw: float, optional
+        Line width in pt
+    
+    marker: str, optional
+        Marker type
+    markersize or ms: float, optional
+        Mark size in pt
+    """
+    ...
 def scatter(
     x: ArrayLike = ..., y: ArrayLike = ..., fmt: Optional[str] = ...,
     *,
@@ -291,7 +324,153 @@ def semilogy(
     """
     ...
 
-# --- Output ---
+def stem(self, *args: Any, orientation: Literal["horizontal","vertical"] = "vertical", linefmt:Optional[str] = ..., markerfmt:Optional[str]=...,
+         label:Optional[str]=...) -> None: 
+    """
+    Draw a stem plot to the selected axis.
+    Parameters
+    ----------
+    locs, heads: ArrayLike
+        Datapoints for plot, (x,y) for vertical, (y,x) for horizontal
+    orientation: {"vertical", "horizontal"}, default "vertical
+        Orientation of stems
+    alpha: float, optional
+        Opacity
+    linefmt, markerfmt: str, optional
+        Short style of line and marker
+    label: str, optional
+        Legend entry
+    """
+    ...
+
+def fill_between(
+    self,
+    x: ArrayLike,
+    y1: ArrayLike,
+    y2: Optional[ArrayLike] = ...,
+    alpha: Optional[float] = ...,
+    color: Optional[ColorLike] = ...,
+    c: Optional[ColorLike] = ...
+) -> None: 
+    """
+    Fill space between two plots (or a single plot and x-axis).
+    Parameters
+    ----------
+    x,y1, y2 : ArrayLike or float (y2 optional)
+        Datapoints, if matched with existing plot, that line will be recycled to save tikz memory.
+    alpha: float, optional
+        Opacity
+    color or c: all matplotlib color formats (without X11/xkcd), optional
+        Fill color: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+    label: str, optional
+        Legend entry
+    """
+    ...
+
+def loglog(self, x: ArrayLike = ..., y: ArrayLike = ..., base: Optional[float] = 10,  fmt: Optional[str] = ...,*, alpha: Optional[float] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ...,
+             linestyle: Optional[LineStyle] = ..., ls: Optional[LineStyle] = ..., linewidth: Optional[float]= ..., lw: Optional[float] = ...,
+             marker: Optional[MarkerStyle] = ..., markersize: Optional[float] = ..., ms: Optional[float] = ...) -> None:
+    """
+    Draw a general plot to the selected axis and change the current axis into log mode.
+
+    Parameters
+    ----------
+    x,y : ArrayLike or float
+        Datapoints
+    base: float, optional
+        Log basis, default 10
+    fmt: str, optional
+        Style
+    alpha: float, optional
+        Opacity
+    color or c: all matplotlib color formats (without X11/xkcd), optional
+        color of line and markers: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+    label: str, optional
+        Legned entry
+    linestyle or ls: str, optional
+        Line style
+    linewidth or lw: float, optional
+        Line width in pt
+    
+    marker: str, optional
+        Marker type
+    markersize or ms: float, optional
+        Mark size in pt
+    """
+    ...
+
+def hlines(
+    self,
+    y: Union[float, Sequence[float]],
+    xmin: Union[float, Sequence[float]],
+    xmax: Union[float, Sequence[float]],
+    colors: Union[str, Sequence[str]] = "k",
+    linestyles: Union[str, Sequence[str]] = "solid",
+) -> None: 
+    """
+    Draw horizontal lines to the selected axis.
+    """
+    ...
+
+def vlines(
+    self,
+    x: Union[float, Sequence[float]],
+    ymin: Union[float, Sequence[float]],
+    ymax: Union[float, Sequence[float]],
+    colors: Union[str, Sequence[str]] = "k",
+    linestyles: Union[str, Sequence[str]] = "solid",
+) -> None: 
+    """
+    Draw vertical lines to the selected axis.
+    """
+    ...
+
+def semilogx(self, x: ArrayLike = ..., y: ArrayLike = ..., base: Optional[float] = 10,  fmt: Optional[str] = ...,*, alpha: Optional[float] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ...,
+             linestyle: Optional[LineStyle] = ..., ls: Optional[LineStyle] = ..., linewidth: Optional[float]= ..., lw: Optional[float] = ...,
+             marker: Optional[MarkerStyle] = ..., markersize: Optional[float] = ..., ms: Optional[float] = ...) -> None:
+    """
+    Draw a general plot to the selected axis and change the current x-axis into log mode.
+    Parameters
+    ----------
+    x,y : ArrayLike or float
+        Datapoints
+    base: float, optional
+        Log basis, default 10
+    fmt: str, optional
+        Style
+    alpha: float, optional
+        Opacity
+    color or c: all matplotlib color formats (without X11/xkcd), optional
+        color of line and markers: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+    label: str, optional
+        Legned entry
+    linestyle or ls: str, optional
+        Line style
+    linewidth or lw: float, optional
+        Line width in pt
+    
+    marker: str, optional
+        Marker type
+    markersize or ms: float, optional
+        Mark size in pt
+    """
+    ...
+def imshow(self, *args: Any, cmap: Optional[str] = ...) -> Tuple[Any, str, float, float]: 
+    """
+    Draw image to the selected axis from array. Uses matplotlib imshow() to export to PDF, then inputs the image to the axis. Return may be used to initialize Colorbar().
+    """
+    ...
+
+def minorticks_num(self, num: int) -> None:
+    ...
+    """
+    Set number of minor ticks between major ticks.
+    
+    Parameters
+    ----------
+    num: int
+        Number of minor ticks between major ticks.
+    """
 
 def savefig(filename: str) -> None:
     """
@@ -310,5 +489,11 @@ def show() -> None:
 def clf() -> None:
     """
     Clear current figure.
+    """
+    ...
+
+def gca() -> Axes:
+    """
+    Get current axis.
     """
     ...
