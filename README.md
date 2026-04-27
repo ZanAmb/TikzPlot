@@ -1,10 +1,11 @@
 # TikzPlot
 A clean version of PltToTikz, this time as Python package. Easy to use: only replace import matplotlib.pyplot with this library.
 
-Please let me know if you find any buggs or unexpected behaviour. When the project will be ready, I might publish it on PyPI.
+Please let me know if you find any bugs or unexpected behaviour. When the project will be ready, I might publish it on PyPI.
 
 # Installation
-Download this package and install using: `pip install [path]`, where [path] is the path to the directory, containing `pyproject.toml`.
+NEW: PyPI: `pip install tikzplot42`.
+Alternativley, download this package and install using: `pip install [path]`, where [path] is the path to the directory, containing `pyproject.toml`.
 
 ## Python usage
 Instead of using `import matplotlib.pyplot (as plt)`, use `import tikzplot.plots (as plt)`.
@@ -14,7 +15,7 @@ Instead of using `import matplotlib.pyplot (as plt)`, use `import tikzplot.plots
 - `\usepackage{pgfplots}`
 - `\pgfplotsset{compat=1.18}`
 - `\usepgfplotslibrary{fillbetween}` (if you use fill-between plots),
-- `\usepgfplotslibrary{grouppots}` (recommended for best results, enabled by default, may be avoided by setting TikzConfig USE_GROUPPLOTS=False),
+- `\usepgfplotslibrary{groupplots}` (recommended for best results, enabled by default, may be avoided by setting TikzConfig USE_GROUPPLOTS=False),
 - `\usepackage{xcolor}` (recommended for best colors, works without but needs change of TikzConfig USE_XCOLOR=False).
 
 Then use the generated file as `\input{example_graph.tex}`.
@@ -30,7 +31,7 @@ Some basic plot commands are already implemented with commonly used arguments:
 - `stem()`,
 - `fill-between()`,
 - `hlines()/vlines()`,
-- `hisotrgam()`,
+- `historgam()`,
 - `imshow()`.
 
 #### Figures
@@ -71,7 +72,7 @@ For plot configurations (default sizes, paddings, etc.), use `from tikzplot impo
 - `setPermanent(PARAM=value)` (for user defined default value).
 Currently supported parameters are listed with their default values in `src/tikzplot/config.py`.
 
-## More features comming soon...
+## More features coming soon...
 - basic color schemes,
-- imporved 3D plots (currently only basic support: plot, errorbar, fill_between, scatter, plot_wireframe, plot_surface),
+- improved 3D plots (currently only basic support: plot, errorbar, fill_between, scatter, plot_wireframe, plot_surface),
 - ... 

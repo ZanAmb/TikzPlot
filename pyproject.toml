@@ -3,16 +3,38 @@ requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "TikzPlot"
-version = "0.2.7"
-description = "TikzPlot to make Tikz PGF plots with matplotlib.pyplot syntax."
+name = "tikzplot42"
+version = "0.2.8"
+description = "TikzPlot to make TikZ/PGFPlots plots with matplotlib.pyplot-like syntax."
 authors = [
-    {name="Zan Ambrozic", email="zan.ambrozic7@gmail.com"}
+    { name = "Zan Ambrozic", email = "zan.ambrozic7@gmail.com" }
 ]
 readme = "README.md"
 requires-python = ">=3.9"
-
+license = { file = "LICENSE" }
+keywords = ["tikz", "pgfplots", "matplotlib", "latex", "plotting"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Visualization",
+]
 dependencies = ["numpy", "matplotlib"]
+
+[project.urls]
+Homepage = "https://github.com/ZanAmb/TikzPlot"
+Repository = "https://github.com/ZanAmb/TikzPlot"
+Issues = "https://github.com/ZanAmb/TikzPlot/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+tikzplot = ["*.pyi", "py.typed"]
