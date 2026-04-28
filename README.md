@@ -1,7 +1,7 @@
 # TikzPlot
 A clean version of PltToTikz, this time as Python package. Easy to use: only replace import matplotlib.pyplot with this library.
 
-Please let me know if you find any bugs or unexpected behaviour. When the project will be ready, I might publish it on PyPI.
+Please let me know if you find any bugs or unexpected behaviour. Examples may be found in repository under `tests/` directory.
 
 # Installation
 NEW: PyPI: `pip install tikzplot42`.
@@ -18,6 +18,7 @@ Instead of using `import matplotlib.pyplot (as plt)`, use `import tikzplot.plots
 - `\usepgfplotslibrary{groupplots}` (recommended for best results, enabled by default, may be avoided by setting TikzConfig USE_GROUPPLOTS=False),
 - `\usepackage{xcolor}` (recommended for best colors, works without but needs change of TikzConfig USE_XCOLOR=False).
 
+Export using `plt.savefig("example_graph.tex")` (recommended) or `plt.show()`.
 Then use the generated file as `\input{example_graph.tex}`.
 
 ## Currently implemented:

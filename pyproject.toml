@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tikzplot42"
-version = "0.2.9"
+version = "0.2.10"
 description = "TikzPlot to make TikZ/PGFPlots plots with matplotlib.pyplot-like syntax."
 authors = [
     { name = "Zan Ambrozic", email = "zan.ambrozic7@gmail.com" }
