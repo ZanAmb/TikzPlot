@@ -3,6 +3,10 @@ A clean version of PltToTikz, this time as Python package. Easy to use: only rep
 
 Please let me know if you find any bugs or unexpected behaviour. Examples may be found in repository under `tests/` directory.
 
+<p align="center">
+  <img src="./tests/demo.png" width="60%">
+</p>
+
 # Installation
 NEW: PyPI: `pip install tikzplot42`.
 Alternativley, download this package and install using: `pip install [path]`, where [path] is the path to the directory, containing `pyproject.toml`.
@@ -16,7 +20,8 @@ Instead of using `import matplotlib.pyplot (as plt)`, use `import tikzplot.plots
 - `\pgfplotsset{compat=1.18}` (may be lower, but compilation is not guaranteed),
 - `\usepgfplotslibrary{fillbetween}` (if you use fill-between plots),
 - `\usepgfplotslibrary{groupplots}` (recommended for best results, enabled by default, may be avoided by setting TikzConfig USE_GROUPPLOTS=False),
-- `\usepackage{xcolor}` (recommended for best colors, works without but needs change of TikzConfig USE_XCOLOR=False).
+- `\usepackage{xcolor}` (recommended for best colors, works without but needs change of TikzConfig USE_XCOLOR=False),
+- `\usepgfplotslibrary{polar}` required for polar axis.
 
 Export using `plt.savefig("example_graph.tex")` (recommended) or `plt.show()`.
 Then use the generated file as `\input{example_graph.tex}`.

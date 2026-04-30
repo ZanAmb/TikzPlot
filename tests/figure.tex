@@ -1,144 +1,319 @@
 
 \begin{tikzpicture}
-\definecolor{c017306270173}{rgb}{0.173, 0.627, 0.173}
-\definecolor{c100004980055}{rgb}{1.000, 0.498, 0.055}
-\definecolor{c012204670706}{rgb}{0.122, 0.467, 0.706}
-\begin{groupplot}[group style={group size=2 by 3, horizontal sep=0.8999999999999999cm, vertical sep=2.0999999999999996cm}]
-\nextgroupplot
-[/pgf/number format/use comma,
- set layers,
- axis line style={on layer=axis foreground},
-alias=p0,
-grid=major,
-legend style={at={(0.97,0.97)},anchor=north east},
-xlabel={X axis},
-ylabel={Y axis},
-width=8.0cm,
-height=6.666666666666667cm]
-\addplot [color={blue},
-line width=1.5pt] table [x=x,y=y] {datapoints/figure_1.dat};\addlegendentry{sin(x)}
-\addplot [color={red},
-dashed] table [x=x,y=y] {datapoints/figure_2.dat};\addlegendentry{cos(x)}
-\node[color=blue, fill=cyan, rotate=30] at (axis cs:1.5,0.5) {text $\alpha$};
-\nextgroupplot
-[/pgf/number format/use comma,
- set layers,
- axis line style={on layer=axis foreground},
-alias=p1,
-grid=major,
-legend style={at={(0.5,0.97)},anchor=north },
-legend columns=2,
-width=8.0cm,
-height=6.666666666666667cm]
-\addplot [color={green},
-only marks,
-mark=*] table [x=x,y=y] {datapoints/figure_3.dat};\addlegendentry{noisy}
-\addlegendimage{line width=2pt,
-color={c012204670706}}
-\addlegendentry{pl1}
-\addlegendimage{color={c100004980055}}
-\addlegendentry{pl2}
-\addlegendimage{color={c017306270173}}
-\addlegendentry{pl3}
-\nextgroupplot
-[/pgf/number format/use comma,
- set layers,
- axis line style={on layer=axis foreground},
-alias=p2,
-ymode=log,
-grid=both,
-title={Semilog Y},
-width=8.0cm,
-height=6.666666666666667cm]
-\addplot [color={violet}] table [x=x,y=y] {datapoints/figure_7.dat};\addlegendentry{$|\sin(x)|$}
-\nextgroupplot
-[/pgf/number format/use comma,
- set layers,
- axis line style={on layer=axis foreground},
-alias=p3,
-xmin=0,
-xmax=10,
-ymin=-1.5,
-ymax=1.5,
-width=8.0cm,
-height=6.666666666666667cm]
-\addplot [solid,
-color={black},
-error bars/.cd,
-y dir=both,
-y explicit] table [x=x,y=y,y error=yerror] {datapoints/figure_8.dat};\addlegendentry{data}
-\addplot [forget plot,
-name path=path1,
-opacity=0,
-color={c012204670706}] table [x=x,y=y] {datapoints/figure_9.dat};
-\addplot [forget plot,
-name path=path2,
-opacity=0,
-color={c100004980055}] table [x=x,y=y] {datapoints/figure_10.dat};
-\addplot [forget plot,
-color={gray},
-opacity=0.3] fill between [of=path1 and path2];
-\nextgroupplot
-[/pgf/number format/use comma,
- set layers,
- axis line style={on layer=axis foreground},
-alias=p4,
-width=8.0cm,
-height=6.666666666666667cm]
-\addplot [forget plot,
-ybar interval,
-fill,
-color={orange}] table [x=x,y=y] {datapoints/figure_11.dat};
-\nextgroupplot
-[axis on top,
-/pgf/number format/use comma,
- set layers,
- axis line style={on layer=axis foreground},
-alias=p5,
-enlargelimits=false,
-grid=major,
-width=8.0cm,
-height=6.666666666666667cm,
-colormap={urgb}{
-    rgb=(0.2670, 0.0049, 0.3294)
-    rgb=(0.2297, 0.3224, 0.5457)
-    rgb=(0.1276, 0.5669, 0.5506)
-    rgb=(0.3692, 0.7889, 0.3829)
-    rgb=(0.9932, 0.9062, 0.1439)
-},
-colorbar,
-colorbar style={
-/pgf/number format/use comma,
-width=0.3cm,
-anchor=west,
-at={(p5.east)},
-xshift=0.05cm,
-height=0.8*\pgfkeysvalueof{/pgfplots/parent axis height},
-title={$Z$},
-title style={at={(4,0.5)}, anchor=base, yshift=-7pt, rotate=-90},
-ytick={-0.5,0,0.5},
-},
-point meta min={-0.8901178391006421},
-point meta max={0.8910716463807059}]
-\addplot [forget plot,
-] graphics [xmin=-3, xmax=3, ymin=-3, ymax=3] {test7_imshow1.pdf};
+\definecolor{c100002620000}{rgb}{1.000, 0.262, 0.000}
+\definecolor{c059109320000}{rgb}{0.591, 0.932, 0.000}
+\definecolor{c029010000032}{rgb}{0.290, 1.000, 0.032}
+\definecolor{c020100411000}{rgb}{0.201, 0.041, 1.000}
+\definecolor{c100000000563}{rgb}{1.000, 0.000, 0.563}
+\definecolor{c013802231000}{rgb}{0.138, 0.223, 1.000}
+\definecolor{c100000000812}{rgb}{1.000, 0.000, 0.812}
+\definecolor{c088208620000}{rgb}{0.882, 0.862, 0.000}
+\definecolor{c100000000000}{rgb}{1.000, 0.000, 0.000}
+\definecolor{c015510000262}{rgb}{0.155, 1.000, 0.262}
+\definecolor{c041400000982}{rgb}{0.414, 0.000, 0.982}
+\definecolor{c100001550000}{rgb}{1.000, 0.155, 0.000}
+\definecolor{c100000000479}{rgb}{1.000, 0.000, 0.479}
+\definecolor{c100000000223}{rgb}{1.000, 0.000, 0.223}
+\definecolor{c100003090000}{rgb}{1.000, 0.309, 0.000}
+\definecolor{c025910000085}{rgb}{0.259, 1.000, 0.085}
+\definecolor{c030910000000}{rgb}{0.309, 1.000, 0.000}
+\definecolor{c071209030000}{rgb}{0.712, 0.903, 0.000}
+\definecolor{c019010000202}{rgb}{0.190, 1.000, 0.202}
+\definecolor{c000009330608}{rgb}{0.000, 0.933, 0.608}
+\definecolor{c007604001000}{rgb}{0.076, 0.400, 1.000}
+\definecolor{c000106171000}{rgb}{0.001, 0.617, 1.000}
+\definecolor{c025410000093}{rgb}{0.254, 1.000, 0.093}
+\definecolor{c100008200000}{rgb}{1.000, 0.820, 0.000}
+\definecolor{c087308640000}{rgb}{0.873, 0.864, 0.000}
+\definecolor{c000006710934}{rgb}{0.000, 0.671, 0.934}
+\definecolor{c010303221000}{rgb}{0.103, 0.322, 1.000}
+\definecolor{c016301511000}{rgb}{0.163, 0.151, 1.000}
+\definecolor{c036200000986}{rgb}{0.362, 0.000, 0.986}
+\definecolor{c017301221000}{rgb}{0.173, 0.122, 1.000}
+\definecolor{c100000000214}{rgb}{1.000, 0.000, 0.214}
+\definecolor{c100006590000}{rgb}{1.000, 0.659, 0.000}
+\definecolor{c026300000996}{rgb}{0.263, 0.000, 0.996}
+\definecolor{c060609290000}{rgb}{0.606, 0.929, 0.000}
+\definecolor{c058409340000}{rgb}{0.584, 0.934, 0.000}
+\definecolor{c100003590000}{rgb}{1.000, 0.359, 0.000}
+\definecolor{c029600000993}{rgb}{0.296, 0.000, 0.993}
+\definecolor{c100000000849}{rgb}{1.000, 0.000, 0.849}
+\definecolor{c100000000095}{rgb}{1.000, 0.000, 0.095}
+\definecolor{c100000000283}{rgb}{1.000, 0.000, 0.283}
+\definecolor{c000006700935}{rgb}{0.000, 0.670, 0.935}
+\definecolor{c100000000660}{rgb}{1.000, 0.000, 0.660}
+\definecolor{c001005901000}{rgb}{0.010, 0.590, 1.000}
+\definecolor{c025810000086}{rgb}{0.258, 1.000, 0.086}
+\definecolor{c062700000962}{rgb}{0.627, 0.000, 0.962}
+\definecolor{c100000000094}{rgb}{1.000, 0.000, 0.094}
+\definecolor{c000007960778}{rgb}{0.000, 0.796, 0.778}
+\definecolor{c100002880000}{rgb}{1.000, 0.288, 0.000}
+\definecolor{c086400000940}{rgb}{0.864, 0.000, 0.940}
+\definecolor{c003805081000}{rgb}{0.038, 0.508, 1.000}
+\definecolor{c100001320000}{rgb}{1.000, 0.132, 0.000}
+\definecolor{c000009580577}{rgb}{0.000, 0.958, 0.577}
+\definecolor{c031709980000}{rgb}{0.317, 0.998, 0.000}
+\definecolor{c100000000603}{rgb}{1.000, 0.000, 0.603}
+\definecolor{c056609380000}{rgb}{0.566, 0.938, 0.000}
+\definecolor{c000007390850}{rgb}{0.000, 0.739, 0.850}
+\definecolor{c031800000991}{rgb}{0.318, 0.000, 0.991}
+\definecolor{c054700000969}{rgb}{0.547, 0.000, 0.969}
+\definecolor{c100000000816}{rgb}{1.000, 0.000, 0.816}
+\definecolor{c000006190999}{rgb}{0.000, 0.619, 0.999}
+\definecolor{c070009060000}{rgb}{0.700, 0.906, 0.000}
+\definecolor{c000007010898}{rgb}{0.000, 0.701, 0.898}
+\definecolor{c100004640000}{rgb}{1.000, 0.464, 0.000}
+\definecolor{c024610000107}{rgb}{0.246, 1.000, 0.107}
+\definecolor{c039309800000}{rgb}{0.393, 0.980, 0.000}
+\definecolor{c100000000122}{rgb}{1.000, 0.000, 0.122}
+\definecolor{c100000000854}{rgb}{1.000, 0.000, 0.854}
+\definecolor{c000008310735}{rgb}{0.000, 0.831, 0.735}
+\definecolor{c000007910785}{rgb}{0.000, 0.791, 0.785}
+\definecolor{c100003990000}{rgb}{1.000, 0.399, 0.000}
+\definecolor{c083400000943}{rgb}{0.834, 0.000, 0.943}
+\definecolor{c100000580000}{rgb}{1.000, 0.058, 0.000}
+\definecolor{c100005230000}{rgb}{1.000, 0.523, 0.000}
+\definecolor{c013410000297}{rgb}{0.134, 1.000, 0.297}
+\definecolor{c000007000898}{rgb}{0.000, 0.700, 0.898}
+\definecolor{c094908460000}{rgb}{0.949, 0.846, 0.000}
+\definecolor{c057309360000}{rgb}{0.573, 0.936, 0.000}
+\definecolor{c000008520709}{rgb}{0.000, 0.852, 0.709}
+\definecolor{c063800000961}{rgb}{0.638, 0.000, 0.961}
+\definecolor{c013610000293}{rgb}{0.136, 1.000, 0.293}
+\definecolor{c074308960000}{rgb}{0.743, 0.896, 0.000}
+\definecolor{c100000140000}{rgb}{1.000, 0.014, 0.000}
+\definecolor{c000009870540}{rgb}{0.000, 0.987, 0.540}
+\definecolor{c100000000527}{rgb}{1.000, 0.000, 0.527}
+\definecolor{c100000000240}{rgb}{1.000, 0.000, 0.240}
+\definecolor{c100000000683}{rgb}{1.000, 0.000, 0.683}
+\definecolor{c003805101000}{rgb}{0.038, 0.510, 1.000}
+\definecolor{c100000000702}{rgb}{1.000, 0.000, 0.702}
+\definecolor{c100007150000}{rgb}{1.000, 0.715, 0.000}
+\definecolor{c100002680000}{rgb}{1.000, 0.268, 0.000}
+\definecolor{c000006670940}{rgb}{0.000, 0.667, 0.940}
+\definecolor{c053509460000}{rgb}{0.535, 0.946, 0.000}
+\definecolor{c000905921000}{rgb}{0.009, 0.592, 1.000}
+\definecolor{c100003560000}{rgb}{1.000, 0.356, 0.000}
+\definecolor{c076200000950}{rgb}{0.762, 0.000, 0.950}
+\definecolor{c017601131000}{rgb}{0.176, 0.113, 1.000}
+\definecolor{c100000350000}{rgb}{1.000, 0.035, 0.000}
+\definecolor{c020110000183}{rgb}{0.201, 1.000, 0.183}
+\definecolor{c010010000356}{rgb}{0.100, 1.000, 0.356}
+\definecolor{c000008110760}{rgb}{0.000, 0.811, 0.760}
+\definecolor{c070809040000}{rgb}{0.708, 0.904, 0.000}
+\definecolor{c000009530583}{rgb}{0.000, 0.953, 0.583}
+\definecolor{c100001370000}{rgb}{1.000, 0.137, 0.000}
+\definecolor{c084108720000}{rgb}{0.841, 0.872, 0.000}
+\definecolor{c100000000610}{rgb}{1.000, 0.000, 0.610}
+\definecolor{c020400321000}{rgb}{0.204, 0.032, 1.000}
+\definecolor{c017401191000}{rgb}{0.174, 0.119, 1.000}
+\definecolor{c000009890538}{rgb}{0.000, 0.989, 0.538}
+\definecolor{c100000000863}{rgb}{1.000, 0.000, 0.863}
+\definecolor{c040509770000}{rgb}{0.405, 0.977, 0.000}
+\definecolor{c063209220000}{rgb}{0.632, 0.922, 0.000}
+\definecolor{c100000220000}{rgb}{1.000, 0.022, 0.000}
+\definecolor{c067509120000}{rgb}{0.675, 0.912, 0.000}
+\definecolor{c100000000138}{rgb}{1.000, 0.000, 0.138}
+\definecolor{c100002580000}{rgb}{1.000, 0.258, 0.000}
+\definecolor{c021400051000}{rgb}{0.214, 0.005, 1.000}
+\definecolor{c100000000416}{rgb}{1.000, 0.000, 0.416}
+\definecolor{c028210000046}{rgb}{0.282, 1.000, 0.046}
+\definecolor{c067109130000}{rgb}{0.671, 0.913, 0.000}
+\definecolor{c081608780000}{rgb}{0.816, 0.878, 0.000}
+\definecolor{c042309730000}{rgb}{0.423, 0.973, 0.000}
+\definecolor{c100002980000}{rgb}{1.000, 0.298, 0.000}
+\definecolor{c090700000936}{rgb}{0.907, 0.000, 0.936}
+\definecolor{c000008940657}{rgb}{0.000, 0.894, 0.657}
+\definecolor{c100000000557}{rgb}{1.000, 0.000, 0.557}
+\definecolor{c005210000436}{rgb}{0.052, 1.000, 0.436}
+\definecolor{c065900000959}{rgb}{0.659, 0.000, 0.959}
+\definecolor{c000009900536}{rgb}{0.000, 0.990, 0.536}
+\definecolor{c100000000875}{rgb}{1.000, 0.000, 0.875}
+\definecolor{c100007210000}{rgb}{1.000, 0.721, 0.000}
+\definecolor{c092500000935}{rgb}{0.925, 0.000, 0.935}
+\definecolor{c010610000344}{rgb}{0.106, 1.000, 0.344}
+\definecolor{c100002690000}{rgb}{1.000, 0.269, 0.000}
+\definecolor{c096000000931}{rgb}{0.960, 0.000, 0.931}
+\definecolor{c100003500000}{rgb}{1.000, 0.350, 0.000}
+\definecolor{c019500591000}{rgb}{0.195, 0.059, 1.000}
+\definecolor{c022710000139}{rgb}{0.227, 1.000, 0.139}
+\definecolor{c100003260000}{rgb}{1.000, 0.326, 0.000}
+\definecolor{c039009810000}{rgb}{0.390, 0.981, 0.000}
+\definecolor{c030010000016}{rgb}{0.300, 1.000, 0.016}
+\definecolor{c069809060000}{rgb}{0.698, 0.906, 0.000}
+\definecolor{c013902181000}{rgb}{0.139, 0.218, 1.000}
+\definecolor{c001405801000}{rgb}{0.014, 0.580, 1.000}
+\definecolor{c000007130883}{rgb}{0.000, 0.713, 0.883}
+\definecolor{c023810000121}{rgb}{0.238, 1.000, 0.121}
+\definecolor{c014102141000}{rgb}{0.141, 0.214, 1.000}
+\definecolor{c100006920000}{rgb}{1.000, 0.692, 0.000}
+\definecolor{c000705971000}{rgb}{0.007, 0.597, 1.000}
+\definecolor{c089800000937}{rgb}{0.898, 0.000, 0.937}
+\begin{groupplot}[group style={group size=1 by 1, horizontal sep=0cm, vertical sep=0cm}]
+\nextgroupplot[alias=p0, width=15.0cm, height=15.0cm, hide axis]
 \end{groupplot}
-\begin{axis}
+\begin{polaraxis}
 [/pgf/number format/use comma,
-axis y line*=right,
-axis x line=none,
-at={(p1.south west)},
-anchor=south west,
-y label style={at={(1.1,0.5)}, rotate=180},
-ylabel={$y$-axis 2},
-width=8.0cm,
-height=6.666666666666667cm]
+ axis on top,
+alias=p0,
+width=15.0cm,
+height=15.0cm]
 \addplot [forget plot,
-line width=2pt,
-color={c012204670706}] table [x=x,y=y] {datapoints/figure_4.dat};
-\addplot [forget plot,
-color={c100004980055}] table [x=x,y=y] {datapoints/figure_5.dat};
-\addplot [forget plot,
-color={c017306270173}] table [x=x,y=y] {datapoints/figure_6.dat};
-\end{axis}
+scatter,
+only marks,
+opacity=0.75,
+point meta=explicit symbolic,
+scatter/classes={
+s1={color={c089800000937},mark size=11.899174856pt},
+s2={color={c000705971000},mark size=15.037092734pt},
+s3={color={c100006920000},mark size=0.054018853pt},
+s4={color={c014102141000},mark size=14.210423285pt},
+s5={color={c023810000121},mark size=7.496335892pt},
+s6={color={c000007130883},mark size=6.593180726pt},
+s7={color={c001405801000},mark size=0.667546962pt},
+s8={color={c013902181000},mark size=0.987066849pt},
+s9={color={c069809060000},mark size=13.020937050pt},
+s10={color={c030010000016},mark size=2.616146075pt},
+s11={color={c039009810000},mark size=0.990208553pt},
+s12={color={c100003260000},mark size=3.136338785pt},
+s13={color={c022710000139},mark size=14.445084327pt},
+s14={color={c019500591000},mark size=5.252027766pt},
+s15={color={c100003500000},mark size=14.477506348pt},
+s16={color={c096000000931},mark size=8.977296544pt},
+s17={color={c100002690000},mark size=9.214809887pt},
+s18={color={c010610000344},mark size=0.190011707pt},
+s19={color={c092500000935},mark size=8.108392314pt},
+s20={color={c100007210000},mark size=5.017844658pt},
+s21={color={c100000000875},mark size=6.365573338pt},
+s22={color={c000009900536},mark size=1.476992714pt},
+s23={color={c065900000959},mark size=0.486945802pt},
+s24={color={c005210000436},mark size=3.121544509pt},
+s25={color={c100000000557},mark size=5.674313143pt},
+s26={color={c000008940657},mark size=3.336120924pt},
+s27={color={c090700000936},mark size=15.654945534pt},
+s28={color={c100002980000},mark size=4.821122951pt},
+s29={color={c042309730000},mark size=9.772984614pt},
+s30={color={c081608780000},mark size=13.986225653pt},
+s31={color={c067109130000},mark size=3.548968686pt},
+s32={color={c028210000046},mark size=7.860920991pt},
+s33={color={c100000000416},mark size=13.979897218pt},
+s34={color={c021400051000},mark size=13.679141844pt},
+s35={color={c100002580000},mark size=10.424167412pt},
+s36={color={c100000000138},mark size=0.606733962pt},
+s37={color={c067509120000},mark size=1.875999327pt},
+s38={color={c100000220000},mark size=14.242202813pt},
+s39={color={c063209220000},mark size=1.168003572pt},
+s40={color={c040509770000},mark size=6.243773254pt},
+s41={color={c100000000863},mark size=0.710999287pt},
+s42={color={c000009890538},mark size=1.166624684pt},
+s43={color={c017401191000},mark size=1.698061746pt},
+s44={color={c020400321000},mark size=13.874413497pt},
+s45={color={c100000000610},mark size=1.968206937pt},
+s46={color={c084108720000},mark size=0.857302335pt},
+s47={color={c100001370000},mark size=1.716693147pt},
+s48={color={c000009530583},mark size=0.274028672pt},
+s49={color={c070809040000},mark size=2.029106130pt},
+s50={color={c000008110760},mark size=3.453046907pt},
+s51={color={c010010000356},mark size=0.241618227pt},
+s52={color={c020110000183},mark size=0.683102937pt},
+s53={color={c100000350000},mark size=0.863319849pt},
+s54={color={c017601131000},mark size=0.013483184pt},
+s55={color={c076200000950},mark size=3.294160506pt},
+s56={color={c100003560000},mark size=0.193458886pt},
+s57={color={c000905921000},mark size=0.625243726pt},
+s58={color={c053509460000},mark size=0.635083581pt},
+s59={color={c000006670940},mark size=4.776382123pt},
+s60={color={c100002680000},mark size=13.460722408pt},
+s61={color={c100007150000},mark size=2.204359272pt},
+s62={color={c100000000702},mark size=12.038957603pt},
+s63={color={c003805101000},mark size=15.195752312pt},
+s64={color={c100000000683},mark size=8.405747694pt},
+s65={color={c100000000240},mark size=5.914742343pt},
+s66={color={c100000000527},mark size=5.287584662pt},
+s67={color={c000009870540},mark size=12.094431053pt},
+s68={color={c100000140000},mark size=11.732639412pt},
+s69={color={c074308960000},mark size=0.164092715pt},
+s70={color={c013610000293},mark size=4.674783950pt},
+s71={color={c063800000961},mark size=5.952493832pt},
+s72={color={c000008520709},mark size=6.829480150pt},
+s73={color={c057309360000},mark size=1.968951373pt},
+s74={color={c094908460000},mark size=8.057691102pt},
+s75={color={c000007000898},mark size=14.806091507pt},
+s76={color={c013410000297},mark size=13.436816853pt},
+s77={color={c100005230000},mark size=3.176523108pt},
+s78={color={c100000580000},mark size=10.366476402pt},
+s79={color={c083400000943},mark size=2.008908741pt},
+s80={color={c100003990000},mark size=6.233591837pt},
+s81={color={c000007910785},mark size=7.205166791pt},
+s82={color={c000008310735},mark size=2.065390510pt},
+s83={color={c100000000854},mark size=1.601528177pt},
+s84={color={c100000000122},mark size=1.061191038pt},
+s85={color={c039309800000},mark size=0.002596133pt},
+s86={color={c024610000107},mark size=0.008453997pt},
+s87={color={c100004640000},mark size=1.944716786pt},
+s88={color={c000007010898},mark size=4.318779714pt},
+s89={color={c070009060000},mark size=1.979134637pt},
+s90={color={c000006190999},mark size=14.427338545pt},
+s91={color={c100000000863},mark size=11.843261114pt},
+s92={color={c100000000816},mark size=1.456255167pt},
+s93={color={c054700000969},mark size=0.572755236pt},
+s94={color={c031800000991},mark size=9.776208020pt},
+s95={color={c000007390850},mark size=9.920834238pt},
+s96={color={c056609380000},mark size=0.045672974pt},
+s97={color={c100000000603},mark size=0.026948736pt},
+s98={color={c031709980000},mark size=7.030902957pt},
+s99={color={c000009580577},mark size=15.231059695pt},
+s100={color={c100001320000},mark size=2.878413775pt},
+s101={color={c003805081000},mark size=0.699048698pt},
+s102={color={c086400000940},mark size=7.143125190pt},
+s103={color={c100002880000},mark size=0.440638991pt},
+s104={color={c000007960778},mark size=1.638912368pt},
+s105={color={c100000000094},mark size=8.298975125pt},
+s106={color={c062700000962},mark size=2.403292499pt},
+s107={color={c025810000086},mark size=7.208258870pt},
+s108={color={c001005901000},mark size=0.867655409pt},
+s109={color={c100000000660},mark size=10.893400846pt},
+s110={color={c000006700935},mark size=0.001159796pt},
+s111={color={c100000000283},mark size=14.593663765pt},
+s112={color={c100000000095},mark size=0.005441639pt},
+s113={color={c100000000849},mark size=7.024116730pt},
+s114={color={c029600000993},mark size=7.727453810pt},
+s115={color={c100003590000},mark size=0.566070706pt},
+s116={color={c058409340000},mark size=1.984837989pt},
+s117={color={c060609290000},mark size=3.332052310pt},
+s118={color={c026300000996},mark size=0.490151866pt},
+s119={color={c100006590000},mark size=1.305195965pt},
+s120={color={c100000000214},mark size=0.033924564pt},
+s121={color={c017301221000},mark size=1.330141140pt},
+s122={color={c036200000986},mark size=3.446336464pt},
+s123={color={c016301511000},mark size=3.245707146pt},
+s124={color={c010303221000},mark size=3.210663532pt},
+s125={color={c000006710934},mark size=7.251831603pt},
+s126={color={c087308640000},mark size=2.722626186pt},
+s127={color={c100008200000},mark size=13.617247033pt},
+s128={color={c025410000093},mark size=3.809481582pt},
+s129={color={c000106171000},mark size=3.169490831pt},
+s130={color={c007604001000},mark size=0.384285878pt},
+s131={color={c000009330608},mark size=13.531445378pt},
+s132={color={c019010000202},mark size=4.323607312pt},
+s133={color={c071209030000},mark size=3.690477247pt},
+s134={color={c030910000000},mark size=13.682979300pt},
+s135={color={c025910000085},mark size=9.230212383pt},
+s136={color={c100003090000},mark size=3.747502676pt},
+s137={color={c100000000223},mark size=0.017190262pt},
+s138={color={c100000000479},mark size=7.931247229pt},
+s139={color={c100001550000},mark size=8.297413473pt},
+s140={color={c041400000982},mark size=7.426602016pt},
+s141={color={c015510000262},mark size=2.076105017pt},
+s142={color={c100000000000},mark size=0.648352474pt},
+s143={color={c088208620000},mark size=12.083659388pt},
+s144={color={c100000000812},mark size=8.251613400pt},
+s145={color={c013802231000},mark size=3.092261368pt},
+s146={color={c100000000563},mark size=6.058851566pt},
+s147={color={c020100411000},mark size=0.609395131pt},
+s148={color={c029010000032},mark size=8.133236606pt},
+s149={color={c059109320000},mark size=1.445951480pt},
+s150={color={c100002620000},mark size=2.982312760pt}
+}] table [x=x,y=y,meta=label] {datapoints/figure_1.dat};
+\end{polaraxis}
 \end{tikzpicture}

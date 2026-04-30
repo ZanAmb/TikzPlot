@@ -38,7 +38,7 @@ class BaseGraph:
         if self._style_str != None:
             return self._style_str
         opts = []
-
+        cmap = None
         def match_ls(input):
             if input in self._LINE_MAP.keys():
                 return self._LINE_MAP[input]
@@ -65,6 +65,10 @@ class BaseGraph:
             r,g,b=ccode
             self._axes._add_col(r,g,b)
             return f"c{r:.3f}{g:.3f}{b:.3f}".replace(".", "")
+        
+        if "scatter" in self._settings:
+            if "cmap" in self._style:
+                cmap = self._style["cmap"]
 
         if "fmt" in self._style:
             fmt = self._style["fmt"]
@@ -83,42 +87,38 @@ class BaseGraph:
             if ls:
                 opts.append(ls)
 
-        if "c" in self._style:
-            sel_col = match_color(self._style['c'])
-            if sel_col:
-                opts.append(f"color={{{sel_col}}}")
-        if "color" in self._style:
-            sel_col = match_color(self._style['color'])
-            if sel_col:
-                opts.append(f"color={{{sel_col}}}")
-        if "ls" in self._style:
-            ls = self._style["ls"]
+        if "c" in self._style or "color" in self._style:
+            if "scatter" in self._settings and self._colors is not None:
+                if isinstance(self._colors[0], (int, float)):
+                    self._colors = [match_color(cmap.color(p)) for p in self._colors]
+                else:
+                    self._colors = [match_color(p) for p in self._colors]
+            else:
+                c = self._style.get("c", self._style.get("color"))
+                sel_col = match_color(c)
+                if sel_col:
+                    opts.append(f"color={{{sel_col}}}")
+
+        if "ls" in self._style or "linestyle" in self._style:
+            ls = self._style.get("ls", self._style.get("linestyle"))
             if ls == "":
                 opts.append("only marks")
             else:
                 sel_ls = match_ls(ls)
                 if sel_ls:
                     opts.append(sel_ls)
-        if "linestyle" in self._style:
-            ls = self._style["linestyle"]
-            if ls == "":
-                opts.append("only marks")
-            else:
-                sel_ls = match_ls(ls)
-                if sel_ls:
-                    opts.append(sel_ls)
-        if "lw" in self._style:
-            opts.append(f"line width={self._style['lw']}pt")
-        if "linewidth" in self._style:
-            opts.append(f"line width={self._style['linewidth']}pt")
+        if "lw" in self._style or "linewidth" in self._style:
+            if "scatter" in self._settings:
+                lw = self._style.get("lw", self._style.get("linewidth"))
+                opts.append(f"line width={lw}pt")
         if "marker" in self._style:
             sel_mark = match_mark(self._style['marker'])
             if sel_mark:
                 opts.append(f"mark={sel_mark}")
-        if "ms" in self._style:
-            opts.append(f"mark size={self._style['ms']}pt")
-        if "marksize" in self._style:
-            opts.append(f"mark size={self._style['marksize']}pt")
+        if "ms" in self._style or "markersize" in self._style:
+            ms = self._style.get("ms", self._style.get("markersize"))
+            if not ("scatter" in self._settings and self._sizes is not None):
+                opts.append(f"mark size={ms}pt")
         if "markerfmt" in self._style:
             col = list(set(self._COLOR_MAP.keys()) & set(fmt))
             if col:
@@ -162,6 +162,20 @@ class BaseGraph:
         if self._path_name: self._settings.append(f"name path={self._path_name}")
         if self._settings:
             opts = self._settings + opts
+        if "scatter" in self._settings and (self._colors is not None or self._sizes is not None):
+            last = 0
+            for i in range(len(self._x)):
+                st = ""
+                if self._colors is not None:
+                    st = f"color={{{self._colors[i]}}},"
+                if self._sizes is not None:
+                    st += f"mark size={self._sizes[i]:.9f}pt"
+                if st not in self._st_dict:
+                    self._st_dict[st] = "s" + str(last+1)
+                    last += 1
+                self._p_dict[i] = self._st_dict[st]
+            opts.append("point meta=explicit symbolic")
+            opts.append(f"scatter/classes={{\n" + ',\n'.join(f"{v}={{{k}}}" for k,v in self._st_dict.items()) + "\n}")
         self._style_str = ",\n".join(str(o) for o in opts)
         return self._style_str
     
@@ -196,12 +210,21 @@ class Graph(BaseGraph):
         super().__init__()
         self._axes = axes
         self._classic = False
+        self._style = style
+        if settings is not None:
+            self._settings = settings
+        if "scatter" in self._settings:
+            self._st_dict = {}
+            self._p_dict = {}
+            self._colors = None
+            self._sizes = None
         if isinstance(coordinates, tuple):
             self._classic = True
             x,y=coordinates
             self._x = np.asarray(x)
             self._y = np.asarray(y)
             mask = np.isfinite(self._x) & np.isfinite(self._y)
+            n0 = len(self._x)
             self._x = self._x[mask]
             self._y = self._y[mask]
             n = len(self._x)
@@ -212,11 +235,28 @@ class Graph(BaseGraph):
 
             if self._yerr is not None:
                 self._yerr = np.asarray(self._yerr)[mask]
+
+            if "scatter" in self._settings:
+                c = self._style.get("c", self._style.get("color", None))
+                if c is not None:
+                    try:
+                        if len(c) == n0:
+                            self._colors = np.asarray(c)[mask]
+                    except: pass
+                s = self._style.get("ms", self._style.get("markersize", None))
+                if s is not None:
+                    try:
+                        if len(s) == n0:
+                            self._sizes = np.asarray(s)[mask]
+                    except: pass
+                if self._colors is None and self._sizes is None:
+                    self._settings.remove("scatter")
+                else:
+                    if self._colors is None:
+                        self._colors = style.get("c", style.get("color", self._axes._get_defcol())) * np.ones(len(self._x))
         else:
             self._special = coordinates
-        self._style = style
         self._label = None
-        self._settings = settings
         if self._settings == None: self._settings = []
 
         self._opacity = 1
@@ -236,6 +276,9 @@ class Graph(BaseGraph):
                 cols += ["yerrminus", "yerrplus"]
             else:
                 cols.append("yerror")
+        if "scatter" in self._settings:
+            if self._p_dict:
+                cols.append("label")                
         return " ".join(cols)
 
     def _rows(self):    
@@ -252,6 +295,9 @@ class Graph(BaseGraph):
                     line += list(self._yerr[i])
                 else:
                     line.append(self._yerr[i])
+            if "scatter" in self._settings:
+                if self._p_dict:
+                    line.append(self._p_dict[i])
             rows.append(" ".join(str(v) for v in line))
         return "\n".join(rows)
     
@@ -266,6 +312,8 @@ class Graph(BaseGraph):
                 table_opts += ",x error=xerror"
             if self._yerr is not None:
                 table_opts += ",y error=yerror"
+            if "scatter" in self._settings and self._p_dict:
+                table_opts += ",meta=label"
             datapoints = f"{header}\n{rows}\n"
             if TikzConfig.SAVE_DATAPOINTS:
                 datapoints = self._save_data(datapoints, filename)
@@ -331,6 +379,12 @@ class Graph(BaseGraph):
     
         if self._yerr is not None:
             self._yerr = self._yerr[mask]
+
+        if "scatter" in self._settings:
+            if self._colors is not None:
+                self._colors = self._colors[mask]
+            if self._sizes is not None:
+                self._sizes = self._sizes[mask]
 
     def _check_equal(self, x,y):
         if self._classic:
@@ -399,6 +453,11 @@ class Graph(BaseGraph):
                             self._xerr = self._xerr[mask]
                         if self._yerr is not None:
                             self._yerr = self._yerr[mask]
+                        if "scatter" in self._settings:
+                            if self._colors is not None:
+                                self._colors = self._colors[mask]
+                            if self._sizes is not None:
+                                self._sizes = self._sizes[mask]
 
 class Graph3(BaseGraph):
     def __init__(self, axes, coordinates, settings=None, xerr=None, yerr=None, zerr=None, path_name=None, **style):

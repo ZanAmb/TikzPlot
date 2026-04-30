@@ -21,6 +21,7 @@ class _TikzConfig:
         self.X_LABEL_PADDING: float = 0.6
         self.XTICK_PADDING: float = 0.7
         self.YTICK_PADDING: float = 0.7
+        self.SEC_YLABEL_LOC: tuple[float, float] = (1.2, 0.5)
 
         self.DEFAULT_WIDTH: float = 12
         self.DEFAULT_HEIGHT: float = 10

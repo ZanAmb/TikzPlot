@@ -22,6 +22,7 @@ class _ConfigParams(TypedDict, total=False):
     X_LABEL_PADDING: float
     XTICK_PADDING: float
     YTICK_PADDING: float
+    SEC_YLABEL_LOC: tuple[float, float]
 
     DEFAULT_WIDTH: float
     DEFAULT_HEIGHT: float

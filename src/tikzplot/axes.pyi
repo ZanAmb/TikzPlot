@@ -1,5 +1,6 @@
 from typing import Any, Optional, Sequence, Tuple, Union, Literal
 import numpy as np
+from .colorbar import Colorbar
 
 ArrayLike = Union[Sequence[float], np.ndarray]
 ColorLike = Union[str, Sequence[float]]
@@ -46,8 +47,8 @@ class BaseAxes:
         """
         ...
 
-    def scatter(self, x: ArrayLike = ..., y: ArrayLike = ..., fmt: Optional[str] = ..., *,alpha: Optional[float] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ...,
-             marker: Optional[MarkerStyle] = ..., markersize: Optional[float] = ..., s: Optional[float] = ...,  label:Optional[str]=...) -> None:
+    def scatter(self, x: ArrayLike = ..., y: ArrayLike = ..., fmt: Optional[str] = ..., *,alpha: Optional[float] = ..., color: Optional[Union[Sequence[ColorLike], ColorLike]] = ..., c: Optional[ColorLike] = ...,
+             marker: Optional[MarkerStyle] = ..., markersize: Optional[Union[Sequence[float], float]] = ..., s: Optional[Union[Sequence[float], float]] = ...,  label:Optional[str]=..., cmap: Optional[Union[str, Colorbar]], vmin: Optional[float] = ..., vmax: Optional[float] = ...) -> None:
         """
         Draw a scatter plot to the selected axis.
         
@@ -62,8 +63,9 @@ class BaseAxes:
         alpha: float, optional
             Opacity
 
-        color or c: all matplotlib color formats (without X11/xkcd), optional
-            color of line and markers: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+        color or c: array like or single: all matplotlib color formats (without X11/xkcd) or float for colormap, optional
+            color of line and markers: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible. Note that if the sequence if of the same length as x, it will be interpreted as color sequence for each point, otherwise it will be interpreted as a single color for all points.
+
 
         label: str, optional
             Legned entry
@@ -71,8 +73,14 @@ class BaseAxes:
         marker: str, optional
             Marker type
 
-        markersize or s: float, optional
-            Mark size in pt
+        markersize or s: ArrayLike or float, optional
+            Mark size in pt (or in 1/50 pt for s), if a sequence of same length as x, it will be interpreted as size for each point, otherwise it will be interpreted as a single size for all points.
+
+        cmap: str or Colorbar, optional
+            Colormap for scatter points, if color is given as float or sequence of floats. Can be a colormap name or a Colorbar object.
+
+        vmin, vmax: float, optional
+            Colorbar limits for scatter points, if color is given sequence of floats and cmap is given as string, otherwise ignored. If cmap is given as str and no vmin or vmax is provided, they will be set to the min and max of color sequence.
         """
         ...
     def semilogy(self, x: ArrayLike = ..., y: ArrayLike = ..., base: Optional[float] = 10,  fmt: Optional[str] = ...,*, alpha: Optional[float] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ...,

@@ -26,8 +26,9 @@ ax1.set_minorticks_num(4)
 
 ax1r = ax1.twinx()
 x = x[::50]
-ax1r.errorbar(x, 2*np.exp(-x / 3), fmt="bo", yerr=0.02*x+0.07, linewidth=1.5, ms=1)
-ax1r.set_ylim(0, 2.5)
+ax1r.errorbar(x, 2*np.exp(-x / 3), fmt="bo", yerr=0.5*np.exp(-x / 2.5), linewidth=1.5, ms=1)
+ax1r.set_ylim(0.05, 10)
+ax1r.set_yscale("log")
 ax1r.set_ylabel("$y_2$")
 
 # 2) histogram + line plot
@@ -48,7 +49,7 @@ y = np.arange(-3.0, 3.0, dy)
 X, Y = np.meshgrid(x, y)
 Z2 = (1 - X / 2 + X**5 + Y**3) * np.exp(-(X**2 + Y**2))
 im = ax3.imshow(Z2, origin="lower", cmap="seismic", aspect="auto")
-Colorbar(im, rel_len=0.75)
+Colorbar(im, rel_len=0.75, label=r"$\gamma$")
 ax3.set(xlabel="$x$", ylabel="$y$")
 ax3.grid()
 

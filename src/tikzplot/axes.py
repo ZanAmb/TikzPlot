@@ -4,6 +4,7 @@ import matplotlib.pyplot as _plt
 from .elements import Graph
 from .texts import Text
 from .config import TikzConfig
+from .colorbar import Colorbar
 from .state import _next_imshow_num, main_name
 from .latex_special import tex_text
 
@@ -21,6 +22,8 @@ class BaseAxes:
         self._add_legend = ""
 
     def _plot(self, x, y, settings=None, xerr=None, yerr=None, **style):
+        if not isinstance(self, Secondary) and self._polar:
+            x = _np.rad2deg(x)
         e = Graph(self, (x, y), settings, xerr=xerr, yerr=yerr, **style)
         self._elements.append(e)
         return e
@@ -45,14 +48,33 @@ class BaseAxes:
             return self._plot(x,y,fmt=fmt, **kwargs)
 
     def scatter(self, x, y, *args, **kwargs):
-        kws = {"fmt", "alpha", "color", "c", "marker", "markersize", "s", "label"}
+        kws = {"fmt", "alpha", "color", "c", "marker", "markersize", "s", "label", "cmap", "vmin", "vmax"}
         kwargs = self._check_kwargs("scatter", kws, **kwargs)
 
         if "s" in kwargs:
-            kwargs["ms"] = kwargs.pop("s")
+            s = kwargs.pop("s")
+            if not isinstance(s, (int, float)):
+                s = [i/50 for i in s]
+            else:
+                s /= 50
+            kwargs["ms"] = s
 
-        return self._plot(x, y, **kwargs, ls="")
-
+        try:
+            c = kwargs.get("c", kwargs.get("color", None))
+            if len(c) == len(x):
+                if isinstance(c[0], (int, float)):
+                    if "cmap" not in kwargs:
+                        kwargs["cmap"] = Colorbar(cmap="viridis", lower=min(c), upper=max(c))
+                    else:
+                        cmap = kwargs["cmap"]
+                        if isinstance(cmap, str):
+                            vmin = kwargs.pop("vmin", min(c))
+                            vmax = kwargs.pop("vmax", max(c))
+                            kwargs["cmap"] = Colorbar(cmap=cmap, lower=vmin, upper=vmax)
+        except: pass
+        
+        return self._plot(x, y, **kwargs, ls="", settings=["scatter"])
+                        
     def semilogy(self, x, y, *args, **kwargs):
         kws = {"fmt", "base", "alpha", "color", "c", "linestyle", "ls", "linewidth", "lw", "marker", "markersize", "ms", "label"}
         kwargs = self._check_kwargs("semilogy", kws, **kwargs)
@@ -661,23 +683,31 @@ class Axes(BaseAxes):
     def _to_tex(self, filename):
         lines = []
         lines2 = []
-        if TikzConfig.USE_GROUPPLOTS:
-            lines.append("\\nextgroupplot")
-        if self._polar:
-            lines.append("\\begin{polaraxis}")
-        elif not TikzConfig.USE_GROUPPLOTS:
-            lines.append("\\begin{axis}")
-        lines.append(f"[{self._axis_option_string()}]")
-        lines.append(self._content_tex(filename))
-        if self._polar:
-            lines.append("\\begin{polaraxis}")
-        elif not TikzConfig.USE_GROUPPLOTS:
-            lines.append("\\end{axis}")
-        if self._secondary_y is not None:
-            lines2.append("\\begin{axis}")
-            lines2.append(f"[{self._secondary_y._axis_option_string()}]")
-            lines2.append(self._secondary_y._content_tex(filename))
-            lines2.append("\\end{axis}")
+        if self._polar and TikzConfig.USE_GROUPPLOTS:
+            lines.append(f"\\nextgroupplot[alias={self._axis_options['alias']}, width={self._width}, height={self._height}, hide axis]")
+            lines2.append("\\begin{polaraxis}")
+            lines2.append(f"[{self._axis_option_string()}]")
+            lines2.append(self._content_tex(filename))
+            lines2.append("\\end{polaraxis}")
+        else:
+            if TikzConfig.USE_GROUPPLOTS:
+                lines.append("\\nextgroupplot")
+            if self._polar:
+                lines.append("\\begin{polaraxis}")
+            elif not TikzConfig.USE_GROUPPLOTS:
+                lines.append("\\begin{axis}")
+            lines.append(f"[{self._axis_option_string()}]")
+            lines.append(self._content_tex(filename))
+            if self._polar:
+                lines.append("\\end{polaraxis}")
+            elif not TikzConfig.USE_GROUPPLOTS:
+            
+                lines.append("\\end{axis}")
+            if self._secondary_y is not None:
+                lines2.append("\\begin{axis}")
+                lines2.append(f"[{self._secondary_y._axis_option_string()}]")
+                lines2.append(self._secondary_y._content_tex(filename))
+                lines2.append("\\end{axis}")
         return lines, lines2
 
     def set(self, **kwargs):
@@ -697,7 +727,7 @@ class Secondary(BaseAxes):
         self._axis_options["axis x line"] = "none"
         self._axis_options["at"] = f"{{({primary._axis_options['alias' if 'alias' in primary._axis_options else 'name']}.south west)}}"
         self._axis_options["anchor"] = "south west"
-        self._axis_options["y label style"] = r"{at={(1.1,0.5)}, rotate=180}"
+        self._axis_options["y label style"] = r"{at={(" + str(TikzConfig.SEC_YLABEL_LOC[0]) + "," + str(TikzConfig.SEC_YLABEL_LOC[1]) + ")}, rotate=180}"
 
         self._fig = primary._fig
 
