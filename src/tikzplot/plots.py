@@ -130,6 +130,10 @@ def fill_between(*args, **kwargs):
     _ensure_axes()
     _current_axes.fill_between(*args, **kwargs)
 
+def text(*args, **kwargs):
+    _ensure_axes()
+    _current_axes.text(*args, **kwargs)
+
 def hlines(*args, **kwargs):
     _ensure_axes()
     _current_axes.hlines(*args, **kwargs)
@@ -173,3 +177,6 @@ def clf():
 def gca():
     _ensure_axes()
     return _current_axes
+
+def tight_layout():
+    pass

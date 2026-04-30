@@ -5,6 +5,7 @@ ArrayLike = Union[Sequence[float], np.ndarray]
 ColorLike = Union[str, Sequence[float]]
 LineStyle = Literal["-", "--", "-.", ":", "solid", "dashed", "dashdot", "none", ""]
 MarkerStyle = Literal["o", "s", "^", "v", "x", "+", ".", "*", "None", ""]
+FontSize = Literal["xx-small", "x-small", "small", "medium", "large", "x-large", "xx-large"]
 
 
 class BaseAxes:   
@@ -200,6 +201,41 @@ class BaseAxes:
         label: str, optional
             Legend entry
 
+        """
+        ...
+
+    def text(self, x: float, y: float, s: str, color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ..., fontsize: Optional[FontSize] = ..., size: Optional[FontSize] = ..., backgroundcolor: Optional[ColorLike] = ..., horizontalalignment: Optional[str] = ..., ha: Optional[str] = ..., verticalalignment: Optional[str] = ..., va: Optional[str] = ..., rotation: Optional[Union[float, str]] = ..., label: Optional[str] = ...) -> None:
+        """
+        Add text to the selected axis.
+
+        Parameters
+        ----------
+        x,y: float
+            Text position in axis coordinates
+
+        s: str
+            Text content (LaTeX format)
+
+        color or c: all matplotlib color formats (without X11/xkcd), optional
+            Text color: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+
+        fontsize or size: FontSize, optional
+            Font size
+
+        backgroundcolor: all matplotlib color formats (without X11/xkcd), optional
+            Background color of text box: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+
+        horizontalalignment or ha: {"center", "left", "right"}, optional
+            Horizontal alignment of text
+
+        verticalalignment or va: {"center", "top", "bottom"}, optional
+            Vertical alignment of text
+
+        rotation: float or {"vertical", "horizontal"}, optional
+            Rotation angle in degrees or preset rotation
+
+        label: str, optional
+            Legend entry
         """
         ...
     def hlines(

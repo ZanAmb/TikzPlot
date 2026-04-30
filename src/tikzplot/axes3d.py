@@ -2,6 +2,7 @@ import numpy as _np
 import matplotlib.pyplot as _plt
 
 from .elements import Graph3
+from .texts import Text3
 from .config import TikzConfig
 #from .state import _next_imshow_num, main_name
 from .latex_special import tex_text
@@ -193,6 +194,12 @@ class Axes3:
             counts = _np.cumsum(counts)
 
         return self._plot(centers, counts, settings=settings, **kwargs)"""
+    
+    def text(self, x, y, z, s, **kwargs):
+        kws = {"alpha", "color", "c", "fontsize", "size", "backgroundcolor", "horizontalalignment", "ha", "verticalalignment", "va", "rotation", "label"}
+        kwargs = self._check_kwargs("text", kws, **kwargs)
+        txt = Text3(self, x, y, z, s, **kwargs)
+        self._elements.append(txt)
 
     def set_title(self, title):
         self._axis_options["title"] = f"{{{tex_text(title)}}}"

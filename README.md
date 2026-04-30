@@ -33,7 +33,8 @@ Some basic plot commands are already implemented with commonly used arguments:
 - `fill-between()`,
 - `hlines()/vlines()`,
 - `historgam()`,
-- `imshow()`.
+- `imshow()`,
+- `text()`.
 
 #### Figures
 - `plt.figure()` (currently only to give you figure object or to set `figsize`),

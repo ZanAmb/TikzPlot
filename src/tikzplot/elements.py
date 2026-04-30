@@ -275,6 +275,8 @@ class Graph(BaseGraph):
                 return f"\\addplot [forget plot,\n{style}] table [{table_opts}] {{{datapoints}}};"
             return ""
         elif TikzConfig.SAVE_DATAPOINTS or not (TikzConfig.SAVE_DATAPOINTS and not TikzConfig.UPDATE_STYLE_ONLY):
+            if self._label and self._axes._legend_on:
+                return f"\\addplot [{style}] {self._special};\\addlegendentry{{{self._label}}}"
             return f"\\addplot [forget plot,\n{style}] {self._special};"
         else:
             return ""

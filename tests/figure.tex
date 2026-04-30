@@ -19,6 +19,7 @@ height=6.666666666666667cm]
 line width=1.5pt] table [x=x,y=y] {datapoints/figure_1.dat};\addlegendentry{sin(x)}
 \addplot [color={red},
 dashed] table [x=x,y=y] {datapoints/figure_2.dat};\addlegendentry{cos(x)}
+\node[color=blue, fill=cyan, rotate=30] at (axis cs:1.5,0.5) {text $\alpha$};
 \nextgroupplot
 [/pgf/number format/use comma,
  set layers,

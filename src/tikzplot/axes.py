@@ -2,6 +2,7 @@ import numpy as _np
 import matplotlib.pyplot as _plt
 
 from .elements import Graph
+from .texts import Text
 from .config import TikzConfig
 from .state import _next_imshow_num, main_name
 from .latex_special import tex_text
@@ -292,6 +293,12 @@ class BaseAxes:
                 for i in range(len(labs)):
                     self._elements[i]._set_label(tex_text(labs[i]))
 
+    def text(self, x, y, s, **kwargs):
+        kws = {"alpha", "color", "c", "fontsize", "size", "backgroundcolor", "horizontalalignment", "ha", "verticalalignment", "va", "rotation", "label"}
+        kwargs = self._check_kwargs("text", kws, **kwargs)
+        txt = Text(self, x, y, s, **kwargs)
+        self._elements.append(txt)
+
     def _add_legend_entries(self):
         if self._add_legend == "": return ""
         axs, labs = self._add_legend
@@ -468,7 +475,7 @@ class Axes(BaseAxes):
         #kws = {"fmt", "alpha", "color", "c", "linestyle", "ls", "linewidth", "lw", "marker", "markersize", "ms", "label"}
         #kwargs = self._check_kwargs("imshow", kws, **kwargs)
         self._imshow = (args, kwargs)
-        self._axis_args.add("axis on top")
+        #self._axis_args.add("axis on top")
         self._axis_options["enlargelimits"] = "false"
         #self._fig._add_global("\\pgfplotsset{set layers}")
         data = args[0]
@@ -486,7 +493,6 @@ class Axes(BaseAxes):
         self._axis_options["title"] = f"{{{tex_text(title)}}}"
 
     def grid(self, visible=True, which="major", **kwargs):
-
         if not visible:
             self._axis_options["grid"] = "none"
             return
@@ -512,7 +518,7 @@ class Axes(BaseAxes):
             kwargs = self._check_kwargs("grid", accepted_kwargs, **kwargs)
             g = Graph(self, None, None, None, None, **kwargs)._style_string()
             self._axis_options[f"{selector}grid style"] = f"{{{g}}}"
-    
+            
     def set_minorticks_num(self, num):
         self._axis_options["minor tick num"] = num
 
@@ -616,7 +622,8 @@ class Axes(BaseAxes):
         if TikzConfig.SCHOOL_AXIS:
             axis_opt_str += f",\n axis lines=middle,\n xlabel style={{at={{(ticklabel* cs:{1+TikzConfig.SCHOOL_AXIS_LABEL_MARGIN})}},anchor=north}},\n ylabel style={{at={{(ticklabel* cs:{1+TikzConfig.SCHOOL_AXIS_LABEL_MARGIN})}},anchor=east}}"
         if TikzConfig.USE_GROUPPLOTS:
-            axis_opt_str += f",\n set layers,\n axis line style={{on layer=axis foreground}}"
+            #axis_opt_str += f",\n set layers,\n axis line style={{on layer=axis foreground}}"
+            axis_opt_str += f",\n axis on top"
         if self._axis_options:
             if axis_opt_str: axis_opt_str += ",\n"
             axis_opt_str += ",\n".join(f"{k}={v}" for k, v in self._axis_options.items())
