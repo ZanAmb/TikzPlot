@@ -4,7 +4,7 @@ A clean version of PltToTikz, this time as Python package. Easy to use: only rep
 Please let me know if you find any bugs or unexpected behaviour. Examples may be found in repository under `tests/` directory.
 
 <p align="center">
-  <img src="./tests/demo.png" width="60%">
+  <img src="https://github.com/ZanAmb/TikzPlot/blob/main/tests/demo.png" width="60%">
 </p>
 
 # Installation
