@@ -21,6 +21,7 @@ class BaseAxes:
 
         self._add_legend = ""
         self._coordinates = {}
+        self._cmap_bar = None
 
     def _plot(self, x, y, settings=None, xerr=None, yerr=None, **style):
         if not isinstance(self, Secondary) and self._polar:
@@ -72,6 +73,10 @@ class BaseAxes:
                             vmin = kwargs.pop("vmin", min(c))
                             vmax = kwargs.pop("vmax", max(c))
                             kwargs["cmap"] = Colorbar(cmap=cmap, lower=vmin, upper=vmax)
+                    if self._cmap_bar and self._cmap_bar != kwargs["cmap"]:
+                        raise Warning("Multiple colormaps on same axis! Only one per axis is allowed.")
+                    else:
+                        self._cmap_bar = kwargs["cmap"]
         except: pass
         
         return self._plot(x, y, **kwargs, ls="", settings=["scatter"])
@@ -670,7 +675,10 @@ class Axes(BaseAxes):
         if self._axis_options:
             if axis_opt_str: axis_opt_str += ",\n"
             axis_opt_str += ",\n".join(f"{k}={v}" for k, v in self._axis_options.items())
-        axis_opt_str += self._colorbar
+        if self._colorbar:
+            axis_opt_str += self._colorbar
+        elif self._cmap_bar:
+            axis_opt_str += f",\n colormap={self._cmap_bar._generate_tex_colormap(self._cmap_bar._cmap)}"
         return axis_opt_str
 
     

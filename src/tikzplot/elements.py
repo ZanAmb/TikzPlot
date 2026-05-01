@@ -88,11 +88,15 @@ class BaseGraph:
                 opts.append(ls)
 
         if "c" in self._style or "color" in self._style:
-            if "scatter" in self._settings and self._colors is not None:
-                if isinstance(self._colors[0], (int, float)):
-                    self._colors = [match_color(cmap.color(p)) for p in self._colors]
-                else:
-                    self._colors = [match_color(p) for p in self._colors]
+            if "scatter" in self._settings:
+                if self._colors is not None:
+                    if not isinstance(self._colors[0], (int, float)):
+                        self._colors = [match_color(p) for p in self._colors]
+                elif self._sizes is not None:
+                    c = self._style.get("c", self._style.get("color"))
+                    sel_col = match_color(c)
+                    if sel_col:
+                        self._colors = [sel_col] * len(self._x)
             else:
                 c = self._style.get("c", self._style.get("color"))
                 sel_col = match_color(c)
@@ -163,19 +167,28 @@ class BaseGraph:
         if self._settings:
             opts = self._settings + opts
         if "scatter" in self._settings and (self._colors is not None or self._sizes is not None):
-            last = 0
-            for i in range(len(self._x)):
-                st = ""
-                if self._colors is not None:
-                    st = f"color={{{self._colors[i]}}},"
-                if self._sizes is not None:
-                    st += f"mark size={self._sizes[i]:.9f}pt"
-                if st not in self._st_dict:
-                    self._st_dict[st] = "s" + str(last+1)
-                    last += 1
-                self._p_dict[i] = self._st_dict[st]
-            opts.append("point meta=explicit symbolic")
-            opts.append(f"scatter/classes={{\n" + ',\n'.join(f"{v}={{{k}}}" for k,v in self._st_dict.items()) + "\n}")
+            if self._sizes is not None:
+                    if self._p_dict:
+                        opts.append("visualization depends on=\\thisrow{size} \\as \\perpointsize,")
+                    else:
+                        opts.append("visualization depends on=\\thisrow{size} \\as \\perpointsize,\n scatter/@pre marker code/.append code={ \\pgfplotsset{mark size=\\perpointsize}},")
+            if "cmap" in self._style:
+                opts.append("scatter src=explicit")
+            else:
+                last = 0
+                for i in range(len(self._x)):
+                    st = ""
+                    if self._colors is not None:
+                        if self._sizes is None:
+                            st = f"color={{{self._colors[i]}}},"
+                        else:
+                            st = f"color={{{self._colors[i]}}},/tikz/mark size=\\perpointsize,"
+                    if st not in self._st_dict:
+                        self._st_dict[st] = "s" + str(last+1)
+                        last += 1
+                    self._p_dict[i] = self._st_dict[st]
+                opts.append("point meta=explicit symbolic")
+                opts.append(f"scatter/classes={{\n" + ',\n'.join(f"{v}={{{k}}}" for k,v in self._st_dict.items()) + "\n}")
         self._style_str = ",\n".join(str(o) for o in opts)
         return self._style_str
     
@@ -251,9 +264,6 @@ class Graph(BaseGraph):
                     except: pass
                 if self._colors is None and self._sizes is None:
                     self._settings.remove("scatter")
-                else:
-                    if self._colors is None:
-                        self._colors = style.get("c", style.get("color", self._axes._get_defcol())) * np.ones(len(self._x))
         else:
             self._special = coordinates
         self._label = None
@@ -277,8 +287,13 @@ class Graph(BaseGraph):
             else:
                 cols.append("yerror")
         if "scatter" in self._settings:
-            if self._p_dict:
-                cols.append("label")                
+            if "cmap" in self._style:
+                cols.append("color")
+            else:
+                if self._p_dict:
+                    cols.append("label")                
+            if self._sizes is not None:
+                    cols.append("size")
         return " ".join(cols)
 
     def _rows(self):    
@@ -296,8 +311,13 @@ class Graph(BaseGraph):
                 else:
                     line.append(self._yerr[i])
             if "scatter" in self._settings:
-                if self._p_dict:
-                    line.append(self._p_dict[i])
+                if "cmap" in self._style:
+                    line.append(self._colors[i])
+                else:
+                    if self._p_dict:
+                        line.append(self._p_dict[i])
+                if self._sizes is not None:
+                    line.append(f"{self._sizes[i]:.9f} pt")
             rows.append(" ".join(str(v) for v in line))
         return "\n".join(rows)
     
@@ -312,8 +332,11 @@ class Graph(BaseGraph):
                 table_opts += ",x error=xerror"
             if self._yerr is not None:
                 table_opts += ",y error=yerror"
-            if "scatter" in self._settings and self._p_dict:
-                table_opts += ",meta=label"
+            if "scatter" in self._settings:
+                if "cmap" in self._style:
+                    table_opts += ",meta=color"
+                elif self._p_dict:
+                    table_opts += ",meta=label"
             datapoints = f"{header}\n{rows}\n"
             if TikzConfig.SAVE_DATAPOINTS:
                 datapoints = self._save_data(datapoints, filename)

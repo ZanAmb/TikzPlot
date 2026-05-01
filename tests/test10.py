@@ -20,5 +20,5 @@ colors = theta
 fig = plt.figure(figsize=(6, 6))
 ax = fig.add_subplot(projection='polar')
 #cbar = Colorbar(cmap='hsv', lower=0, upper=max(theta))
-c = ax.scatter(theta, r, c=colors, s=area, cmap='hsv', alpha=0.75)
+c = ax.scatter(theta, r, c="blue", s=100, alpha=0.75)
 plt.savefig("figure.tex")
