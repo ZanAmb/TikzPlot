@@ -45,7 +45,8 @@ Some basic plot commands are already implemented with commonly used arguments:
 #### Figures
 - `plt.figure()` (currently only to give you figure object or to set `figsize`),
 - `plt.subplot()`, `plt.subplots()` (with `sharex/sharey` fully implemented, projection `polar` and `3d` with basic support),
-- `set_size_inches()`.
+- `set_size_inches()`,
+- `delaxes()`.
 
 #### Styles
 If axes and plot have different name for command with same effect, both are implemented (e.g. `plt.xlim()` and `ax.set_xlim()`).
