@@ -38,6 +38,7 @@ Some basic plot commands are already implemented with commonly used arguments:
 - `fill-between()`,
 - `hlines()/vlines()`,
 - `historgam()`,
+- `step()`,
 - `imshow()`,
 - `text()`.
 

@@ -211,6 +211,16 @@ class BaseAxes:
             counts = _np.cumsum(counts)
 
         return self._plot(centers, counts, settings=settings, **kwargs)
+    
+    def step(self, x, y, *args, **kwargs):
+        kws = {"fmt", "alpha", "color", "c", "linestyle", "ls", "linewidth", "lw", "marker", "markersize", "ms", "label", "where"}
+        kwargs = self._check_kwargs("step", kws, **kwargs)
+        WHERE_DICT = {"pre": "left", "post": "right", "mid": "mid"}
+        where = WHERE_DICT.get(kwargs.pop("where", "pre"), None)
+        settings = [f"const plot mark {where}"]
+        if len(args) == 1:
+            kwargs["fmt"] = args[0]
+        return self._plot(x,y,settings=settings, **kwargs)
 
     def set_ylabel(self, label):
         self._axis_options["ylabel"] = f"{{{tex_text(label)}}}"

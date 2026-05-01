@@ -101,26 +101,26 @@ def plot(*args, **kwargs):
     _ensure_axes()
     _current_axes.plot(*args, **kwargs)
 
-def scatter(x, y, *args, **kwargs):
+def scatter(*args, **kwargs):
     _ensure_axes()
-    _current_axes.scatter(x, y, *args, **kwargs)
+    _current_axes.scatter(*args, **kwargs)
 
 
-def loglog(x, y, *args, **kwargs):
+def loglog(*args, **kwargs):
     _ensure_axes()
-    _current_axes.loglog(x, y, *args, **kwargs)
+    _current_axes.loglog(*args, **kwargs)
 
-def semilogx(x, y, *args, **kwargs):
+def semilogx(*args, **kwargs):
     _ensure_axes()
-    _current_axes.semilogx(x, y, *args, **kwargs)
+    _current_axes.semilogx(*args, **kwargs)
 
-def semilogy(x, y, *args, **kwargs):
+def semilogy(*args, **kwargs):
     _ensure_axes()
-    _current_axes.semilogy(x, y, *args, **kwargs)
+    _current_axes.semilogy(*args, **kwargs)
 
-def errorbar(x, y, *args, **kwargs):
+def errorbar(*args, **kwargs):
     _ensure_axes()
-    _current_axes.errorbar(x, y, *args, **kwargs)
+    _current_axes.errorbar(*args, **kwargs)
 
 def stem(*args, **kwargs):
     _ensure_axes()
@@ -145,6 +145,14 @@ def vlines(*args, **kwargs):
 def imshow(*args, **kwargs):
     _ensure_axes()
     return _current_axes.imshow(*args, **kwargs)
+
+def hist(*args, **kwargs):
+    _ensure_axes()
+    return _current_axes.hist(*args, **kwargs)
+
+def step(*args, **kwargs):
+    _ensure_axes()
+    return _current_axes.step(*args, **kwargs)
 
 def xticks(*args, **kwargs):
     _ensure_axes()

@@ -3,7 +3,8 @@
 from typing import Any, Optional, Tuple, Union, Sequence, Literal
 import numpy as np
 
-from .config import TikzConfig as TikzConfig
+from .config import TikzConfig
+from .colorbar import Colorbar
 from .figure import Figure as Figure
 from .state import main_name as main_name, next_show_num as next_show_num
 from .axes import Axes
@@ -239,15 +240,8 @@ def errorbar(self, x: ArrayLike = ..., y: ArrayLike = ..., yerr: Optional[ArrayL
         Mark size in pt
     """
     ...
-def scatter(
-    x: ArrayLike = ..., y: ArrayLike = ..., fmt: Optional[str] = ...,
-    *,
-    alpha: Optional[float] = ...,
-    color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ...,
-    marker: Optional[MarkerStyle] = ...,
-    markersize: Optional[float] = ..., ms: Optional[float] = ...,
-    label: Optional[str] = ...
-) -> None:
+def scatter(self, x: ArrayLike = ..., y: ArrayLike = ..., fmt: Optional[str] = ..., *,alpha: Optional[float] = ..., color: Optional[Union[Sequence[ColorLike], ColorLike]] = ..., c: Optional[ColorLike] = ...,
+             marker: Optional[MarkerStyle] = ..., markersize: Optional[Union[Sequence[float], float]] = ..., s: Optional[Union[Sequence[float], float]] = ...,  label:Optional[str]=..., cmap: Optional[Union[str, Colorbar]], vmin: Optional[float] = ..., vmax: Optional[float] = ...) -> None:
     """
     Draw a scatter plot to the selected axis.
     
@@ -255,24 +249,23 @@ def scatter(
     ----------
     x,y : ArrayLike or float
         Datapoints
-
     fmt: str, optional
         Style
-
     alpha: float, optional
         Opacity
-
-    color or c: all matplotlib color formats (without X11/xkcd), optional
-        color of line and markers: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
-
+    color or c: array like or single: all matplotlib color formats (without X11/xkcd) or float for colormap, optional
+        color of line and markers: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible. Note that if the sequence if of the same length as x, it will be interpreted as color sequence for each point, otherwise it will be interpreted as a single color for all points.
     label: str, optional
         Legned entry
     
     marker: str, optional
         Marker type
-
-    markersize or ms: float, optional
-        Mark size in pt
+    markersize or s: ArrayLike or float, optional
+        Mark size in pt (or in 1/50 pt for s), if a sequence of same length as x, it will be interpreted as size for each point, otherwise it will be interpreted as a single size for all points.
+    cmap: str or Colorbar, optional
+        Colormap for scatter points, if color is given as float or sequence of floats. Can be a colormap name or a Colorbar object.
+    vmin, vmax: float, optional
+        Colorbar limits for scatter points, if color is given sequence of floats and cmap is given as string, otherwise ignored. If cmap is given as str and no vmin or vmax is provided, they will be set to the min and max of color sequence.
     """
     ...
 
@@ -406,6 +399,52 @@ def loglog(self, x: ArrayLike = ..., y: ArrayLike = ..., base: Optional[float] =
         Datapoints
     base: float, optional
         Log basis, default 10
+    fmt: str, optional
+        Style
+    alpha: float, optional
+        Opacity
+    color or c: all matplotlib color formats (without X11/xkcd), optional
+        color of line and markers: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+    label: str, optional
+        Legned entry
+    linestyle or ls: str, optional
+        Line style
+    linewidth or lw: float, optional
+        Line width in pt
+    
+    marker: str, optional
+        Marker type
+    markersize or ms: float, optional
+        Mark size in pt
+    """
+    ...
+
+def hist(
+    self,
+    x: Union[ArrayLike, Sequence[ArrayLike]],
+    bins: int = ...,
+    density: bool = ...,
+    *,
+    cumulative: bool = ...,
+    orientation: Literal["horizontal","vertical"] = "vertical",
+    rwidth: Optional[float] = ...,
+    range: Optional[Tuple[float,float]] = ...,
+    color: Optional[ColorLike] = ...,
+    **kwargs: Any
+) -> None: 
+    """
+    Draw histogram to the selected axis.
+    """
+    ...
+def step(self, x: ArrayLike, y: ArrayLike, *args: Any, where: Literal["pre","post","mid"] = "pre", **kwargs: Any) -> None:
+    """
+    Draw a step plot to the selected axis.
+    Parameters
+    ----------
+    x,y : ArrayLike or float
+        Datapoints
+    where: {"pre", "post", "mid"}, default "pre"
+        Define where the steps should be placed: before the value (pre), after the value (post), or centered on the value (mid).
     fmt: str, optional
         Style
     alpha: float, optional

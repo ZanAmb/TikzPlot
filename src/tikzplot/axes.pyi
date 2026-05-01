@@ -275,6 +275,44 @@ class BaseAxes:
         Draw histogram to the selected axis.
         """
         ...
+
+    def step(self, x: ArrayLike, y: ArrayLike, *args: Any, where: Literal["pre","post","mid"] = "pre", **kwargs: Any) -> None:
+        """
+        Draw a step plot to the selected axis.
+
+        Parameters
+        ----------
+        x,y : ArrayLike or float
+            Datapoints
+
+        where: {"pre", "post", "mid"}, default "pre"
+            Define where the steps should be placed: before the value (pre), after the value (post), or centered on the value (mid).
+
+        fmt: str, optional
+            Style
+
+        alpha: float, optional
+            Opacity
+
+        color or c: all matplotlib color formats (without X11/xkcd), optional
+            color of line and markers: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+
+        label: str, optional
+            Legned entry
+
+        linestyle or ls: str, optional
+            Line style
+
+        linewidth or lw: float, optional
+            Line width in pt
+        
+        marker: str, optional
+            Marker type
+
+        markersize or ms: float, optional
+            Mark size in pt
+        """
+        ...
     
     def set_ylabel(self, label: str) -> None: 
         """

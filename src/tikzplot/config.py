@@ -26,7 +26,7 @@ class _TikzConfig:
         self.DEFAULT_WIDTH: float = 12
         self.DEFAULT_HEIGHT: float = 10
 
-        self.SHARED_AXIS_REL_MARGIN: float = 0.03
+        self.SHARED_AXIS_REL_MARGIN: float = 0.08
 
         self.SAVE_DATAPOINTS: bool = True
         self.DATAPOINTS_DIR: str = "datapoints"  # ignored if SAVE_DATAPOINTS == False
