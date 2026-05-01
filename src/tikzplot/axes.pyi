@@ -313,6 +313,32 @@ class BaseAxes:
             Mark size in pt
         """
         ...
+
+    def spy(self, x_p: float, y_p: float, x_m: float, y_m: float, zoom: float, size: float, **kwargs) -> int:
+        """
+        Add a spy to the selected axis.
+
+        Parameters
+        ----------
+        x_p, y_p: float
+            Spy point coordinates in axis units
+
+        x_m, y_m: float
+            Spy view coordinates in cm
+
+        zoom: float
+            Spy zoom
+
+        size: float
+            Spy viewer size in cm
+
+        shape: {"circle"}, optional
+            Spy shape, default square
+
+        connect: bool, optional
+            Connect spy point and view with a line, default False
+        """
+        ...
     
     def set_ylabel(self, label: str) -> None: 
         """

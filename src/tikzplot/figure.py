@@ -28,6 +28,7 @@ class Figure:
         self._col_dict = {}
 
         self._globals = set()
+        self._spies = []
 
     def add_subplot(self, nrows=1, ncols=1, index=1, sharex=None, sharey=None, projection=None, polar=False):
         if projection=="3d":
@@ -195,6 +196,21 @@ class Figure:
         for group in shared_y:
             set_ax_ranges("y", group)
 
+    def _add_spy(self, zoom, size, **kwargs):
+        sp_str = f"\\spy [size={size}cm, magnification={zoom}"
+        bck = ""
+        n = len(self._spies)
+        if "shape" in kwargs and kwargs["shape"] == "circle":
+            sp_str += ", circle"
+            bck = f"\\fill[white] (spyviewr{n}) circle ({size/2}cm);\n"
+        else:
+            bck = f"\\fill[white] ($(spyviewr{n}) + (-{size/2}cm,-{size/2}cm)$) rectangle ($(spyviewr{n}) + ({size/2}cm,{size/2}cm)$);\n"
+        if "connect" in kwargs and kwargs["connect"]:
+            sp_str += ", connect spies"
+        sp_str += f"] on (spypoint{n}) in node at (spyviewr{n});"
+        self._spies.append(bck + sp_str)
+        return n
+    
     def _reduce_points(self):
         counts = [0]
         for ax in self._axes:
@@ -229,14 +245,20 @@ class Figure:
             if TikzConfig.USE_GROUPPLOTS:
                 preambule += "\\usepgfplotslibrary{groupplots}\n"
             preambule += "\\usepgfplotslibrary{fillbetween}\n"
+            preambule += "\\usepgfplotslibrary{polar}\n"
             preambule += f"\\pgfplotsset{{compat={TikzConfig.TIKZ_COMPAT}}}\n"
             if TikzConfig.USE_XCOLOR:
                 preambule += "\\usepackage{xcolor}\n"
+            if self._spies:
+                 preambule += "\\usetikzlibrary{spy}\n"
             preambule += "\\begin{document}\n"
             
         lines = [g for g in self._globals]
         lines2 = []
-        lines.append("\\begin{tikzpicture}")
+        if self._spies:
+            lines.append("\\begin{tikzpicture}[spy using outlines={}]")
+        else:
+            lines.append("\\begin{tikzpicture}")
         nrows = self._axes[0]._get_nrows()
         ncols = self._axes[0]._get_ncols()
         if TikzConfig.USE_GROUPPLOTS:
@@ -253,6 +275,8 @@ class Figure:
         if TikzConfig.USE_GROUPPLOTS:
             lines.append("\\end{groupplot}")
         lines += lines2
+        for spy in self._spies:
+            lines.append(spy)
         lines.append("\\end{tikzpicture}")
         for c in self._col_dict:
             r,g,b=self._col_dict[c]

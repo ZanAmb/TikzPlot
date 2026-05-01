@@ -154,6 +154,10 @@ def step(*args, **kwargs):
     _ensure_axes()
     return _current_axes.step(*args, **kwargs)
 
+def magnify(*args, **kwargs):
+    _ensure_axes()
+    return _current_axes.magnify(*args, **kwargs)
+
 def xticks(*args, **kwargs):
     _ensure_axes()
     _current_axes.set_xticks(*args, **kwargs)

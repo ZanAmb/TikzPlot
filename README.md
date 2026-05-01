@@ -35,12 +35,13 @@ Some basic plot commands are already implemented with commonly used arguments:
 - `semilogx()/semilogy()`,
 - `errorbar()`,
 - `stem()`,
-- `fill-between()`,
+- `fill_between()`,
 - `hlines()/vlines()`,
 - `historgam()`,
 - `step()`,
 - `imshow()`,
-- `text()`.
+- `text()`,
+- `magnify()` (used to magnify part of a plot, but Tikz cannot handle `fill_between` if this one is used, which is a long known issue). 
 
 #### Figures
 - `plt.figure()` (currently only to give you figure object or to set `figsize`),

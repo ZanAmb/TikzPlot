@@ -49,6 +49,7 @@ y2 = [25, 20, 15, 10, 5]
 
 ax5.plot(x, y1, color='cyan', linestyle='--', marker='o')
 ax5.plot(x, y2, color='purple', linestyle='-', marker='x')
+ax5.magnify(3.5, 12, 2, 10, 5, 2, connect=True)
 
 ax1.errorbar(points[:,0], ys, yerr=yerr, marker="o", linestyle="", color="blue", label="Meritve")
 lims = np.array([points[0,0], points[-1,0]])

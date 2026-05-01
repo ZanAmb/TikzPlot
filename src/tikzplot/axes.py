@@ -20,6 +20,7 @@ class BaseAxes:
             self._axis_args.add("/pgf/number format/use comma")
 
         self._add_legend = ""
+        self._coordinates = {}
 
     def _plot(self, x, y, settings=None, xerr=None, yerr=None, **style):
         if not isinstance(self, Secondary) and self._polar:
@@ -331,6 +332,13 @@ class BaseAxes:
         txt = Text(self, x, y, s, **kwargs)
         self._elements.append(txt)
 
+    def magnify(self, x_p, y_p, x_m, y_m, zoom, size, **kwargs):
+        kws = {"shape", "connect"}
+        kwargs = self._check_kwargs("magnify", kws, **kwargs)
+        n = self._fig._add_spy(zoom, size, **kwargs)
+        self._coordinates.update({f"spypoint{n}": (x_p,y_p)})
+        self._coordinates.update({f"spyviewr{n}": (x_m,y_m)})
+
     def _add_legend_entries(self):
         if self._add_legend == "": return ""
         axs, labs = self._add_legend
@@ -346,6 +354,9 @@ class BaseAxes:
     def _content_tex(self, filename):
         ouptut = "\n".join(e._to_tex(filename) for e in self._elements)
         ouptut += self._add_legend_entries()
+        for coord in self._coordinates:
+            x,y = self._coordinates[coord]
+            ouptut += f"\n\\coordinate ({coord}) at ({x},{y});"
         return ouptut
     
     def _get_hard_range(self,which):
