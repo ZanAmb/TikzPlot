@@ -70,6 +70,11 @@ class Figure:
                 ax._update_size()
         except:
             pass
+
+    def delaxes(self, ax):
+        if ax in self._axes:
+            self._axes.remove(ax)
+            del ax
     
     def _compute_group_spacing(self):
         grid = np.zeros((self._nrows, self._ncols, 4))

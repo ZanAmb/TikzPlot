@@ -20,6 +20,12 @@ class Figure:
         Set figure size (w,h).
         """
         ...
+
+    def delaxes(self, ax:Axes) -> None:
+        """
+        Delete axis from figure.
+        """
+        ...
     def clear(self) -> None: 
         """
         Clear figure.
