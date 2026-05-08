@@ -30,6 +30,8 @@ class Figure:
         self._globals = set()
         self._spies = []
 
+        self._lims = {"xmin": {}, "xmax": {}, "ymin": {}, "ymax": {}}
+
     def add_subplot(self, nrows=1, ncols=1, index=1, sharex=None, sharey=None, projection=None, polar=False):
         if projection=="3d":
             ax = Axes3(nrows, ncols, index, self)
@@ -104,7 +106,42 @@ class Figure:
                 return 0
             return self._spacings[0][row-1]
         return self._spacings[1][col-1]
+    
+    def _charcode(self, n):
+        result = []
+        while n > 0:
+            n -= 1
+            n, r = divmod(n, 26)
+            result.append(chr(ord('a') + r))
+        return ''.join(reversed(result))
+    
+    def _next_limname(self, which, value):
+        d2 = {v: k for k, v in self._lims[which].items()}
+        if value in d2.keys():
+            return d2[value]
+        dct = self._lims[which]
+        n = len(dct)+1
+        nm = "\\" + which + self._charcode(n)
+        self._lims[which][nm] = value
+        return nm
+    
+    def _get_limname(self, which, name):
+        return self._lims[which].get(name)
+    
+    def _range_setting(self, min_val, max_val, mode):
+        if min_val < max_val:
+            if mode == "lin":
+                d = max_val - min_val
+                min_val -= d * TikzConfig.SHARED_AXIS_REL_MARGIN
+                max_val += d * TikzConfig.SHARED_AXIS_REL_MARGIN
+        
+            else:
+                d = (max_val / min_val) ** TikzConfig.SHARED_AXIS_REL_MARGIN
+                min_val /= d
+                max_val *= d
 
+            return min_val, max_val
+        return None
     
     def _shared_ranges(self):
         shared_x = []
@@ -161,34 +198,19 @@ class Figure:
                 if max_val is not None:
                     for ax in group:
                         ax._set_range(which + "max", max_val)
-        
-                return
-        
+                
             mins = [ax._get_range(which + "min") for ax in group]
             maxes = [ax._get_range(which + "max") for ax in group]
         
             min_val = min(r[0] for r in mins)
             max_val = max(r[0] for r in maxes)
-        
-            for r in mins:
-                if r[2] == "log":
-                    mode = "log"
-        
-            if min_val < max_val:
-                if mode == "lin":
-                    d = max_val - min_val
-                    min_val -= d * TikzConfig.SHARED_AXIS_REL_MARGIN
-                    max_val += d * TikzConfig.SHARED_AXIS_REL_MARGIN
-        
-                else:
-                    d = (max_val / min_val) ** TikzConfig.SHARED_AXIS_REL_MARGIN
-                    min_val /= d
-                    max_val *= d
-        
+            mode = "log" if "log" in [r[2] for r in mins] else "lin"
+            min_val, max_val = self._range_setting(min_val, max_val, mode)
             for ax in group:
-                ax._set_range(which + "min", min_val)
-                ax._set_range(which + "max", max_val)
-        
+                if hard_min_vals == []:
+                    ax._set_range(which + "min", min_val)
+                if hard_max_vals == []:
+                    ax._set_range(which + "max", max_val)        
         
         for group in shared_x:
             set_ax_ranges("x", group)
@@ -232,6 +254,7 @@ class Figure:
             ax._reduce_points(limit)
 
     def _to_tex(self, filename):
+        single = self._nrows * self._ncols == 1
         if not self._axes:
             return ""
         self._shared_ranges()
@@ -242,7 +265,7 @@ class Figure:
             preambule += "\\documentclass[tikz,border=2pt]{standalone}\n"
             preambule += "\\usepackage{tikz}\n"
             preambule += "\\usepackage{pgfplots}\n"
-            if TikzConfig.USE_GROUPPLOTS:
+            if TikzConfig.USE_GROUPPLOTS and not single:
                 preambule += "\\usepgfplotslibrary{groupplots}\n"
             preambule += "\\usepgfplotslibrary{fillbetween}\n"
             preambule += "\\usepgfplotslibrary{polar}\n"
@@ -253,26 +276,27 @@ class Figure:
                  preambule += "\\usetikzlibrary{spy}\n"
             preambule += "\\begin{document}\n"
             
-        lines = [g for g in self._globals]
+        lines0 = [g for g in self._globals]
+        lines = []
         lines2 = []
         if self._spies:
-            lines.append("\\begin{tikzpicture}[spy using outlines={}]")
+            lines0.append("\\begin{tikzpicture}[spy using outlines={}]")
         else:
-            lines.append("\\begin{tikzpicture}")
+            lines0.append("\\begin{tikzpicture}")
         nrows = self._axes[0]._get_nrows()
         ncols = self._axes[0]._get_ncols()
-        if TikzConfig.USE_GROUPPLOTS:
+        if TikzConfig.USE_GROUPPLOTS and not single:
             self._compute_group_spacing()
             if len(self._spacings[0]) > 0 and len(self._spacings[1]) > 0:
                 lines.append(f"\\begin{{groupplot}}[group style={{group size={ncols} by {nrows}, horizontal sep={max(self._spacings[1])}cm, vertical sep={max(self._spacings[0])}cm}}]")
             else:
                 lines.append(f"\\begin{{groupplot}}[group style={{group size={ncols} by {nrows}}}]")
         for ax in self._axes:
-            prim, sec = ax._to_tex(filename)
+            prim, sec = ax._to_tex(filename, single)
             lines += prim
             if sec:
                 lines2 += sec
-        if TikzConfig.USE_GROUPPLOTS:
+        if TikzConfig.USE_GROUPPLOTS and not single:
             lines.append("\\end{groupplot}")
         lines += lines2
         for spy in self._spies:
@@ -280,10 +304,14 @@ class Figure:
         lines.append("\\end{tikzpicture}")
         for c in self._col_dict:
             r,g,b=self._col_dict[c]
-            lines.insert(1,f"\\definecolor{{{c}}}{{rgb}}{{{r:.3f}, {g:.3f}, {b:.3f}}}")
+            lines0.insert(1,f"\\definecolor{{{c}}}{{rgb}}{{{r:.3f}, {g:.3f}, {b:.3f}}}")
         fin = ""
         if TikzConfig.STANDALONE:
             fin += "\\end{document}"
+        for k in self._lims.keys():
+            for j in self._lims[k]:
+                lines0.append(f"\\def{j}{{{self._lims[k][j]}}}")
+        lines = lines0 + lines
         output = preambule + "\n" + "\n".join(lines) + "\n" + fin
         return output
 

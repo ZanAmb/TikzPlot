@@ -258,6 +258,18 @@ class BaseAxes:
         Draw horizontal lines to the selected axis.
         """
         ...
+    def vlines(
+        self,
+        x: Union[float, Sequence[float]],
+        ymin: Union[float, Sequence[float]],
+        ymax: Union[float, Sequence[float]],
+        colors: Union[str, Sequence[str]] = "k",
+        linestyles: Union[str, Sequence[str]] = "solid",
+    ) -> None: 
+        """
+        Draw vertical lines to the selected axis.
+        """
+        ...
     def hist(
         self,
         x: Union[ArrayLike, Sequence[ArrayLike]],
@@ -314,9 +326,109 @@ class BaseAxes:
         """
         ...
 
-    def spy(self, x_p: float, y_p: float, x_m: float, y_m: float, zoom: float, size: float, **kwargs) -> int:
+    def axvline(self, x:float, ymin:float=0, ymax:float=1, alpha:Optional[float] = ..., color:Optional[ColorLike] = ..., linestyle:Optional[str] = ..., linewidth:Optional[float] = ..., label:Optional[str] = ...) -> None:
         """
-        Add a spy to the selected axis.
+        Draw a vertical line to the selected axis at given x coordinate.
+        
+        Parameters
+        ----------
+        x: float
+            X coordinate of the line(s)
+        
+        ymin, ymax: float, optional
+            Y relative coordinate of the lower and upper end of the line
+        
+        alpha: float, optional
+            Opacity
+
+        color or c: all matplotlib color formats (without X11/xkcd), optional
+            color of line: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+
+        linestyle or ls: str, optional
+            Line style
+
+        linewidth or lw: float, optional
+            Line width in pt
+
+        label: str, optional
+            Legend entry
+        """
+
+    def axhline(self, y:float, xmin:float=0, xmax:float=1, alpha:Optional[float] = ..., color:Optional[ColorLike] = ..., linestyle:Optional[str] = ..., linewidth:Optional[float] = ..., label:Optional[str] = ...) -> None:
+        """
+        Draw a horizontal line to the selected axis at given y coordinate.
+        
+        Parameters
+        ----------
+        y: float
+            Y coordinate of the line(s)
+        
+        xmin, xmax: float, optional
+            X relative coordinate of the left and right end of the line
+        
+        alpha: float, optional
+            Opacity
+
+        color or c: all matplotlib color formats (without X11/xkcd), optional
+            color of line: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+
+        linestyle or ls: str, optional
+            Line style
+
+        linewidth or lw: float, optional
+            Line width in pt
+
+        label: str, optional
+            Legend entry
+        """
+
+    def axvspan(self, xmin:float, xmax:float, ymin:float=0, ymax:float=1, alpha:Optional[float] = ..., color:Optional[ColorLike] = ..., label:Optional[str] = ...) -> None:
+        """
+        Draw a background vertical span to the selected axis between given x coordinates.
+
+        Parameters
+        ----------
+        xmin, xmax: float
+            X coordinates of the left and right end of the span
+        
+        ymin, ymax: float, optional
+            Y relative coordinate of the lower and upper end of the span
+        
+        alpha: float, optional
+            Opacity
+
+        color or c: all matplotlib color formats (without X11/xkcd), optional
+            color of line: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+
+        label: str, optional
+            Legend entry
+        """
+
+    def axhspan(self, ymin:float, ymax:float, xmin:float=0, xmax:float=1, alpha:Optional[float] = ..., color:Optional[ColorLike] = ..., label:Optional[str] = ...) -> None:
+        """
+        Draw a background horizontal span to the selected axis between given y coordinates.
+
+        Parameters
+        ----------
+        ymin, ymax: float
+            Y coordinates of the lower and upper end of the span
+        
+        xmin, xmax: float, optional
+            X relative coordinate of the left and right end of the span
+        
+        alpha: float, optional
+            Opacity
+
+        color or c: all matplotlib color formats (without X11/xkcd), optional
+            color of line: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+
+        label: str, optional
+            Legend entry
+        """
+
+    def magnify(self, x_p: float, y_p: float, x_m: float, y_m: float, zoom: float, size: float, **kwargs) -> int:
+        """
+        Add a spyviewer to the selected axis.
 
         Parameters
         ----------
@@ -368,13 +480,14 @@ class BaseAxes:
         ...
     def legend(self, *args: Any, loc: Optional[Union[int,str,Tuple[float,float]]] = ...) -> None:
         """
-        Show legend for the selected axis.
+        Show legend for the selected axis. Despite arguments requires at least one plotted element on the axis (not necesarily with label) to show up (LaTeX does not allow legend on empty axis).
 
         Parameters
         ----------
         *args:
             - single arg: list/tuple, optional: list of labels to assign to axis elements (in given order assigned to plotted elements in the order of plotting). If label is used on any of the elements, the original label is overwritten.
             - two args: list/tuple, optional: element, label - assign labels to plots (use references of plots which are returned in plot commands). In case that a plot already has a label, both will be displayed. This is the only option to merge the legend entries for double-axis (twinx) plots.
+            
         loc: int, str or tuple, optional
             Location of legend (as in matplotlib: 1 - upper right, 2 - upper left, ... or with tuple of relative coordinates).
 
@@ -465,18 +578,6 @@ class Axes(BaseAxes):
 
         markersize or ms: float, optional
             Mark size in pt
-        """
-        ...
-    def vlines(
-        self,
-        x: Union[float, Sequence[float]],
-        ymin: Union[float, Sequence[float]],
-        ymax: Union[float, Sequence[float]],
-        colors: Union[str, Sequence[str]] = "k",
-        linestyles: Union[str, Sequence[str]] = "solid",
-    ) -> None: 
-        """
-        Draw vertical lines to the selected axis.
         """
         ...
     def imshow(self, *args: Any, cmap: Optional[str] = ...) -> Tuple[Any, str, float, float]: 

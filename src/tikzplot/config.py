@@ -6,6 +6,7 @@ class _TikzConfig:
     def __init__(self):
 
         self.USE_DECIMAL_COMMA: bool = False
+        self.THOUSANDS_SEP: str = ""
 
         self.LEGEND_REL_X: float = 0.03
         self.LEGEND_REL_Y: float = 0.03

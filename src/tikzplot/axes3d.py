@@ -553,9 +553,9 @@ class Axes3:
     def _get_index(self):
         return self._index
     
-    def _to_tex(self, filename):
+    def _to_tex(self, filename, single):
         lines = []
-        if TikzConfig.USE_GROUPPLOTS:
+        if TikzConfig.USE_GROUPPLOTS and not single:
             lines.append("\\nextgroupplot")
             lines.append(f"[{self._axis_option_string()}]")
             lines.append(self._content_tex(filename))

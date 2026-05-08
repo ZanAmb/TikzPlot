@@ -57,8 +57,10 @@ def subplots(
         - Single Axes if nrows*ncols == 1
         - 1D array if one dimension is 1
         - 2D array otherwise
+
     figsize : tuple, optional
         Figure size in inches (width, height).
+
     sharex, sharey : Axes, optional
         Specify if row, column or all subplots should share x or y axis.
     """
@@ -132,14 +134,19 @@ def grid(self, visible: bool = True, which: Literal["major","minor","both"] = "m
         ----------
         visible: bool, default True
             Show grid
+
         which: {"major", "minor", "both"}, default "major"
             Grid selector
+
         alpha: float, optional
             Opacity
+        
         color or c: all matplotlib color formats (without X11/xkcd), optional
             Grid color: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+        
         linestyle or ls: str, optional
             Grid line style
+        
         linewidth or lw: float, optional
             Grid line width in pt
         """
@@ -154,17 +161,21 @@ def set_minorticks_num(num: int) -> None:
         """
 def legend(*args: Any, loc: Optional[Union[int,str,Tuple[float,float]]] = ...) -> None:
     """
-    Show legend for the selected axis.
+    Show legend for the selected axis. Despite arguments requires at least one plotted element on the axis (not necesarily with label) to show up (LaTeX does not allow legend on empty axis).
 
     Parameters
     ----------
+    *args:
+        - single arg: list/tuple, optional: list of labels to assign to axis elements (in given order assigned to plotted elements in the order of plotting). If label is used on any of the elements, the original label is overwritten.
+        - two args: list/tuple, optional: element, label - assign labels to plots (use references of plots which are returned in plot commands). In case that a plot already has a label, both will be displayed. This is the only option to merge the legend entries for double-axis (twinx) plots.
+
     loc: int, str or tuple, optional
         Location of legend (as in matplotlib: 1 - upper right, 2 - upper left, ... or with tuple of relative coordinates).
+
+    ncols: int, optional
+        Number of columns in legend, default 1.
     """
     ...
-
-
-# --- Plotting (verbatim docstrings) ---
 
 def plot(
     x: ArrayLike = ..., y: ArrayLike = ..., fmt: Optional[str] = ...,
@@ -195,7 +206,7 @@ def plot(
         color of line and markers: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
 
     label: str, optional
-        Legned entry
+        Legend entry
 
     linestyle or ls: str, optional
         Line style
@@ -219,23 +230,31 @@ def errorbar(self, x: ArrayLike = ..., y: ArrayLike = ..., yerr: Optional[ArrayL
     ----------
     x,y : ArrayLike or float
         Datapoints
+    
     yerr, xerr: ArrayLike or float
         Datapoint error (constant, symmetric, asymmetric)
+    
     fmt: str, optional
         Style
+    
     alpha: float, optional
         Opacity
+    
     color or c: all matplotlib color formats (without X11/xkcd), optional
         color of line and markers: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+    
     label: str, optional
-        Legned entry
+        Legend entry
+    
     linestyle or ls: str, optional
         Line style
+    
     linewidth or lw: float, optional
         Line width in pt
     
     marker: str, optional
         Marker type
+    
     markersize or ms: float, optional
         Mark size in pt
     """
@@ -249,21 +268,28 @@ def scatter(self, x: ArrayLike = ..., y: ArrayLike = ..., fmt: Optional[str] = .
     ----------
     x,y : ArrayLike or float
         Datapoints
+    
     fmt: str, optional
         Style
+    
     alpha: float, optional
         Opacity
+    
     color or c: array like or single: all matplotlib color formats (without X11/xkcd) or float for colormap, optional
         color of line and markers: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible. Note that if the sequence if of the same length as x, it will be interpreted as color sequence for each point, otherwise it will be interpreted as a single color for all points.
+    
     label: str, optional
-        Legned entry
+        Legend entry
     
     marker: str, optional
         Marker type
+    
     markersize or s: ArrayLike or float, optional
         Mark size in pt (or in 1/50 pt for s), if a sequence of same length as x, it will be interpreted as size for each point, otherwise it will be interpreted as a single size for all points.
+    
     cmap: str or Colorbar, optional
         Colormap for scatter points, if color is given as float or sequence of floats. Can be a colormap name or a Colorbar object.
+    
     vmin, vmax: float, optional
         Colorbar limits for scatter points, if color is given sequence of floats and cmap is given as string, otherwise ignored. If cmap is given as str and no vmin or vmax is provided, they will be set to the min and max of color sequence.
     """
@@ -302,7 +328,7 @@ def semilogy(
         color of line and markers: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
 
     label: str, optional
-        Legned entry
+        Legend entry
 
     linestyle or ls: str, optional
         Line style
@@ -326,12 +352,16 @@ def stem(self, *args: Any, orientation: Literal["horizontal","vertical"] = "vert
     ----------
     locs, heads: ArrayLike
         Datapoints for plot, (x,y) for vertical, (y,x) for horizontal
+    
     orientation: {"vertical", "horizontal"}, default "vertical
         Orientation of stems
+    
     alpha: float, optional
         Opacity
+    
     linefmt, markerfmt: str, optional
         Short style of line and marker
+    
     label: str, optional
         Legend entry
     """
@@ -352,10 +382,13 @@ def fill_between(
     ----------
     x,y1, y2 : ArrayLike or float (y2 optional)
         Datapoints, if matched with existing plot, that line will be recycled to save tikz memory.
+    
     alpha: float, optional
         Opacity
+    
     color or c: all matplotlib color formats (without X11/xkcd), optional
         Fill color: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+    
     label: str, optional
         Legend entry
     """
@@ -368,22 +401,30 @@ def text(self, x: float, y: float, s: str, color: Optional[ColorLike] = ..., c: 
     ----------
     x,y: float
         Text position in axis coordinates
+    
     s: str
         Text content (LaTeX format)
+    
     color or c: all matplotlib color formats (without X11/xkcd), optional
         Text color: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+    
     fontsize or size: FontSize, optional
         Font size
+    
     backgroundcolor: all matplotlib color formats (without X11/xkcd), optional
         Background color of text box: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+    
     horizontalalignment or ha: {"center", "left", "right"}, optional
         Horizontal alignment of text
+    
     verticalalignment or va: {"center", "top", "bottom"}, optional
         Vertical alignment of text
+    
     rotation: float or {"vertical", "horizontal"}, optional
         Rotation angle in degrees or preset rotation
+    
     label: str, optional
-    Legend entry
+        Legend entry
     """
     ...
 
@@ -397,23 +438,31 @@ def loglog(self, x: ArrayLike = ..., y: ArrayLike = ..., base: Optional[float] =
     ----------
     x,y : ArrayLike or float
         Datapoints
+    
     base: float, optional
         Log basis, default 10
+    
     fmt: str, optional
         Style
+    
     alpha: float, optional
         Opacity
+    
     color or c: all matplotlib color formats (without X11/xkcd), optional
         color of line and markers: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+    
     label: str, optional
-        Legned entry
+        Legend entry
+    
     linestyle or ls: str, optional
         Line style
+    
     linewidth or lw: float, optional
         Line width in pt
     
     marker: str, optional
         Marker type
+    
     markersize or ms: float, optional
         Mark size in pt
     """
@@ -443,43 +492,56 @@ def step(self, x: ArrayLike, y: ArrayLike, *args: Any, where: Literal["pre","pos
     ----------
     x,y : ArrayLike or float
         Datapoints
+    
     where: {"pre", "post", "mid"}, default "pre"
         Define where the steps should be placed: before the value (pre), after the value (post), or centered on the value (mid).
+    
     fmt: str, optional
         Style
+    
     alpha: float, optional
         Opacity
+    
     color or c: all matplotlib color formats (without X11/xkcd), optional
         color of line and markers: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+    
     label: str, optional
-        Legned entry
+        Legend entry
+    
     linestyle or ls: str, optional
         Line style
+    
     linewidth or lw: float, optional
         Line width in pt
     
     marker: str, optional
         Marker type
+    
     markersize or ms: float, optional
         Mark size in pt
     """
     ...
 
-def spy(self, x_p: float, y_p: float, x_m: float, y_m: float, zoom: float, size: float, **kwargs) -> int:
+def magnify(self, x_p: float, y_p: float, x_m: float, y_m: float, zoom: float, size: float, **kwargs) -> int:
     """
-    Add a spy to the selected axis.
+    Add a spyviewer to the selected axis.
     Parameters
     ----------
     x_p, y_p: float
         Spy point coordinates in axis units
+    
     x_m, y_m: float
         Spy view coordinates in cm
+    
     zoom: float
         Spy zoom
+    
     size: float
         Spy viewer size in cm
+    
     shape: {"circle"}, optional
         Spy shape, default square
+    
     connect: bool, optional
         Connect spy point and view with a line, default False
     """
@@ -520,23 +582,31 @@ def semilogx(self, x: ArrayLike = ..., y: ArrayLike = ..., base: Optional[float]
     ----------
     x,y : ArrayLike or float
         Datapoints
+    
     base: float, optional
         Log basis, default 10
+    
     fmt: str, optional
         Style
+    
     alpha: float, optional
         Opacity
+    
     color or c: all matplotlib color formats (without X11/xkcd), optional
         color of line and markers: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+    
     label: str, optional
-        Legned entry
+        Legend entry
+    
     linestyle or ls: str, optional
         Line style
+    
     linewidth or lw: float, optional
         Line width in pt
     
     marker: str, optional
         Marker type
+    
     markersize or ms: float, optional
         Mark size in pt
     """
@@ -544,6 +614,161 @@ def semilogx(self, x: ArrayLike = ..., y: ArrayLike = ..., base: Optional[float]
 def imshow(self, *args: Any, cmap: Optional[str] = ...) -> Tuple[Any, str, float, float]: 
     """
     Draw image to the selected axis from array. Uses matplotlib imshow() to export to PDF, then inputs the image to the axis. Return may be used to initialize Colorbar().
+    """
+    ...
+
+def step(self, x: ArrayLike, y: ArrayLike, *args: Any, where: Literal["pre","post","mid"] = "pre", **kwargs: Any) -> None:
+    """
+    Draw a step plot to the selected axis.
+    Parameters
+    ----------
+    x,y : ArrayLike or float
+        Datapoints
+    
+    where: {"pre", "post", "mid"}, default "pre"
+        Define where the steps should be placed: before the value (pre), after the value (post), or centered on the value (mid).
+    
+    fmt: str, optional
+        Style
+    
+    alpha: float, optional
+        Opacity
+    
+    color or c: all matplotlib color formats (without X11/xkcd), optional
+        color of line and markers: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+    
+    label: str, optional
+        Legend entry
+    
+    linestyle or ls: str, optional
+        Line style
+    
+    linewidth or lw: float, optional
+        Line width in pt
+    
+    marker: str, optional
+        Marker type
+    
+    markersize or ms: float, optional
+        Mark size in pt
+    """
+    ...
+
+def axvline(self, x:float, ymin:float=0, ymax:float=1, alpha:Optional[float] = ..., color:Optional[ColorLike] = ..., linestyle:Optional[str] = ..., linewidth:Optional[float] = ..., label:Optional[str] = ...) -> None:
+    """
+    Draw a vertical line to the selected axis at given x coordinate.
+
+    Parameters
+    ----------
+    x: float
+        x coordinate of the line in axis units
+    x: float
+        X coordinate of the line(s)
+        
+    ymin, ymax: float, optional
+        Y relative coordinate of the lower and upper end of the line
+        
+    alpha: float, optional
+        Opacity
+
+    color or c: all matplotlib color formats (without X11/xkcd), optional
+        color of line: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+
+    linestyle or ls: str, optional
+        Line style
+
+    linewidth or lw: float, optional
+        Line width in pt
+
+    label: str, optional
+        Legend entry
+    """
+    ...
+
+def axhline(self, y:float, xmin:float=0, xmax:float=1, alpha:Optional[float] = ..., color:Optional[ColorLike] = ..., linestyle:Optional[str] = ..., linewidth:Optional[float] = ..., label:Optional[str] = ...) -> None:
+    """
+    Draw a horizontal line to the selected axis at given y coordinate.
+
+    Parameters
+    ----------
+    y: float
+        y coordinate of the line in axis units
+        
+    xmin, xmax: float, optional
+        X relative coordinate of the left and right end of the line
+        
+    alpha: float, optional
+        Opacity
+
+    color or c: all matplotlib color formats (without X11/xkcd), optional
+        color of line: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+
+    linestyle or ls: str, optional
+        Line style
+
+    linewidth or lw: float, optional
+        Line width in pt
+
+    label: str, optional
+        Legend entry
+    """
+    ...
+
+def axvspan(self, xmin:float, xmax:float, ymin:float=0, ymax:float=1, alpha:Optional[float] = ..., color:Optional[ColorLike] = ..., linestyle:Optional[str] = ..., linewidth:Optional[float] = ..., label:Optional[str] = ...) -> None:
+    """
+    Draw a vertical span to the selected axis between given x coordinates.
+
+    Parameters
+    ----------
+    xmin, xmax: float
+        X coordinates of the left and right end of the span in axis units
+        
+    ymin, ymax: float, optional
+        Y relative coordinate of the lower and upper end of the span
+        
+    alpha: float, optional
+        Opacity
+
+    color or c: all matplotlib color formats (without X11/xkcd), optional
+        color of line: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+
+    linestyle or ls: str, optional
+        Line style
+
+    linewidth or lw: float, optional
+        Line width in pt
+
+    label: str, optional
+        Legend entry
+    """
+    ...
+
+def axhspan(self, ymin:float, ymax:float, xmin:float=0, xmax:float=1, alpha:Optional[float] = ..., color:Optional[ColorLike] = ..., linestyle:Optional[str] = ..., linewidth:Optional[float] = ..., label:Optional[str] = ...) -> None:
+    """
+    Draw a horizontal span to the selected axis between given y coordinates.
+
+    Parameters
+    ----------
+    ymin, ymax: float
+        Y coordinates of the lower and upper end of the span in axis units
+        
+    xmin, xmax: float, optional
+        X relative coordinate of the left and right end of the span
+        
+    alpha: float, optional
+        Opacity
+
+    color or c: all matplotlib color formats (without X11/xkcd), optional
+        color of line: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+
+    linestyle or ls: str, optional
+        Line style
+
+    linewidth or lw: float, optional
+        Line width in pt
+
+    label: str, optional
+        Legend entry
     """
     ...
 

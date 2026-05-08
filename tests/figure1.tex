@@ -1,20 +1,20 @@
 \documentclass[tikz,border=2pt]{standalone}
 \usepackage{tikz}
 \usepackage{pgfplots}
-\usepgfplotslibrary{groupplots}
 \usepgfplotslibrary{fillbetween}
+\usepgfplotslibrary{polar}
 \pgfplotsset{compat=1.18}
 \usepackage{xcolor}
 \begin{document}
 
 \begin{tikzpicture}
-\begin{groupplot}[group style={group size=1 by 1, horizontal sep=0cm, vertical sep=0cm}]
-\nextgroupplot
-[/pgf/number format/use comma,
+\begin{axis}
+[/pgf/number format/.cd, 1000 sep={},
  axis lines=middle,
  xlabel style={at={(ticklabel* cs:1.1)},anchor=north},
  ylabel style={at={(ticklabel* cs:1.1)},anchor=east},
- axis on top,
+ set layers,
+ axis line style={on layer=axis foreground},
 alias=p0,
 ylabel={$y$},
 grid=both,
@@ -25,7 +25,8 @@ minor tick num=2,
 xmin=0,
 xmax=10,
 width=12.0cm,
-height=10.0cm]
+height=10.0cm,
+extra x ticks={0}]
 \addplot [forget plot,
 color={blue}] table [x=x,y=y] {datapoints/figure1_1.dat};
 \addplot [forget plot,
@@ -36,6 +37,6 @@ color={black},
 error bars/.cd,
 y dir=both,
 y explicit] table [x=x,y=y,y error=yerror] {datapoints/figure1_3.dat};
-\end{groupplot}
+\end{axis}
 \end{tikzpicture}
 \end{document}

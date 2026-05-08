@@ -7,6 +7,7 @@ from typing import TypedDict, Unpack, Any, ClassVar, Protocol
 
 class _ConfigParams(TypedDict, total=False):
     USE_DECIMAL_COMMA: bool
+    THOUSANDS_SEP: str
 
     LEGEND_REL_X: float
     LEGEND_REL_Y: float

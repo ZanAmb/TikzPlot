@@ -27,7 +27,6 @@ ax.plot(x, y2, ls="--", color="red", label="cos(x)")
 ax.text(1.5, 0.5, r"text $\alpha$", color="blue", ha="center", va="center", backgroundcolor="cyan", rotation=30)
 ax.grid()
 ax.legend(loc="upper right")
-
 # =========================
 # (2) Scatter + markers
 # =========================
@@ -91,10 +90,6 @@ cbar = Colorbar(
     horizontal=False
 )
 
-
-# --- Global labels ---
-plt.xlabel("X axis")
-plt.ylabel("Y axis")
 
 # --- Save ---
 plt.savefig("figure.tex")

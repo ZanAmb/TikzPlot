@@ -112,9 +112,8 @@ class BaseGraph:
                 if sel_ls:
                     opts.append(sel_ls)
         if "lw" in self._style or "linewidth" in self._style:
-            if "scatter" in self._settings:
-                lw = self._style.get("lw", self._style.get("linewidth"))
-                opts.append(f"line width={lw}pt")
+            lw = self._style.get("lw", self._style.get("linewidth"))
+            opts.append(f"line width={lw}pt")
         if "marker" in self._style:
             sel_mark = match_mark(self._style['marker'])
             if sel_mark:
@@ -164,7 +163,7 @@ class BaseGraph:
             if key[0] in keys:
                 del opts[i]
         if self._path_name: self._settings.append(f"name path={self._path_name}")
-        if self._settings:
+        if self._classic and self._settings:
             opts = self._settings + opts
         if "scatter" in self._settings and (self._colors is not None or self._sizes is not None):
             if self._sizes is not None:
@@ -222,7 +221,7 @@ class Graph(BaseGraph):
     def __init__(self, axes, coordinates, settings=None, xerr=None, yerr=None, path_name=None, **style):
         super().__init__()
         self._axes = axes
-        self._classic = False
+        #self._classic = False
         self._style = style
         if settings is not None:
             self._settings = settings
@@ -231,7 +230,9 @@ class Graph(BaseGraph):
             self._p_dict = {}
             self._colors = None
             self._sizes = None
-        if isinstance(coordinates, tuple):
+        if settings == "axvline" or settings == "axhline" or settings == "axvspan" or settings == "axhspan":
+            self._x,self._y=coordinates
+        elif isinstance(coordinates, tuple):
             self._classic = True
             x,y=coordinates
             self._x = np.asarray(x)
@@ -324,6 +325,55 @@ class Graph(BaseGraph):
     def _to_tex(self, filename):
         style = self._style_string()
 
+        def rel_coor(which, m, M, v):
+            if self._axes._axis_options.get(f"{which}mode") == "log":
+                r = M/m
+                lower = m * r**v[0]
+                upper = m * r**v[1]
+            else:
+                d = M - m
+                lower = m + v[0] * d
+                upper = m + v[1] * d
+            return lower, upper
+
+        if "axvline" in self._settings:
+            ym, yM = self._axes._axis_options["ymin"], self._axes._axis_options["ymax"]
+            ym = self._axes._fig._get_limname("ymin", ym)
+            yM = self._axes._fig._get_limname("ymax", yM)
+            lower, upper = rel_coor("y", ym, yM, self._y)
+            self._special = f"coordinates {{({self._x}, {lower}) ({self._x}, {upper})}}"
+
+        if "axhline" in self._settings:
+            xm, xM = self._axes._axis_options["xmin"], self._axes._axis_options["xmax"]
+            xm = self._axes._fig._get_limname("xmin", xm)
+            xM = self._axes._fig._get_limname("xmax", xM)
+            lower, upper = rel_coor("x", xm, xM, self._x)
+            self._special = f"coordinates {{({lower}, {self._y}) ({upper}, {self._y})}}"
+
+        if "axvspan" == self._settings:
+            ym, yM = self._axes._axis_options["ymin"], self._axes._axis_options["ymax"]
+            ym = self._axes._fig._get_limname("ymin", ym)
+            yM = self._axes._fig._get_limname("ymax", yM)
+            lower, upper = rel_coor("y", ym, yM, self._y)
+            rect = f"\\fill[{style}] (axis cs:{self._x[0]}, {lower}) rectangle (axis cs:{self._x[1]}, {upper});"
+            if self._label and self._axes._legend_on:
+                rect += f"\\addlegendentry{{{self._label}}}"
+            if TikzConfig.USE_GROUPPLOTS:
+                return f"\\begin{{pgfonlayer}}{{axis background}}{rect}\\end{{pgfonlayer}}"
+            return rect
+        
+        if "axhspan" == self._settings:
+            xm, xM = self._axes._axis_options["xmin"], self._axes._axis_options["xmax"]
+            xm = self._axes._fig._get_limname("xmin", xm)
+            xM = self._axes._fig._get_limname("xmax", xM)
+            lower, upper = rel_coor("x", xm, xM, self._x)
+            rect = f"\\fill[{style}] (axis cs:{lower}, {self._y[0]}) rectangle (axis cs:{upper}, {self._y[1]});"
+            if self._label and self._axes._legend_on:
+                rect += f"\\addlegendentry{{{self._label}}}"
+            if TikzConfig.USE_GROUPPLOTS:
+                return f"\\begin{{pgfonlayer}}{{axis background}}{rect}\\end{{pgfonlayer}}"
+            return rect
+        
         if self._classic:
             header = self._header()
             rows = self._rows()
@@ -358,56 +408,62 @@ class Graph(BaseGraph):
         return xmin, xmax, ymin, ymax
     
     def _get_erange(self, which):
-        if which == "xmin":
-            return min(self._x)
-        if which == "xmax":
-            return max(self._x)
-        if which == "ymin":
-            return min(self._y)
-        if which == "ymax":
-            return max(self._y)
+        if self._classic:
+            if which == "xmin":
+                return min(self._x)
+            if which == "xmax":
+                return max(self._x)
+            if which == "ymin":
+                return min(self._y)
+            if which == "ymax":
+                return max(self._y)
+        elif "axvline" == self._settings and which in ["xmin", "xmax"]:
+            return self._x
+        elif "axhline" == self._settings and which in ["ymin", "ymax"]:
+            return self._y
         
     def _filter(self, which, value):
-        if which == "xmin":
-            mask = self._x >= value
-            idx_keep = np.where(self._x < value)[0]
-            if len(idx_keep) > 0:
-                idx_keep = idx_keep[-1]
-        elif which == "xmax":
-            mask = self._x <= value
-            idx_keep = np.where(self._x > value)[0]
-            if len(idx_keep) > 0:
-                idx_keep = idx_keep[0]
-        elif which == "ymin":
-            mask = self._y >= value
-            idx_keep = np.where(self._y < value)[0]
-            if len(idx_keep) > 0:
-                idx_keep = idx_keep[-1]
-        elif which == "ymax":
-            mask = self._y <= value
-            idx_keep = np.where(self._y > value)[0]
-            if len(idx_keep) > 0:
-                idx_keep = idx_keep[0]
-    
-        else:
-            raise ValueError("Invalid filter type")
-    
-        mask[idx_keep] = True
-    
-        self._x = self._x[mask]
-        self._y = self._y[mask]
-    
-        if self._xerr is not None:
-            self._xerr = self._xerr[mask]
-    
-        if self._yerr is not None:
-            self._yerr = self._yerr[mask]
+        if self._classic:
+            if which == "xmin":
+                mask = self._x >= value
+                idx_keep = np.where(self._x < value)[0]
+                if len(idx_keep) > 0:
+                    idx_keep = idx_keep[-1]
+            elif which == "xmax":
+                mask = self._x <= value
+                idx_keep = np.where(self._x > value)[0]
+                if len(idx_keep) > 0:
+                    idx_keep = idx_keep[0]
+            elif which == "ymin":
+                mask = self._y >= value
+                idx_keep = np.where(self._y < value)[0]
+                if len(idx_keep) > 0:
+                    idx_keep = idx_keep[-1]
+            elif which == "ymax":
+                mask = self._y <= value
+                idx_keep = np.where(self._y > value)[0]
+                if len(idx_keep) > 0:
+                    idx_keep = idx_keep[0]
 
-        if "scatter" in self._settings:
-            if self._colors is not None:
-                self._colors = self._colors[mask]
-            if self._sizes is not None:
-                self._sizes = self._sizes[mask]
+            else:
+                raise ValueError("Invalid filter type")
+
+            mask[idx_keep] = True
+
+            self._x = self._x[mask]
+            self._y = self._y[mask]
+
+            if self._xerr is not None:
+                self._xerr = self._xerr[mask]
+
+            if self._yerr is not None:
+                self._yerr = self._yerr[mask]
+
+            if "scatter" in self._settings:
+                if self._colors is not None:
+                    self._colors = self._colors[mask]
+                if self._sizes is not None:
+                    self._sizes = self._sizes[mask]
 
     def _check_equal(self, x,y):
         if self._classic:

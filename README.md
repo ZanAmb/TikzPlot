@@ -37,11 +37,13 @@ Some basic plot commands are already implemented with commonly used arguments:
 - `stem()`,
 - `fill_between()`,
 - `hlines()/vlines()`,
-- `historgam()`,
+- `histogram()`,
 - `step()`,
 - `imshow()`,
 - `text()`,
-- `magnify()` (used to magnify part of a plot, but Tikz cannot handle `fill_between` if this one is used, which is a long known issue). 
+- `magnify()` (used to magnify part of a plot, but Tikz cannot handle `fill_between` if this one is used, which is a long known issue),
+- `axvline()/axhline()`,
+- `axvspan()/axhspan()` (background span).
 
 #### Figures
 - `plt.figure()` (currently only to give you figure object or to set `figsize`),

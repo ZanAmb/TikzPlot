@@ -11,6 +11,7 @@ class Figure:
         Parameters
         ----------
         projection: None, "polar", "3d", optional
+        
         polar: bool, optional
             Use polar projection for axis (no additional features implemented yet).
         """

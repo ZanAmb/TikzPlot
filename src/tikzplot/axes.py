@@ -17,17 +17,25 @@ class BaseAxes:
         self._yticks = True
         self._fig = None
         if TikzConfig.USE_DECIMAL_COMMA:
-            self._axis_args.add("/pgf/number format/use comma")
+            self._axis_args.add(f"/pgf/number format/.cd, use comma, 1000 sep={{{TikzConfig.THOUSANDS_SEP}}}")
+        else:
+            self._axis_args.add(f"/pgf/number format/.cd, 1000 sep={{{TikzConfig.THOUSANDS_SEP}}}")
 
         self._add_legend = ""
         self._coordinates = {}
         self._cmap_bar = None
 
+        self._ext_ymin = False
+        self._ext_ymax = False
+
     def _plot(self, x, y, settings=None, xerr=None, yerr=None, **style):
         if not isinstance(self, Secondary) and self._polar:
             x = _np.rad2deg(x)
         e = Graph(self, (x, y), settings, xerr=xerr, yerr=yerr, **style)
-        self._elements.append(e)
+        if TikzConfig.USE_GROUPPLOTS and ("axvspan" == settings or "axhspan" == settings):
+            self._elements.insert(0, e)
+        else:
+            self._elements.append(e)
         return e
 
     def _check_kwargs(self, func, allowed, **kwargs):
@@ -182,6 +190,28 @@ class BaseAxes:
                 return self._plot([xmins[i], xmaxs[i]], [ys[i]]*2, None, None, None, c=colorss[i], ls=lss[i], label=kwargs["label"])
             else:
                 return self._plot([xmins[i], xmaxs[i]], [ys[i]]*2, None, None, None, c=colorss[i], ls=lss[i])
+            
+    def vlines(self, x, ymin, ymax, colors="k", linestyles="solid", **kwargs):
+        kws = {"label"}
+        kwargs = self._check_kwargs("vlines", kws, **kwargs)
+        def _pad_or_truncate(some_list, target_len):
+            return some_list[:target_len] + [some_list[-1]]*(target_len - len(some_list))
+        def _to_list(x):
+            if x is None:
+                return []
+            if isinstance(x, (int, float, str)):
+                return [x]
+            return list(x)
+        xs = _to_list(x)
+        ymins = _pad_or_truncate(_to_list(ymin), len(xs))
+        ymaxs = _pad_or_truncate(_to_list(ymax), len(xs))
+        colorss = _pad_or_truncate(_to_list(colors), len(xs))
+        lss = _pad_or_truncate(_to_list(linestyles), len(xs))
+        for i in range(len(xs)):
+            if i == 0 and "label" in kwargs:
+                self._plot([xs[i]]*2, [ymins[i], ymaxs[i]], None, None, None, c=colorss[i], ls=lss[i], label=kwargs["label"])
+            else:
+                self._plot([xs[i]]*2, [ymins[i], ymaxs[i]], None, None, None, c=colorss[i], ls=lss[i])
 
     def hist(self, x, bins=10, density=False,**kwargs):
         #kws = {"alpha", "color", "c", "label"}
@@ -227,6 +257,40 @@ class BaseAxes:
         if len(args) == 1:
             kwargs["fmt"] = args[0]
         return self._plot(x,y,settings=settings, **kwargs)
+    
+    def axvline(self, x, ymin=0, ymax=0, **kwargs):
+        kws = {"fmt", "base", "alpha", "color", "c", "linestyle", "ls", "linewidth", "lw", "label"}
+        kwargs = self._check_kwargs("axvline", kws, **kwargs)
+        self._ext_ymin = self._ext_ymax = True
+        self._plot(x, (ymin, ymax), settings="axvline", **kwargs)
+
+    def axhline(self, y, xmin=0, xmax=0, **kwargs):
+        kws = {"fmt", "base", "alpha", "color", "c", "linestyle", "ls", "linewidth", "lw", "label"}
+        kwargs = self._check_kwargs("axhline", kws, **kwargs)
+        if isinstance(self, Secondary):
+            self._primary._ext_xmin = self._primary._ext_xmax = True
+        else:
+            self._ext_xmin = self._ext_xmax = True
+        self._plot((xmin, xmax), y, settings="axhline", **kwargs)
+
+    def axvspan(self, xmin, xmax, ymin=0, ymax=1, **kwargs):
+        kws = {"c", "color", "alpha", "label"}
+        kwargs = self._check_kwargs("axvspan", kws, **kwargs)
+        self._ext_ymin = self._ext_ymax = True
+        if TikzConfig.USE_GROUPPLOTS:
+            self._axis_args.add("set layers")
+        self._plot([xmin, xmax], [ymin, ymax], settings="axvspan", **kwargs)
+
+    def axhspan(self, ymin, ymax, xmin=0, xmax=1, **kwargs):
+        kws = {"c", "color", "alpha", "label"}
+        kwargs = self._check_kwargs("axhspan", kws, **kwargs)
+        if isinstance(self, Secondary):
+            self._primary._ext_xmin = self._primary._ext_xmax = True
+        else:
+            self._ext_xmin = self._ext_xmax = True
+        if TikzConfig.USE_GROUPPLOTS:
+            self._axis_args.add("set layers")
+        self._plot([xmin, xmax], [ymin, ymax], settings="axhspan", **kwargs)
 
     def set_ylabel(self, label):
         self._axis_options["ylabel"] = f"{{{tex_text(label)}}}"
@@ -380,13 +444,20 @@ class BaseAxes:
         mode = "lin"
         if arg in self._axis_options:
             mode = self._axis_options[arg]
+        common = self._elements.copy()
+        if "x" in which and isinstance(self,Axes) and self._secondary_y:
+            common += self._secondary_y._elements
         if which in self._axis_options:
-            for e in self._elements:
+            for e in common:
                 e._filter(which, self._axis_options[which])
             return (self._axis_options[which], True, mode)
+        values = [e._get_erange(which) for e in common]
+        values = [v for v in values if v is not None]
+        if not values:
+            return (None, False, mode)
         if "min" in which:
-            return (min([e._get_erange(which) for e in self._elements]), False, mode)
-        return (max([e._get_erange(which) for e in self._elements]), False, mode)
+            return (min(values), False, mode)
+        return (max(values), False, mode)
     
     def _get_limit(self, which):
         arg = f"{which[0]}mode"
@@ -403,6 +474,15 @@ class BaseAxes:
 
     def _set_range(self, which, value):
         self._axis_options[which] = value
+        if isinstance(self, Axes):
+            if which == "xmin":
+                self._ext_xmin = True
+            if which == "xmax":
+                self._ext_xmax = True
+        if which == "ymin":
+            self._ext_ymin = True
+        if which == "ymax":
+            self._ext_ymax = True
         for e in self._elements:
             e._filter(which, value)
 
@@ -442,6 +522,9 @@ class Axes(BaseAxes):
         self._colorbar = ""
         self._cbar_h = False
         self._polar = polar
+
+        self._ext_xmin = False
+        self._ext_xmax = False
 
         def _posit_string(): # returns neighbour, neighbour corner, anchor
             i = self._index
@@ -496,28 +579,6 @@ class Axes(BaseAxes):
         if "base" in kwargs:
             self._axis_options["log basis x"] = kwargs["base"]
         return self._plot(x, y, **kwargs)
-
-    def vlines(self, x, ymin, ymax, colors="k", linestyles="solid", **kwargs):
-        kws = {"label"}
-        kwargs = self._check_kwargs("vlines", kws, **kwargs)
-        def _pad_or_truncate(some_list, target_len):
-            return some_list[:target_len] + [some_list[-1]]*(target_len - len(some_list))
-        def _to_list(x):
-            if x is None:
-                return []
-            if isinstance(x, (int, float, str)):
-                return [x]
-            return list(x)
-        xs = _to_list(x)
-        ymins = _pad_or_truncate(_to_list(ymin), len(xs))
-        ymaxs = _pad_or_truncate(_to_list(ymax), len(xs))
-        colorss = _pad_or_truncate(_to_list(colors), len(xs))
-        lss = _pad_or_truncate(_to_list(linestyles), len(xs))
-        for i in range(len(xs)):
-            if i == 0 and "label" in kwargs:
-                self._plot([xs[i]]*2, [ymins[i], ymaxs[i]], None, None, None, c=colorss[i], ls=lss[i], label=kwargs["label"])
-            else:
-                self._plot([xs[i]]*2, [ymins[i], ymaxs[i]], None, None, None, c=colorss[i], ls=lss[i])
 
     def imshow(self, *args, **kwargs):
         #kws = {"fmt", "alpha", "color", "c", "linestyle", "ls", "linewidth", "lw", "marker", "markersize", "ms", "label"}
@@ -626,6 +687,7 @@ class Axes(BaseAxes):
         if self._polar:
             raise Exception("Cannot create twinx() on polar plot.")
         self._secondary_y = Secondary(self)
+        self._ext_xmin = self._ext_xmax = True
         return self._secondary_y
     
     def _export_imshow(self, *args, **kwargs):
@@ -669,9 +731,31 @@ class Axes(BaseAxes):
             axis_opt_str += ",\n".join(self._axis_args)
         if TikzConfig.SCHOOL_AXIS:
             axis_opt_str += f",\n axis lines=middle,\n xlabel style={{at={{(ticklabel* cs:{1+TikzConfig.SCHOOL_AXIS_LABEL_MARGIN})}},anchor=north}},\n ylabel style={{at={{(ticklabel* cs:{1+TikzConfig.SCHOOL_AXIS_LABEL_MARGIN})}},anchor=east}}"
+            if ("xmin" in self._axis_options and self._axis_options["xmin"] == 0) or ("xmax" in self._axis_options and self._axis_options["xmax"] == 0):
+                self._axis_options["extra x ticks"] = r"{0}"
+            if ("ymin" in self._axis_options and self._axis_options["ymin"] == 0) or ("ymax" in self._axis_options and self._axis_options["ymax"] == 0):
+                self._axis_options["extra y ticks"] = r"{0}"
         if TikzConfig.USE_GROUPPLOTS:
-            #axis_opt_str += f",\n set layers,\n axis line style={{on layer=axis foreground}}"
-            axis_opt_str += f",\n axis on top"
+            if TikzConfig.SCHOOL_AXIS:
+                axis_opt_str += f",\n set layers,\n axis line style={{on layer=axis foreground}}"
+            else:
+                axis_opt_str += f",\n axis on top"
+        if self._ext_xmin or self._ext_xmax:
+            lower = self._get_range("xmin")
+            upper = self._get_range("xmax")
+            xm, xM = self._fig._range_setting(lower[0], upper[0], lower[2])
+            if self._ext_xmin:
+                self._axis_options["xmin"] = self._fig._next_limname("xmin", self._axis_options.get("xmin", xm))
+            if self._ext_xmax:
+                self._axis_options["xmax"] = self._fig._next_limname("xmax", self._axis_options.get("xmax", xM))
+        if self._ext_ymin or self._ext_ymax:
+            lower = self._get_range("ymin")
+            upper = self._get_range("ymax")
+            ym, yM = self._fig._range_setting(lower[0], upper[0], lower[2])
+            if self._ext_ymin:
+                self._axis_options["ymin"] = self._fig._next_limname("ymin", self._axis_options.get("ymin", ym))
+            if self._ext_ymax:
+                self._axis_options["ymax"] = self._fig._next_limname("ymax", self._axis_options.get("ymax", yM))
         if self._axis_options:
             if axis_opt_str: axis_opt_str += ",\n"
             axis_opt_str += ",\n".join(f"{k}={v}" for k, v in self._axis_options.items())
@@ -709,27 +793,27 @@ class Axes(BaseAxes):
     def _get_index(self):
         return self._index
     
-    def _to_tex(self, filename):
+    def _to_tex(self, filename, single):
         lines = []
         lines2 = []
-        if self._polar and TikzConfig.USE_GROUPPLOTS:
+        if self._polar and TikzConfig.USE_GROUPPLOTS and not single:
             lines.append(f"\\nextgroupplot[alias={self._axis_options['alias']}, width={self._width}, height={self._height}, hide axis]")
             lines2.append("\\begin{polaraxis}")
             lines2.append(f"[{self._axis_option_string()}]")
             lines2.append(self._content_tex(filename))
             lines2.append("\\end{polaraxis}")
         else:
-            if TikzConfig.USE_GROUPPLOTS:
+            if TikzConfig.USE_GROUPPLOTS and not single:
                 lines.append("\\nextgroupplot")
             if self._polar:
                 lines.append("\\begin{polaraxis}")
-            elif not TikzConfig.USE_GROUPPLOTS:
+            elif not TikzConfig.USE_GROUPPLOTS or (TikzConfig.USE_GROUPPLOTS and single):
                 lines.append("\\begin{axis}")
             lines.append(f"[{self._axis_option_string()}]")
             lines.append(self._content_tex(filename))
             if self._polar:
                 lines.append("\\end{polaraxis}")
-            elif not TikzConfig.USE_GROUPPLOTS:
+            elif not TikzConfig.USE_GROUPPLOTS or (TikzConfig.USE_GROUPPLOTS and single):
             
                 lines.append("\\end{axis}")
             if self._secondary_y is not None:
@@ -768,6 +852,16 @@ class Secondary(BaseAxes):
         axis_opt_str = ""
         if self._axis_args:
             axis_opt_str += ",\n".join(self._axis_args)
+        if self._ext_ymin or self._ext_ymax:
+            lower = self._get_range("ymin")
+            upper = self._get_range("ymax")
+            ym, yM = self._fig._range_setting(lower[0], upper[0], lower[2])
+            if self._ext_ymin:
+                self._axis_options["ymin"] = self._fig._next_limname("ymin", self._axis_options.get("ymin", ym))
+            if self._ext_ymax:
+                self._axis_options["ymax"] = self._fig._next_limname("ymax", self._axis_options.get("ymax", yM))
+        self._axis_options["xmin"] = self._primary._axis_options["xmin"]
+        self._axis_options["xmax"] = self._primary._axis_options["xmax"]
         if self._axis_options:
             if axis_opt_str: axis_opt_str += ",\n"
             axis_opt_str += ",\n".join(f"{k}={v}" for k, v in self._axis_options.items())

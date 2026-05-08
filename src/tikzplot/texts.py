@@ -44,17 +44,19 @@ class Text:
         if "horizontalalignment" in self._kwargs or "ha" in self._kwargs:
             ha = self._kwargs.get("horizontalalignment") or self._kwargs.get("ha")
             if ha in {"center", "left", "right"}:
-                if ha in {"left", "right"}:
-                    output.append(ha)
+                if ha == "left":
+                    output.append("right")
+                elif ha == "right":
+                    output.append("left")
             else:
                 raise ValueError(f"Horizontal alignment {ha} not recognized. Valid options are: center, left, right.")
         if "verticalalignment" in self._kwargs or "va" in self._kwargs:
             va = self._kwargs.get("verticalalignment") or self._kwargs.get("va")
             if va in {"center", "top", "bottom"}:
                 if va == "top":
-                    output.append("above")
-                elif va == "bottom":
                     output.append("below")
+                elif va == "bottom":
+                    output.append("above")
             else:
                 raise ValueError(f"Vertical alignment {va} not recognized. Valid options are: center, top, bottom.")
         if "rotation" in self._kwargs:

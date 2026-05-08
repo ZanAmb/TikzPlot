@@ -2,7 +2,7 @@
 
 import tikzplot.plots as plt
 import numpy as np
-#from tikzplot import Colorbar
+from tikzplot import Colorbar
 #from tikzplot import TikzConfig
 
 #TikzConfig.modifyParam(USE_GROUPPLOTS=False)
@@ -19,6 +19,6 @@ colors = theta
 
 fig = plt.figure(figsize=(6, 6))
 ax = fig.add_subplot(projection='polar')
-#cbar = Colorbar(cmap='hsv', lower=0, upper=max(theta))
-c = ax.scatter(theta, r, c="blue", s=100, alpha=0.75)
+cbar = Colorbar(cmap='hsv', lower=0, upper=max(theta))
+c = ax.scatter(theta, r, c=colors, s=area, alpha=0.75, cmap=cbar)
 plt.savefig("figure.tex")

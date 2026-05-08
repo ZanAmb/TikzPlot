@@ -154,6 +154,22 @@ def step(*args, **kwargs):
     _ensure_axes()
     return _current_axes.step(*args, **kwargs)
 
+def axvline(*args, **kwargs):
+    _ensure_axes()
+    return _current_axes.axvline(*args, **kwargs)
+
+def axhline(*args, **kwargs):
+    _ensure_axes()
+    return _current_axes.axhline(*args, **kwargs)
+
+def axvspan(*args, **kwargs):
+    _ensure_axes()
+    return _current_axes.axvspan(*args, **kwargs)
+
+def axhspan(*args, **kwargs):
+    _ensure_axes()
+    return _current_axes.axhspan(*args, **kwargs)
+
 def magnify(*args, **kwargs):
     _ensure_axes()
     return _current_axes.magnify(*args, **kwargs)
