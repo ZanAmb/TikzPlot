@@ -29,7 +29,7 @@ class _TikzConfig:
 
         self.SHARED_AXIS_REL_MARGIN: float = 0.08
 
-        self.SAVE_DATAPOINTS: bool = True
+        self.SAVE_DATAPOINTS: bool = False
         self.DATAPOINTS_DIR: str = "datapoints"  # ignored if SAVE_DATAPOINTS == False
         self.UPDATE_DATA_ONLY: bool = False       # ignored if SAVE_DATAPOINTS == False
         self.UPDATE_STYLE_ONLY: bool = False      # ignored if SAVE_DATAPOINTS == False

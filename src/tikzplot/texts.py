@@ -1,10 +1,11 @@
 from .colors import _tex_color
 
 class Text:
-    def __init__(self, ax, x, y, s, **kwargs):
+    def __init__(self, ax, x, y, coordinate, s, **kwargs):
         self._axes = ax
         self._x = x
         self._y = y
+        self._coordinate = coordinate
         self._s = s
         self._kwargs = kwargs
         self._color = False
@@ -78,10 +79,19 @@ class Text:
 
     def _to_tex(self, _):
         if self._visible:
-            return f"\\node[{self._style_string()}] at (axis cs:{self._x},{self._y}) {{{self._fsize or ''}{self._s}}};"
+            if self._coordinate is not None:
+                return f"\\coordinate {self._coordinate} at (axis cs:{self._x},{self._y});"
+            else:
+                return f"\\node[{self._style_string()}] at (axis cs:{self._x},{self._y}) {{{self._fsize or ''}{self._s}}};"
+
         else:
             return ""
-    
+    def _to_tex_fin(self):
+        if self._visible:
+            if self._coordinate is not None:
+                return f"\\node[{self._style_string()}] at {self._coordinate} {{{self._fsize or ''}{self._s}}};"
+        else:
+            return ""
     def _set_label(self, label):
         self._label = label
 

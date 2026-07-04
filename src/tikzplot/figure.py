@@ -30,6 +30,10 @@ class Figure:
         self._globals = set()
         self._spies = []
 
+        self._num_coordinates = 0
+
+        self.texts = []
+
         self._lims = {"xmin": {}, "xmax": {}, "ymin": {}, "ymax": {}}
 
     def add_subplot(self, nrows=1, ncols=1, index=1, sharex=None, sharey=None, projection=None, polar=False):
@@ -301,6 +305,8 @@ class Figure:
         lines += lines2
         for spy in self._spies:
             lines.append(spy)
+        for text in self.texts:
+            lines.append(text._to_tex_fin())
         lines.append("\\end{tikzpicture}")
         for c in self._col_dict:
             r,g,b=self._col_dict[c]
@@ -340,3 +346,10 @@ class Figure:
 
     def _add_global(self, setting):
         self._globals.add(setting)
+
+    def _next_coordinate_name(self):
+        self._num_coordinates += 1
+        return f"(coordinate{self._num_coordinates})"
+    
+    def _add_text(self, text):
+        self.texts.append(text)

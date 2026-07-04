@@ -258,13 +258,13 @@ class BaseAxes:
             kwargs["fmt"] = args[0]
         return self._plot(x,y,settings=settings, **kwargs)
     
-    def axvline(self, x, ymin=0, ymax=0, **kwargs):
+    def axvline(self, x, ymin=0, ymax=1, **kwargs):
         kws = {"fmt", "base", "alpha", "color", "c", "linestyle", "ls", "linewidth", "lw", "label"}
         kwargs = self._check_kwargs("axvline", kws, **kwargs)
         self._ext_ymin = self._ext_ymax = True
         self._plot(x, (ymin, ymax), settings="axvline", **kwargs)
 
-    def axhline(self, y, xmin=0, xmax=0, **kwargs):
+    def axhline(self, y, xmin=0, xmax=1, **kwargs):
         kws = {"fmt", "base", "alpha", "color", "c", "linestyle", "ls", "linewidth", "lw", "label"}
         kwargs = self._check_kwargs("axhline", kws, **kwargs)
         if isinstance(self, Secondary):
@@ -395,10 +395,15 @@ class BaseAxes:
                 for i in range(len(labs)):
                     self._elements[i]._set_label(tex_text(labs[i]))
 
-    def text(self, x, y, s, **kwargs):
+    def text(self, x, y, s, on_top=True, **kwargs):
         kws = {"alpha", "color", "c", "fontsize", "size", "backgroundcolor", "horizontalalignment", "ha", "verticalalignment", "va", "rotation", "label"}
         kwargs = self._check_kwargs("text", kws, **kwargs)
-        txt = Text(self, x, y, s, **kwargs)
+        if on_top:
+            coord = self._fig._next_coordinate_name()
+            txt = Text(self, x, y, coord, s, **kwargs)
+            self._fig._add_text(txt)
+        else:
+            txt = Text(self, x, y, None, s, **kwargs)
         self._elements.append(txt)
 
     def magnify(self, x_p, y_p, x_m, y_m, zoom, size, **kwargs):
