@@ -23,9 +23,9 @@ fig, axs = plt.subplots(3,2)
 # =========================
 ax = axs[0, 0]
 ax.plot(x, y, color="blue", lw=1.5, label="sin(x)")
+ax.text(1.5, 0.5, r"text $\alpha$", color="blue", ha="center", on_top=False, va="center", backgroundcolor="cyan", rotation=30)
 ax.plot(x, y2, ls="--", color="red", label="cos(x)")
-ax.text(1.5, 0.5, r"text $\alpha$", color="blue", ha="center", va="center", backgroundcolor="cyan", rotation=30)
-ax.text(1.5, -0.5, r"text $\beta$", color="teal", ha="center", on_top=False, va="center", rotation=-70)
+ax.text(1.5, -0.5, r"text $\beta$", color="teal", ha="center", va="center", rotation=-70)
 
 ax.grid()
 ax.legend(loc="upper right")

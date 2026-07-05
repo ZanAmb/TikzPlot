@@ -138,8 +138,8 @@ class BaseGraph:
         if "alpha" in self._style:
             self._opacity = self._style["alpha"]
 
-        #if "onlayer" in self._style:
-        #    opts.append(f"on layer={self._style["onlayer"]}")
+        if "onlayer" in self._style:
+            opts.append(f"on layer={self._style['onlayer']}")
 
         if self._opacity < 1:
             opts.append(f"opacity={self._opacity}")

@@ -589,7 +589,6 @@ class Axes(BaseAxes):
         #kws = {"fmt", "alpha", "color", "c", "linestyle", "ls", "linewidth", "lw", "marker", "markersize", "ms", "label"}
         #kwargs = self._check_kwargs("imshow", kws, **kwargs)
         self._imshow = (args, kwargs)
-        #self._axis_args.add("axis on top")
         self._axis_options["enlargelimits"] = "false"
         #self._fig._add_global("\\pgfplotsset{set layers}")
         data = args[0]
@@ -744,7 +743,7 @@ class Axes(BaseAxes):
             if TikzConfig.SCHOOL_AXIS:
                 axis_opt_str += f",\n set layers,\n axis line style={{on layer=axis foreground}}"
             else:
-                axis_opt_str += f",\n axis on top"
+                axis_opt_str += f",\n set layers=standard, cell picture=true, grid style={{on layer=axis grid}}"
         if self._ext_xmin or self._ext_xmax:
             lower = self._get_range("xmin")
             upper = self._get_range("xmax")
