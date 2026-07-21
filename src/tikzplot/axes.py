@@ -21,15 +21,15 @@ class BaseAxes:
         else:
             self._axis_args.add(f"/pgf/number format/.cd, 1000 sep={{{TikzConfig.THOUSANDS_SEP}}}")
 
-        self._add_legend = ""
+        self._add_legend = []
         self._coordinates = {}
         self._cmap_bar = None
 
         self._ext_ymin = False
         self._ext_ymax = False
 
-    def _plot(self, x, y, settings=None, xerr=None, yerr=None, **style):
-        if not isinstance(self, Secondary) and self._polar:
+    def _plot(self, x, y, settings=[], xerr=None, yerr=None, **style):
+        if isinstance(self, Axes) and self._polar:
             x = _np.rad2deg(x)
         e = Graph(self, (x, y), settings, xerr=xerr, yerr=yerr, **style)
         if TikzConfig.USE_GROUPPLOTS and ("axvspan" == settings or "axhspan" == settings):
@@ -71,6 +71,7 @@ class BaseAxes:
 
         try:
             c = kwargs.get("c", kwargs.get("color", None))
+            if c is None: raise ValueError("No color specified")
             if len(c) == len(x):
                 if isinstance(c[0], (int, float)):
                     if "cmap" not in kwargs:
@@ -118,9 +119,8 @@ class BaseAxes:
             x = range(len(y))
         elif len(args) == 2:
             x,y=args
-        elif len(args) == 3:
-            x,y,fmt=args
-            kwargs["fmt"]=fmt
+        else:
+            raise Warning("Invalid number of args for stem.")
         if "orientation" in kwargs:
             o = kwargs.pop("orientation")
             if o == "horizontal":
@@ -139,6 +139,7 @@ class BaseAxes:
                     return el._try_set_pname(pname)
                 else:
                     return None
+        assert self._fig is not None
         name1 = self._fig._get_free_path_name()
         name2 = self._fig._get_free_path_name()
         if isinstance(y1, (int, float)):
@@ -165,7 +166,7 @@ class BaseAxes:
                 self._plot(xs,ys,path_name=name2, alpha=0)
             else:
                 name2 = inst
-        e = Graph(self, f"fill between [of={name1} and {name2}]",settings=None, xerr=None, yerr=None, **kwargs)
+        e = Graph(self, f"fill between [of={name1} and {name2}]",settings=[], xerr=None, yerr=None, **kwargs)
         self._elements.append(e)
         return e
         
@@ -224,9 +225,6 @@ class BaseAxes:
             datasets = [x]
         all_data = _np.concatenate(datasets)
         edges = _np.histogram_bin_edges(all_data, bins=bins)
-        for data in datasets:
-            counts, _ = _np.histogram(data, edges, density=density)
-            centers = (edges[:-1] + edges[1:]) / 2
         widths = edges[1:] - edges[:-1]
         settings = []
         if "orientation" in kwargs and kwargs["orientation"] == "horizontal":
@@ -241,12 +239,18 @@ class BaseAxes:
         if "range" in kwargs:
             if settings[0] == "xbar":
                 self.set_ylim(kwargs["range"])
-            else:
+            elif isinstance(self, Axes):
                 self.set_xlim(kwargs["range"])
-        if "cumulative" in kwargs and kwargs["cumulative"]:
-            counts = _np.cumsum(counts)
-
-        return self._plot(centers, counts, settings=settings, **kwargs)
+            elif  isinstance(self, Secondary):
+                self._primary.set_xlim(kwargs["range"])
+        outputs = []
+        for data in datasets:
+            counts, _ = _np.histogram(data, edges, density=density)
+            centers = (edges[:-1] + edges[1:]) / 2
+            if "cumulative" in kwargs and kwargs["cumulative"]:
+                counts = _np.cumsum(counts)
+            outputs.append(self._plot(centers, counts, settings=settings, **kwargs))
+        return outputs
     
     def step(self, x, y, *args, **kwargs):
         kws = {"fmt", "alpha", "color", "c", "linestyle", "ls", "linewidth", "lw", "marker", "markersize", "ms", "label", "where"}
@@ -358,7 +362,8 @@ class BaseAxes:
                 try:
                     lx,ly=float(loc[0]), float(loc[1])
                     posit = "south west"
-                except: print(f"Error parsing legend location: {loc}")
+                except: 
+                    print(f"Error parsing legend location: {loc}")
             else:
                 if isinstance(loc, int):
                     loc = self._LEGEND_LOC_MAP[loc]
@@ -379,7 +384,7 @@ class BaseAxes:
             legend_string = []
             if lx is not None and ly is not None:
                 legend_string.append(r"at={(" + f"{lx},{ly}" + r")}")
-            if len(posit):
+            if posit is not None and len(posit):
                 legend_string.append(r"anchor=" + posit)
             self._axis_options["legend style"] = f"{{{','.join(legend_string)}}}"
         self._legend_on = True
@@ -395,10 +400,12 @@ class BaseAxes:
                 for i in range(len(labs)):
                     self._elements[i]._set_label(tex_text(labs[i]))
 
-    def text(self, x, y, s, on_top=True, **kwargs):
-        kws = {"alpha", "color", "c", "fontsize", "size", "backgroundcolor", "horizontalalignment", "ha", "verticalalignment", "va", "rotation", "label"}
+    def text(self, x, y, s, **kwargs):
+        kws = {"alpha", "color", "c", "fontsize", "on_top", "size", "backgroundcolor", "horizontalalignment", "ha", "verticalalignment", "va", "rotation", "label"}
         kwargs = self._check_kwargs("text", kws, **kwargs)
+        on_top = kwargs.pop("on_top", True)
         if on_top:
+            assert self._fig is not None
             coord = self._fig._next_coordinate_name()
             txt = Text(self, x, y, coord, s, **kwargs)
             self._fig._add_text(txt)
@@ -409,12 +416,13 @@ class BaseAxes:
     def magnify(self, x_p, y_p, x_m, y_m, zoom, size, **kwargs):
         kws = {"shape", "connect"}
         kwargs = self._check_kwargs("magnify", kws, **kwargs)
+        assert self._fig is not None
         n = self._fig._add_spy(zoom, size, **kwargs)
         self._coordinates.update({f"spypoint{n}": (x_p,y_p)})
         self._coordinates.update({f"spyviewr{n}": (x_m,y_m)})
 
     def _add_legend_entries(self):
-        if self._add_legend == "": return ""
+        if self._add_legend == []: return ""
         axs, labs = self._add_legend
         output = ""
         if len(axs) != len(labs):
@@ -499,6 +507,7 @@ class BaseAxes:
             e._reduce_points(limit)
 
     def _add_col(self, r,g,b):
+        assert self._fig is not None
         self._fig._add_col(r,g,b)
 
     def set(self, **kwargs):
@@ -629,7 +638,7 @@ class Axes(BaseAxes):
         if kwargs:
             accepted_kwargs = {"color", "c", "linestyle", "ls", "linewidth", "lw", "alpha"}
             kwargs = self._check_kwargs("grid", accepted_kwargs, **kwargs)
-            g = Graph(self, None, None, None, None, **kwargs)._style_string()
+            g = Graph(self, None, [], None, None, **kwargs)._style_string()
             self._axis_options[f"{selector}grid style"] = f"{{{g}}}"
             
     def set_minorticks_num(self, num):
@@ -729,7 +738,7 @@ class Axes(BaseAxes):
             if "extent" in self._imshow[1]:
                 bounds = self._imshow[1]["extent"]
             xm, xM, ym, yM = bounds
-            self._elements.insert(0, Graph(self, f"graphics [xmin={xm}, xmax={xM}, ymin={ym}, ymax={yM}] {{{im_name}}}",settings=None, xerr=None, yerr=None, onlayer="axis background"))
+            self._elements.insert(0, Graph(self, f"graphics [xmin={xm}, xmax={xM}, ymin={ym}, ymax={yM}] {{{im_name}}}",settings=[], xerr=None, yerr=None, onlayer="axis background"))
         axis_opt_str = ""
         if self._axis_args:
             axis_opt_str += ",\n".join(self._axis_args)

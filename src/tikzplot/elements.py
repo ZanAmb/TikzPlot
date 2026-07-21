@@ -1,3 +1,5 @@
+from typing import Any
+
 import numpy as np
 from pathlib import Path
 
@@ -10,13 +12,21 @@ class BaseGraph:
     _LINE_MAP = {"--": "dashed", ":": "dotted", "-.": "dashdotted", "-":"solid"}
     _MARKER_MAP = {'o':'*', ".": "*", 's':'square*', '^':'triangle', 'v':'triangle*', 'd':'diamond', '+':'+', 'x':'x', '*':'star'}
 
+    _settings: list[str]
+    _style: dict[str, Any]
+    _style_str: str | None
+    _x: np.ndarray
+    _y: np.ndarray
+    _p_dict: dict[int, str]
+    _st_dict: dict[str, str]
     def __init__(self):
         self._axes = None
         self._classic = False
-        self._style = None
+        self._style = {}
         self._label = None
-        self._settings = None
-        if self._settings == None: self._settings = []
+        self._settings = []
+
+        self._sizes = None
 
         self._opacity = 1
         self._path_name = None
@@ -37,6 +47,7 @@ class BaseGraph:
     def _style_string(self):
         if self._style_str != None:
             return self._style_str
+        assert self._axes is not None
         opts = []
         cmap = None
         def match_ls(input):
@@ -63,6 +74,7 @@ class BaseGraph:
             if isinstance(ccode, str):
                 return ccode
             r,g,b=ccode
+            assert self._axes is not None
             self._axes._add_col(r,g,b)
             return f"c{r:.3f}{g:.3f}{b:.3f}".replace(".", "")
         
@@ -123,6 +135,7 @@ class BaseGraph:
             if not ("scatter" in self._settings and self._sizes is not None):
                 opts.append(f"mark size={ms}pt")
         if "markerfmt" in self._style:
+            fmt = self._style["markerfmt"]
             col = list(set(self._COLOR_MAP.keys()) & set(fmt))
             if col:
                 opts.append(f"mark options={{{self._COLOR_MAP[col[0]]}}}")
@@ -146,7 +159,7 @@ class BaseGraph:
         if not self._has_color and self._classic:
             opts.append(f"color={{{match_color(f'C{self._axes._get_defcol()}')}}}")
         if self._classic:
-            if self._xerr is not None or self._yerr is not None or (isinstance(self, Graph3) and self._zerr is not None):
+            if isinstance(self, Graph) and (self._xerr is not None or self._yerr is not None) or (isinstance(self, Graph3) and self._zerr is not None):
                 opts.append("error bars/.cd")
                 if self._xerr is not None:
                     opts.append("x dir=both")
@@ -162,9 +175,10 @@ class BaseGraph:
             key = str(opts[i]).split("=")
             if key[0] in keys:
                 del opts[i]
-        if self._path_name: self._settings.append(f"name path={self._path_name}")
-        if self._classic and self._settings:
+        if self._classic:
             opts = self._settings + opts
+            if self._path_name:
+                opts.insert(0, f"name path={self._path_name}")
         if "scatter" in self._settings and (self._colors is not None or self._sizes is not None):
             if self._sizes is not None:
                     if self._p_dict:
@@ -218,7 +232,7 @@ class BaseGraph:
         self._style["label"] = lab
 
 class Graph(BaseGraph):
-    def __init__(self, axes, coordinates, settings=None, xerr=None, yerr=None, path_name=None, **style):
+    def __init__(self, axes, coordinates, settings=[], xerr=None, yerr=None, path_name=None, **style):
         super().__init__()
         self._axes = axes
         #self._classic = False
@@ -229,7 +243,6 @@ class Graph(BaseGraph):
             self._st_dict = {}
             self._p_dict = {}
             self._colors = None
-            self._sizes = None
         if settings == "axvline" or settings == "axhline" or settings == "axvspan" or settings == "axhspan":
             self._x,self._y=coordinates
         elif isinstance(coordinates, tuple):
@@ -312,7 +325,7 @@ class Graph(BaseGraph):
                 else:
                     line.append(self._yerr[i])
             if "scatter" in self._settings:
-                if "cmap" in self._style:
+                if "cmap" in self._style and self._colors is not None:
                     line.append(self._colors[i])
                 else:
                     if self._p_dict:
@@ -480,6 +493,7 @@ class Graph(BaseGraph):
             if xM == None: xM = self._get_erange("xmax")
             if ym == None: ym = self._get_erange("ymin")
             if yM == None: yM = self._get_erange("ymax")
+            assert xm != None and xM != None and ym != None and yM != None
             l = len(self._x)
             if l > limit:
                 if TikzConfig.REDUCE_METHOD == 0:
@@ -516,7 +530,7 @@ class Graph(BaseGraph):
                             dx2 = vis_x[2:] - vis_x[1:-1]
                             dy2 = vis_y[2:] - vis_y[1:-1]
                             crit = np.hypot(dx1, dy1) + np.hypot(dx2, dy2)
-                        elif TikzConfig.REDUCE_METHOD == 2:
+                        else: #TikzConfig.REDUCE_METHOD == 2:
                             x0, x1, x2 = vis_x[:-2], vis_x[1:-1], vis_x[2:]
                             y0, y1, y2 = vis_y[:-2], vis_y[1:-1], vis_y[2:]
                             crit = np.abs((x1 - x0)*(y2 - y0) - (y1 - y0)*(x2 - x0))
@@ -539,7 +553,7 @@ class Graph(BaseGraph):
                                 self._sizes = self._sizes[mask]
 
 class Graph3(BaseGraph):
-    def __init__(self, axes, coordinates, settings=None, xerr=None, yerr=None, zerr=None, path_name=None, **style):
+    def __init__(self, axes, coordinates, settings=[], xerr=None, yerr=None, zerr=None, path_name=None, **style):
         super().__init__()
         self._axes = axes
         self._classic = False
@@ -755,7 +769,7 @@ class Graph3(BaseGraph):
                             dy2 = vis_y[2:] - vis_y[1:-1]
                             dz2 = vis_z[2:] - vis_z[1:-1]
                             crit = np.hypot(np.hypot(dx1, dy1), dz1) + np.hypot(np.hypot(dx2, dy2), dz2)
-                        elif TikzConfig.REDUCE_METHOD == 2:
+                        else: #TikzConfig.REDUCE_METHOD == 2:
                             x0, x1, x2 = vis_x[:-2], vis_x[1:-1], vis_x[2:]
                             y0, y1, y2 = vis_y[:-2], vis_y[1:-1], vis_y[2:]
                             z0, z1, z2 = vis_z[:-2], vis_z[1:-1], vis_z[2:]

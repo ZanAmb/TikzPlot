@@ -19,7 +19,7 @@ class Axes3:
         if TikzConfig.USE_DECIMAL_COMMA:
             self._axis_args.add("/pgf/number format/use comma")
 
-        self._add_legend = ""
+        self._add_legend = []
 
         self._left = False
         self._neigh = None
@@ -60,7 +60,7 @@ class Axes3:
         if self._fig._get_height():
             self._height = f"{self._fig._get_height() / nrows}cm"
 
-    def _plot(self, xs, ys, zs, zdir="z", settings=None, xerr=None, yerr=None, zerr=None, **style):
+    def _plot(self, xs, ys, zs, zdir="z", settings=[], xerr=None, yerr=None, zerr=None, **style):
         if isinstance(zs, (float,int)):
             zs = [zs] * len(xs)
         if zdir == "y":
@@ -126,6 +126,7 @@ class Axes3:
                 if el._check_equal(xs,ys,zs):
                     return el._try_set_pname(pname)
             return None
+        assert self._fig is not None
         name1 = self._fig._get_free_path_name()
         name2 = self._fig._get_free_path_name()
         if isinstance(y1, (int, float)):
@@ -156,7 +157,7 @@ class Axes3:
                 self._plot(xs,ys,path_name=name2, alpha=0)
             else:
                 name2 = inst"""
-        e = Graph3(self, f"fill between [of={name1} and {name2}]",settings=None, xerr=None, yerr=None, zerr=None, **kwargs)
+        e = Graph3(self, f"fill between [of={name1} and {name2}]",settings=[], xerr=None, yerr=None, zerr=None, **kwargs)
         self._elements.append(e)
         return e
 
@@ -395,7 +396,7 @@ class Axes3:
             legend_string = []
             if lx is not None and ly is not None:
                 legend_string.append(r"at={(" + f"{lx},{ly}" + r")}")
-            if len(posit):
+            if posit is not None and len(posit):
                 legend_string.append(r"anchor=" + posit)
             else: print(posit)
             self._axis_options["legend style"] = f"{{{','.join(legend_string)}}}"
@@ -423,7 +424,7 @@ class Axes3:
         self._axis_options["rotate around z"] = f"{{{roll}}}" 
 
     def _add_legend_entries(self):
-        if self._add_legend == "": return ""
+        if self._add_legend == []: return ""
         axs, labs = self._add_legend
         output = ""
         if len(axs) != len(labs):
@@ -481,9 +482,11 @@ class Axes3:
             e._reduce_points(limit, logx, logy)
 
     def _add_col(self, r,g,b):
+        assert self._fig is not None
         self._fig._add_col(r,g,b)
 
     def _update_size(self):
+        assert self._fig is not None
         if self._fig._get_width():
             self._width= f"{self._fig._get_width() / self._ncols}cm"
         if self._fig._get_height():
@@ -512,6 +515,7 @@ class Axes3:
         if self._height:
             self._axis_options["height"] = self._height
         if not TikzConfig.USE_GROUPPLOTS:
+            assert self._fig is not None
             if self._left:
                 self._axis_options["yshift"] = f"-{self._fig._get_spacing(self._row, self._col)}cm"
             else:

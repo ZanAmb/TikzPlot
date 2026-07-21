@@ -1,9 +1,10 @@
 from typing import Any, Optional, Sequence, Tuple, Union, Literal
 import numpy as np
+from pyrsistent import T
 from .colorbar import Colorbar
 
 ArrayLike = Union[Sequence[float], np.ndarray]
-ColorLike = Union[str, Sequence[float]]
+ColorLike = Union[str, Sequence[float], Sequence[Sequence[float] | ArrayLike], np.ndarray, None]
 LineStyle = Literal["-", "--", "-.", ":", "solid", "dashed", "dashdot", "none", ""]
 MarkerStyle = Literal["o", "s", "^", "v", "x", "+", ".", "*", "None", ""]
 FontSize = Literal["xx-small", "x-small", "small", "medium", "large", "x-large", "xx-large"]
@@ -48,7 +49,7 @@ class BaseAxes:
         ...
 
     def scatter(self, x: ArrayLike = ..., y: ArrayLike = ..., fmt: Optional[str] = ..., *,alpha: Optional[float] = ..., color: Optional[Union[Sequence[ColorLike], ColorLike]] = ..., c: Optional[ColorLike] = ...,
-             marker: Optional[MarkerStyle] = ..., markersize: Optional[Union[Sequence[float], float]] = ..., s: Optional[Union[Sequence[float], float]] = ...,  label:Optional[str]=..., cmap: Optional[Union[str, Colorbar]], vmin: Optional[float] = ..., vmax: Optional[float] = ...) -> None:
+             marker: Optional[MarkerStyle] = ..., markersize: Optional[Union[ArrayLike, float]] = ..., s: Optional[Union[ArrayLike, float]] = ...,  label:Optional[str]=..., cmap: Optional[Union[str, Colorbar]], vmin: Optional[float] = ..., vmax: Optional[float] = ...) -> None:
         """
         Draw a scatter plot to the selected axis.
         
@@ -212,7 +213,7 @@ class BaseAxes:
         """
         ...
 
-    def text(self, x: float, y: float, s: str, color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ..., fontsize: Optional[FontSize] = ..., size: Optional[FontSize] = ..., backgroundcolor: Optional[ColorLike] = ..., horizontalalignment: Optional[str] = ..., ha: Optional[str] = ..., verticalalignment: Optional[str] = ..., va: Optional[str] = ..., rotation: Optional[Union[float, str]] = ..., label: Optional[str] = ...) -> None:
+    def text(self, x: float, y: float, s: str, color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ..., fontsize: Optional[FontSize] = ..., on_top: bool = ..., size: Optional[FontSize] = ..., backgroundcolor: Optional[ColorLike] = ..., horizontalalignment: Optional[str] = ..., ha: Optional[str] = ..., verticalalignment: Optional[str] = ..., va: Optional[str] = ..., rotation: Optional[Union[float, str]] = ..., label: Optional[str] = ...) -> None:
         """
         Add text to the selected axis.
 
@@ -229,6 +230,9 @@ class BaseAxes:
 
         fontsize or size: FontSize, optional
             Font size
+
+        on_top: bool, optional
+            Draw text on top of other elements (True by default)
 
         backgroundcolor: all matplotlib color formats (without X11/xkcd), optional
             Background color of text box: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
@@ -248,9 +252,9 @@ class BaseAxes:
         ...
     def hlines(
         self,
-        y: Union[float, Sequence[float]],
-        xmin: Union[float, Sequence[float]],
-        xmax: Union[float, Sequence[float]],
+        y: Union[float, ArrayLike],
+        xmin: Union[float, ArrayLike],
+        xmax: Union[float, ArrayLike],
         colors: Union[str, Sequence[str]] = "k",
         linestyles: Union[str, Sequence[str]] = "solid",
     ) -> None: 
@@ -260,9 +264,9 @@ class BaseAxes:
         ...
     def vlines(
         self,
-        x: Union[float, Sequence[float]],
-        ymin: Union[float, Sequence[float]],
-        ymax: Union[float, Sequence[float]],
+        x: Union[float, ArrayLike],
+        ymin: Union[float, ArrayLike],
+        ymax: Union[float, ArrayLike],
         colors: Union[str, Sequence[str]] = "k",
         linestyles: Union[str, Sequence[str]] = "solid",
     ) -> None: 
@@ -468,7 +472,7 @@ class BaseAxes:
         Set y-axis scale (to log).
         """
         ...
-    def set_yticks(self, ticks: Sequence[float], labels: Optional[Sequence[str]] = ...) -> None: 
+    def set_yticks(self, ticks: ArrayLike, labels: Optional[Sequence[str]] = ...) -> None: 
         """
         Set y-axis ticks and their labels.
         """
@@ -499,9 +503,17 @@ class BaseAxes:
         Set parameter (lims, labels, ticks, ticklabels, title)
         """
         ...
+    def _add_legend_entries(self) -> str: ...
+    def _content_tex(self, filename: str) -> str: ...
+    def _get_hard_range(self, which: Literal["xmin","xmax","ymin","ymax"]) -> Tuple[float,str]: ...
+    def _get_range(self, which: Literal["xmin","xmax","ymin","ymax"]) -> Tuple[float, bool,str]: ...
+    def _get_limit(self, which: Literal["xmin","xmax","ymin","ymax"]) -> Tuple[float,bool,str]: ...
+    def _set_range(self, which: Literal["xmin","xmax","ymin","ymax"], value: Union[float, int]): ...
+    def _num_points(self) -> list[int]: ...
+    # def _add_color(self, ?) -> None: ...
     
 class Axes(BaseAxes):
-    def __init__(self, nrows: int, ncols: int, index: int, fig: Any) -> None: ...
+    def __init__(self, nrows: int, ncols: int, index: int, fig: Any, pol: bool) -> None: ...
     def loglog(self, x: ArrayLike = ..., y: ArrayLike = ..., base: Optional[float] = 10,  fmt: Optional[str] = ...,*, alpha: Optional[float] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ...,
              linestyle: Optional[LineStyle] = ..., ls: Optional[LineStyle] = ..., linewidth: Optional[float]= ..., lw: Optional[float] = ...,
              marker: Optional[MarkerStyle] = ..., markersize: Optional[float] = ..., ms: Optional[float] = ...) -> None:
@@ -636,14 +648,14 @@ class Axes(BaseAxes):
         Set x-axis scale (to log).
         """
         ...
-    def set_xticks(self, ticks: Sequence[float], labels: Optional[Sequence[str]] = ...) -> None: 
+    def set_xticks(self, ticks: ArrayLike, labels: Optional[Sequence[str]] = ...) -> None: 
         """
         Set x-axis ticks and their labels.
         """
         ...
     def set_xticklabels(self, labels: Sequence[str]) -> None: 
         """
-        Set y-axis tick labels.
+        Set x-axis tick labels.
         """
         ...
     def twinx(self) -> "Secondary": 
@@ -651,6 +663,22 @@ class Axes(BaseAxes):
         Initialize secondary y-axis.
         """
         ...
+    def _export_imshow(self, *args: Any, **kwargs: Any) -> str: ...
+    def _axis_options_string(self) -> str: ...
+    def _margins(self) -> tuple[float, float, float, float]: ...
+    def _get_row(self) -> int: ...
+    def _get_col(self) -> int: ...
+    def _get_nrows(self) -> int: ...
+    def _get_ncols(self) -> int: ...
+    def _get_defcol(self) -> int: ...
+    def _show_colorbar(self, cbar: str, horizontal: bool = ...) -> None: ...
+    def _get_index(self) -> int: ...
+    def _to_tex(self, filename: str, single: bool) -> tuple[list[str], list[str]]: ...
+
     
 class Secondary(BaseAxes):
     def __init__(self, primary: Axes) -> None: ...
+    def _axis_options_string(self) -> str: ...
+    def _padding(self) -> float: ...
+    def _get_defcol(self) -> int: ...
+    def _get_index(self) -> int: ...

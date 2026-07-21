@@ -17,9 +17,7 @@ cmap = Colorbar(axis=ax, cmap="gist_rainbow", lower=1, upper=10, rel_len=0.5, di
 facecolors = [cmap.color(l) for l in lambdas]
 
 for i, l in enumerate(lambdas):
-    ax.fill_between(x, l, l**x * np.exp(-l) / gamma(x + 1),
-                    x, l, 0,
-                    color=facecolors[i], alpha=.5)
+    ax.fill_between(x, l, l**x * np.exp(-l) / gamma(x + 1), x, l, 0, color=facecolors[i], alpha=.5)
 
 ax.set(xlim=(0, 10), ylim=(1, 9), zlim=(0, 0.35),
        xlabel='$x$', ylabel=r'$\lambda$', zlabel='probability')

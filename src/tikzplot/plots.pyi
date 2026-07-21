@@ -1,6 +1,6 @@
 # plots.pyi
 
-from typing import Any, Optional, Tuple, Union, Sequence, Literal
+from typing import Any, Optional, Tuple, Union, Sequence, Literal, overload, Protocol
 import numpy as np
 
 from .config import TikzConfig
@@ -10,7 +10,7 @@ from .state import main_name as main_name, next_show_num as next_show_num
 from .axes import Axes
 
 ArrayLike = Union[Sequence[float], np.ndarray]
-ColorLike = Union[str, Sequence[float]]
+ColorLike = Union[str, Sequence[float], Sequence[Sequence[float] | ArrayLike], np.ndarray, None]
 LineStyle = Literal["-", "--", "-.", ":", "solid", "dashed", "dashdot", "none", ""]
 MarkerStyle = Literal["o", "s", "^", "v", "x", "+", ".", "*", "None", ""]
 FontSize = Literal["xx-small", "x-small", "small", "medium", "large", "x-large", "xx-large"]
@@ -32,21 +32,46 @@ def subplot(
     nrows: int,
     ncols: int,
     index: int,
-    sharex: Optional[Axes] = ...,
-    sharey: Optional[Axes] = ...
+    sharex: Optional[str] = None,
+    sharey: Optional[str] = None
 ) -> Axes:
     """
     Create a subplot and make it current.
     """
     ...
 
+"""class AxesGrid(Protocol):
+    @overload
+    def __getitem__(self, index: int) -> Axes: ...
+    @overload
+    def __getitem__(self, index: tuple[int, int]) -> Axes: ...
+    def __iter__(self): ...
+
+@overload
+def subplots(
+    nrows: Literal[1] = 1,
+    ncols: Literal[1] = 1,
+    sharex: Optional[str] = None,
+    sharey: Optional[str] = None,
+    **kwargs: Any
+) -> tuple[Figure, Axes]: ...
+
+@overload
+def subplots(
+    nrows: int,
+    ncols: int,
+    sharex: Optional[str] = None,
+    sharey: Optional[str] = None,
+    **kwargs: Any
+) -> tuple[Figure, AxesGrid]: ..."""
+
 def subplots(
     nrows: int = 1,
     ncols: int = 1,
-    sharex: Optional[Axes] = ...,
-    sharey: Optional[Axes] = ...,
-    **kwargs: Any
-) -> Tuple[Figure, Union[Axes, np.ndarray]]:
+    sharex: Optional[str] = None,
+    sharey: Optional[str] = None,
+    **kwargs: Any,
+) -> tuple[Figure, Any]:
     """
     Create a figure and a set of subplots.
 
@@ -113,13 +138,13 @@ def yscale(*args: Any, base: Optional[float] = ...) -> None:
     """
     ...
 
-def xticks(ticks: Sequence[float], labels: Optional[Sequence[str]] = ...) -> None:
+def xticks(ticks: ArrayLike, labels: Optional[Sequence[str]] = ...) -> None:
     """
     Set x-axis ticks and their labels.
     """
     ...
 
-def yticks(ticks: Sequence[float], labels: Optional[Sequence[str]] = ...) -> None:
+def yticks(ticks: ArrayLike, labels: Optional[Sequence[str]] = ...) -> None:
     """
     Set y-axis ticks and their labels.
     """
@@ -260,7 +285,7 @@ def errorbar(self, x: ArrayLike = ..., y: ArrayLike = ..., yerr: Optional[ArrayL
     """
     ...
 def scatter(self, x: ArrayLike = ..., y: ArrayLike = ..., fmt: Optional[str] = ..., *,alpha: Optional[float] = ..., color: Optional[Union[Sequence[ColorLike], ColorLike]] = ..., c: Optional[ColorLike] = ...,
-             marker: Optional[MarkerStyle] = ..., markersize: Optional[Union[Sequence[float], float]] = ..., s: Optional[Union[Sequence[float], float]] = ...,  label:Optional[str]=..., cmap: Optional[Union[str, Colorbar]], vmin: Optional[float] = ..., vmax: Optional[float] = ...) -> None:
+             marker: Optional[MarkerStyle] = ..., markersize: Optional[Union[ArrayLike, float]] = ..., s: Optional[Union[ArrayLike, float]] = ...,  label:Optional[str]=..., cmap: Optional[Union[str, Colorbar]], vmin: Optional[float] = ..., vmax: Optional[float] = ...) -> None:
     """
     Draw a scatter plot to the selected axis.
     
@@ -394,7 +419,7 @@ def fill_between(
     """
     ...
 
-def text(self, x: float, y: float, s: str, color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ..., fontsize: Optional[FontSize] = ..., size: Optional[FontSize] = ..., backgroundcolor: Optional[ColorLike] = ..., horizontalalignment: Optional[str] = ..., ha: Optional[str] = ..., verticalalignment: Optional[str] = ..., va: Optional[str] = ..., rotation: Optional[Union[float, str]] = ..., label: Optional[str] = ...) -> None:
+def text(self, x: float, y: float, s: str, color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ..., fontsize: Optional[FontSize] = ..., on_top: Optional[bool] = ..., size: Optional[FontSize] = ..., backgroundcolor: Optional[ColorLike] = ..., horizontalalignment: Optional[str] = ..., ha: Optional[str] = ..., verticalalignment: Optional[str] = ..., va: Optional[str] = ..., rotation: Optional[Union[float, str]] = ..., label: Optional[str] = ...) -> None:
     """
     Add text to the selected axis.
     Parameters
@@ -410,6 +435,9 @@ def text(self, x: float, y: float, s: str, color: Optional[ColorLike] = ..., c: 
     
     fontsize or size: FontSize, optional
         Font size
+    
+    on_top: bool, optional
+        Draw text on top of other elements (True by default)
     
     backgroundcolor: all matplotlib color formats (without X11/xkcd), optional
         Background color of text box: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
@@ -485,42 +513,6 @@ def hist(
     Draw histogram to the selected axis.
     """
     ...
-def step(self, x: ArrayLike, y: ArrayLike, *args: Any, where: Literal["pre","post","mid"] = "pre", **kwargs: Any) -> None:
-    """
-    Draw a step plot to the selected axis.
-    Parameters
-    ----------
-    x,y : ArrayLike or float
-        Datapoints
-    
-    where: {"pre", "post", "mid"}, default "pre"
-        Define where the steps should be placed: before the value (pre), after the value (post), or centered on the value (mid).
-    
-    fmt: str, optional
-        Style
-    
-    alpha: float, optional
-        Opacity
-    
-    color or c: all matplotlib color formats (without X11/xkcd), optional
-        color of line and markers: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
-    
-    label: str, optional
-        Legend entry
-    
-    linestyle or ls: str, optional
-        Line style
-    
-    linewidth or lw: float, optional
-        Line width in pt
-    
-    marker: str, optional
-        Marker type
-    
-    markersize or ms: float, optional
-        Mark size in pt
-    """
-    ...
 
 def magnify(self, x_p: float, y_p: float, x_m: float, y_m: float, zoom: float, size: float, **kwargs) -> int:
     """
@@ -549,9 +541,9 @@ def magnify(self, x_p: float, y_p: float, x_m: float, y_m: float, zoom: float, s
 
 def hlines(
     self,
-    y: Union[float, Sequence[float]],
-    xmin: Union[float, Sequence[float]],
-    xmax: Union[float, Sequence[float]],
+    y: Union[float, ArrayLike],
+    xmin: Union[float, ArrayLike],
+    xmax: Union[float, ArrayLike],
     colors: Union[str, Sequence[str]] = "k",
     linestyles: Union[str, Sequence[str]] = "solid",
 ) -> None: 
@@ -562,9 +554,9 @@ def hlines(
 
 def vlines(
     self,
-    x: Union[float, Sequence[float]],
-    ymin: Union[float, Sequence[float]],
-    ymax: Union[float, Sequence[float]],
+    x: Union[float, ArrayLike],
+    ymin: Union[float, ArrayLike],
+    ymax: Union[float, ArrayLike],
     colors: Union[str, Sequence[str]] = "k",
     linestyles: Union[str, Sequence[str]] = "solid",
 ) -> None: 

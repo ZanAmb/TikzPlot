@@ -44,6 +44,9 @@ class _Colorbar:
             self._divs = kwargs["divisions"]
         if self._axis:
             self._axis._show_colorbar(str(self))
+        
+        if self._cmap is None:
+            self._cmap = "viridis"
 
     _discrete = {'Pastel1':9, 'Pastel2':8, 'Paired':12, 'Accent':8, 'Dark2':8, 'Set1': 9, 'Set2':8, 'Set3':12, 'tab10':10, 'tab20':20, 'tab20b':20, 'tab20c':20}
     _dictionary = {
@@ -186,6 +189,7 @@ class _Colorbar:
         return "\n".join(output)
     
     def __str__(self):
+        assert self._axis is not None
         tridim = isinstance(self._axis, Axes3)
         lines = []
         lines.append(f"colormap={self._generate_tex_colormap(self._cmap)},")

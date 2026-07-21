@@ -41,7 +41,7 @@ ax2.plot(xs, np.cos(xs+1), label="cos2")
 
 fig.set_size_inches(6,5)
 
-ax4.stem(xs,xs, "r.")
+ax4.stem(xs,xs, linefmt="r", markerfmt="b*")
 
 x = [1, 2, 3, 4, 5]
 y1 = [1, 4, 9, 16, 25]

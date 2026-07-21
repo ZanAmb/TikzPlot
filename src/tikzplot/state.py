@@ -1,24 +1,25 @@
 import __main__
 import os.path
+from typing import Sequence
 
 _export_counter = 0
 _show_counter = 0
 _imshow_counter = 0
 
-def next_export_num():
+def next_export_num() -> int:
     global _export_counter
     _export_counter += 1
     return _export_counter
 
-def next_show_num():
+def next_show_num() -> int:
     global _show_counter
     _show_counter += 1
     return _show_counter
 
-def _next_imshow_num():
+def _next_imshow_num() -> int:
     global _imshow_counter
     _imshow_counter += 1
     return _imshow_counter
 
-def main_name():
-    return os.path.split(getattr(__main__, '__file__', None))
+def main_name() -> Sequence[str]:
+    return os.path.split(getattr(__main__, '__file__', ""))

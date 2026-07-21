@@ -20,22 +20,22 @@ class Colorbar:
     where `im` is a tuple describing an image:
         (axis, cmap, lower, upper)
     """
-
+    _cmap: Any
     def __init__(
         self,
-        im: Optional[Tuple[Axes, str, float, float]] = ...,
+        im: Optional[Tuple[Axes, str, float, float]] = None,
         *,
-        axis: Optional[Axes | Axes3] = ...,
-        cmap: Optional[str] = ...,
-        lower: Optional[float] = ...,
-        upper: Optional[float] = ...,
-        ticks: Optional[Sequence[ float]] = ...,
-        tick_labels: Optional[Sequence[str | float]] = ...,
-        label: Optional[str] = ...,
-        width: Optional[float] = ...,
-        horizontal: Optional[bool] = ...,
-        rel_len: Optional[float] = ...,
-        divisions: Optional[int] = ...
+        axis: Optional[Axes | Axes3] = None,
+        cmap: Optional[str] = "viridis",
+        lower: Optional[float] = 0,
+        upper: Optional[float] = 1,
+        ticks: Optional[Sequence[ float]] = None,
+        tick_labels: Optional[Sequence[str | float]] = None,
+        label: Optional[str] = None,
+        width: Optional[float] = 0.3,
+        horizontal: Optional[bool] = None,
+        rel_len: Optional[float] = 1,
+        divisions: Optional[int] = 0
     ) -> None:
         """
         Parameters

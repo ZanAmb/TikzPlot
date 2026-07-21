@@ -40,7 +40,7 @@ class Figure:
         if projection=="3d":
             ax = Axes3(nrows, ncols, index, self)
         else:
-            pol = projection=="polar" or polar
+            pol: bool = projection=="polar" or polar
             ax = Axes(nrows, ncols, index, self, pol)
         self._nrows = nrows
         self._ncols = ncols
@@ -61,6 +61,8 @@ class Figure:
             if subplot_kw:
                 if "projection" in subplot_kw:
                     ax = self.add_subplot(nrows, ncols, i, sharex, sharey, projection=subplot_kw["projection"])
+                else:
+                    ax = self.add_subplot(nrows, ncols, i, sharex, sharey)
             else:
                 ax = self.add_subplot(nrows, ncols, i, sharex, sharey)
             grid.append(ax)
@@ -105,6 +107,7 @@ class Figure:
     def _get_spacing(self, row, col):
         if not self._spacings:
             self._compute_group_spacing()
+        assert self._spacings is not None
         if col == 0:
             if row == 0:
                 return 0
@@ -145,7 +148,7 @@ class Figure:
                 max_val *= d
 
             return min_val, max_val
-        return None
+        return None, None
     
     def _shared_ranges(self):
         shared_x = []
@@ -291,6 +294,7 @@ class Figure:
         ncols = self._axes[0]._get_ncols()
         if TikzConfig.USE_GROUPPLOTS and not single:
             self._compute_group_spacing()
+            assert self._spacings is not None
             if len(self._spacings[0]) > 0 and len(self._spacings[1]) > 0:
                 lines.append(f"\\begin{{groupplot}}[group style={{group size={ncols} by {nrows}, horizontal sep={max(self._spacings[1])}cm, vertical sep={max(self._spacings[0])}cm}}]")
             else:
