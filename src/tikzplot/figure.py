@@ -6,10 +6,11 @@ from .config import TikzConfig
 
 class Figure:
 
-    def __init__(self):
+    def __init__(self, style):
         self._axes = []
         self._width = None
         self._height = None
+        self._style = style
         if TikzConfig.DEFAULT_WIDTH:
             self._width = TikzConfig.DEFAULT_WIDTH
         if TikzConfig.DEFAULT_HEIGHT:
@@ -338,7 +339,7 @@ class Figure:
         return self._height
     
     def clear(self):
-        self.__init__()
+        self.__init__(style=self._style)
 
     def _get_free_path_name(self):
         self._last_path_num += 1

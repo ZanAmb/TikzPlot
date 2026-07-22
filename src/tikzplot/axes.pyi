@@ -592,7 +592,7 @@ class Axes(BaseAxes):
             Mark size in pt
         """
         ...
-    def imshow(self, *args: Any, cmap: Optional[str] = ...) -> Tuple[Any, str, float, float]: 
+    def imshow(self, *args: Any, cmap: Optional[str] = ..., **kwargs: Any) -> Tuple[Any, str, float, float]: 
         """
         Draw image to the selected axis from array. Uses matplotlib imshow() to export to PDF, then inputs the image to the axis. Return may be used to initialize Colorbar().
         """

@@ -3,6 +3,8 @@ from typing import Any
 import numpy as np
 from pathlib import Path
 
+from tikzplot.styles import Styles
+
 from .config import TikzConfig
 from .state import next_export_num, main_name
 from .colors import _tex_color
@@ -68,7 +70,11 @@ class BaseGraph:
         
         def match_color(input):
             self._has_color = True
-            ccode, op = _tex_color(input)
+            if self._axes is None:
+                st = Styles()
+            else:
+                st = self._axes._style
+            ccode, op = _tex_color(input, style=st)
             if not isinstance(op, bool):
                 self._opacity = op
             if isinstance(ccode, str):

@@ -1,5 +1,7 @@
 import numpy as np
 
+from tikzplot.styles import Styles
+
 from .figure import Figure
 from .state import main_name, next_show_num
 from .config import TikzConfig
@@ -9,9 +11,11 @@ from .axes3d import Axes3
 _current_figure = None
 _current_axes = None
 
+style = Styles()
+
 def figure(**kwargs):        
     global _current_figure, _current_axes
-    _current_figure = Figure()
+    _current_figure = Figure(style)
     _current_axes = None
     if "figsize" in kwargs:
         _current_figure.set_size_inches(kwargs["figsize"])
@@ -21,8 +25,7 @@ def _ensure_axes():
     global _current_figure, _current_axes
 
     if _current_figure is None:
-        from .figure import Figure
-        _current_figure = Figure()
+        _current_figure = Figure(style)
 
     if _current_axes is None:
         _current_axes = subplot(1, 1, 1)
@@ -83,7 +86,7 @@ def subplots(nrows=1, ncols=1, sharex=None, sharey=None, subplot_kw=None, **kwar
 
     global _current_figure, _current_axes
 
-    _current_figure = Figure()
+    _current_figure = Figure(style)
     axes = _current_figure._add_subplots(nrows, ncols, sharex, sharey, subplot_kw)
 
     if nrows * ncols == 1:

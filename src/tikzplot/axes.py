@@ -530,6 +530,7 @@ class Axes(BaseAxes):
         self._col = self._index - self._row * self._ncols
 
         self._fig = fig
+        self._style = self._fig._style
         self._imshow = None
 
         self._defcol_counter = 0
@@ -568,6 +569,15 @@ class Axes(BaseAxes):
 
         self._xticks = True
 
+        self._style_defaults()
+
+    def _style_defaults(self):
+        _gs = self._style._get_grid_cycle()
+        if _gs is not None:
+            self.grid(**_gs)
+        _bcgnd = self._style._get_background_cycle()
+        if _bcgnd is not None:
+            self._axis_options["axis background/.style"] = f"{{{_bcgnd}}}"
 
     def _update_size(self):
         if self._fig._get_width():
@@ -856,6 +866,7 @@ class Secondary(BaseAxes):
         self._axis_options["y label style"] = r"{at={(" + str(TikzConfig.SEC_YLABEL_LOC[0]) + "," + str(TikzConfig.SEC_YLABEL_LOC[1]) + ")}, rotate=180}"
 
         self._fig = primary._fig
+        self._style = self._fig._style
 
     def _axis_option_string(self):
         if self._primary._width:

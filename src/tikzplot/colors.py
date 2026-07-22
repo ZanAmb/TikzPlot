@@ -1,11 +1,11 @@
 from typing import Any
 
 from .config import TikzConfig
+from .styles import Styles
 
 _COLOR_MAP: dict[str, str] = {'b':'blue', 'g':'teal', 'r':'red', 'c':'cyan', 'm':'magenta', 'y':'yellow', 'k':'black', 'w':'white', "orange":"orange", "green": "green", "cyan":"cyan", "peru": "brown", "lime": "lime", "gray": "gray", "magenta": "magetna", "purple": "violet"}
-_DEFAULT_CYCLE: list[str] = ['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf']
 
-def _tex_color(input) -> tuple[Any, bool | float]:
+def _tex_color(input, style=Styles()) -> tuple[Any, bool | float]:
     def color_string(r,g,b):
         if TikzConfig.USE_XCOLOR:
             return (r,g,b)
@@ -48,8 +48,8 @@ def _tex_color(input) -> tuple[Any, bool | float]:
         i = float(s)
         return color_string(i,i,i), False
     if s.startswith("C") and s[1:].isdigit():
-        index = int(s[1:]) % len(_DEFAULT_CYCLE)
-        return hex_to_rgb(_DEFAULT_CYCLE[index]), False
+        index = int(s[1:]) % len(style._get_color_cycle())
+        return hex_to_rgb(style._get_color_cycle()[index]), False
     if s.lower() == "none":
         return color_string(0,0,0), 0
     if s in _COLOR_MAP.keys():

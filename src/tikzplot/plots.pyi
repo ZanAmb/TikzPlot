@@ -3,6 +3,8 @@
 from typing import Any, Optional, Tuple, Union, Sequence, Literal, overload, Protocol
 import numpy as np
 
+from tikzplot.styles import Styles
+
 from .config import TikzConfig
 from .colorbar import Colorbar
 from .figure import Figure as Figure
@@ -15,7 +17,7 @@ LineStyle = Literal["-", "--", "-.", ":", "solid", "dashed", "dashdot", "none", 
 MarkerStyle = Literal["o", "s", "^", "v", "x", "+", ".", "*", "None", ""]
 FontSize = Literal["xx-small", "x-small", "small", "medium", "large", "x-large", "xx-large"]
 
-# --- Figure / Axes creation ---
+style: Styles
 
 def figure(*, figsize: Optional[Tuple[float, float]] = ...) -> Figure:
     """

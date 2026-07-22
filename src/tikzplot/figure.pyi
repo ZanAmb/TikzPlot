@@ -4,6 +4,8 @@ import numpy as np
 from typing import Optional
 from typing_extensions import Literal, Sequence, overload
 
+from tikzplot.styles import Styles
+
 from .axes import Axes
 from .axes3d import Axes3
 from .config import TikzConfig
@@ -11,7 +13,7 @@ from .config import TikzConfig
 ShareOptions = Optional[str] | Literal["row", "col", "all", "none"]
 
 class Figure:
-    def __init__(self) -> None: ...
+    def __init__(self, style: Styles) -> None: ...
     @overload
     def add_subplot(self, nrows:Optional[int]=1, ncols:Optional[int]=1, index:Optional[int]=1, sharex:Optional[ShareOptions]=None, sharey:Optional[ShareOptions]=None, projection:Literal["3d"]="3d", polar:Optional[bool]=False) -> Axes3: ...
     @overload
