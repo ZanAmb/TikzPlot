@@ -132,6 +132,9 @@ class BaseGraph:
         if "lw" in self._style or "linewidth" in self._style:
             lw = self._style.get("lw", self._style.get("linewidth"))
             opts.append(f"line width={lw}pt")
+        else:
+            if hasattr(self, "_x") and self._axes._style._get_line_width() is not None:
+                opts.append(f"line width={self._axes._style._get_line_width()}pt")
         if "marker" in self._style:
             sel_mark = match_mark(self._style['marker'])
             if sel_mark:

@@ -1,6 +1,6 @@
 from typing import Literal
 
-StyleName = Literal["default", "classic", "tableau", "colorblind10", "ggplot", "538", "seaborn", "bmh"]
+StyleName = Literal["empty", "default", "classic", "tableau", "colorblind10", "ggplot", "538", "seaborn", "bmh", "dark_background"]
 
 class Styles:
     def __init__(self) -> None: ...

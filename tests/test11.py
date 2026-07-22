@@ -8,7 +8,7 @@ TikzConfig.modifyParam(
     DEFAULT_HEIGHT=20,
 )
 
-plt.style.use("bmh")
+plt.style.use("538")
 
 # --- Data ---
 x = np.linspace(0, 10, 200)

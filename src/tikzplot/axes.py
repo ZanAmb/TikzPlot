@@ -386,7 +386,10 @@ class BaseAxes:
                 legend_string.append(r"at={(" + f"{lx},{ly}" + r")}")
             if posit is not None and len(posit):
                 legend_string.append(r"anchor=" + posit)
-            self._axis_options["legend style"] = f"{{{','.join(legend_string)}}}"
+            if "legend style" in self._axis_options:
+                self._axis_options["legend style"] = self._axis_options["legend style"].rstrip("}") + f" ,{','.join(legend_string)}}}"
+            else:
+                self._axis_options["legend style"] = f"{{{','.join(legend_string)}}}"
         self._legend_on = True
         if "ncols" in kwargs:
             self._axis_options["legend columns"] = kwargs["ncols"]
@@ -578,6 +581,9 @@ class Axes(BaseAxes):
         _bcgnd = self._style._get_background_cycle()
         if _bcgnd is not None:
             self._axis_options["axis background/.style"] = f"{{{_bcgnd}}}"
+        _add_settgs = self._style._get_additional_settings()
+        if _add_settgs is not None:
+            self._axis_options = _add_settgs | self._axis_options
 
     def _update_size(self):
         if self._fig._get_width():
@@ -867,6 +873,12 @@ class Secondary(BaseAxes):
 
         self._fig = primary._fig
         self._style = self._fig._style
+        self._style_defaults()
+
+    def _style_defaults(self):
+        _add_settgs = self._style._get_additional_settings()
+        if _add_settgs is not None:
+            self._axis_options = _add_settgs | self._axis_options
 
     def _axis_option_string(self):
         if self._primary._width:

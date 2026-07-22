@@ -1,4 +1,6 @@
 import numpy as _np
+
+from tikzplot.styles import Styles
 from .elements import Graph
 from .axes3d import Axes3
 from .config import TikzConfig
@@ -195,6 +197,9 @@ class _Colorbar:
         lines.append(f"colormap={self._generate_tex_colormap(self._cmap)},")
         lines.append(f"colorbar{' horizontal' if self._horizontal else ''},")
         lines.append(r"colorbar style={")
+        if hasattr(self._axis._fig, "_style"):
+            _st_settings = self._axis._fig._style._get_colorbar_settings()
+        else: _st_settings = {}
         if TikzConfig.USE_DECIMAL_COMMA:
             lines.append("/pgf/number format/use comma,")
         if self._horizontal:
@@ -212,10 +217,13 @@ class _Colorbar:
         if self._label:
             lines.append(f"title={{{self._label}}},")
             offset = 4 - 2 * (self._ticks == [] or self._tick_labels == [])
+            _add_color = ""
+            if _st_settings and "text" in _st_settings:
+                _add_color = f", text={_st_settings['text']}"
             if self._horizontal:
-                lines.append(f"title style={{at={{(0.5, -{offset})}}, anchor=base}},")
+                lines.append(f"title style={{at={{(0.5, -{offset})}}, anchor=base{_add_color}}}, ")
             else:
-                lines.append(f"title style={{at={{({offset},0.5)}}, anchor=base, yshift=-7pt, rotate=-90}},")
+                lines.append(f"title style={{at={{({offset},0.5)}}, anchor=base, yshift=-7pt, rotate=-90{_add_color}}},")
         if self._ticks is not None:
             lines.append(f"{'x' if self._horizontal else 'y'}tick={{{','.join(str(a) for a in self._ticks)}}},")
             if self._tick_labels and len(self._tick_labels) == len(self._ticks):
