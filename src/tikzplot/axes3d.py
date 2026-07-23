@@ -31,7 +31,8 @@ class Axes3:
         self._col = self._index - self._row * self._ncols
 
         self._fig = fig
-
+        self._style = self._fig._style
+        
         self._defcol_counter = 0
         self._colorbar = ""
         self._cbar_h = False
@@ -59,6 +60,19 @@ class Axes3:
             self._width= f"{self._fig._get_width() / ncols}cm"
         if self._fig._get_height():
             self._height = f"{self._fig._get_height() / nrows}cm"
+
+        self._style_defaults()
+
+    def _style_defaults(self):
+        _gs = self._style._get_grid_cycle()
+        if _gs is not None:
+            self.grid(**_gs)
+        _bcgnd = self._style._get_background_cycle()
+        if _bcgnd is not None:
+            self._axis_options["axis background/.style"] = f"{{{_bcgnd}}}"
+        _add_settgs = self._style._get_additional_settings()
+        if _add_settgs is not None:
+            self._axis_options = _add_settgs | self._axis_options
 
     def _plot(self, xs, ys, zs, zdir="z", settings=[], xerr=None, yerr=None, zerr=None, **style):
         if isinstance(zs, (float,int)):
