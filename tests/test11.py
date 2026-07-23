@@ -8,6 +8,7 @@ TikzConfig.modifyParam(
     DEFAULT_HEIGHT=20,
 )
 
+#plt.style.set_profile("vivid", {"color_cycle": ["#003cff", "#ff0000", "#009933", "#ffd900", "#00f7ff", "#ff9900", "#7f7f7f"], "grid": {"visible": "true"}})
 plt.style.use("538")
 
 # --- Data ---

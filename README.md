@@ -62,6 +62,7 @@ If axes and plot have different name for command with same effect, both are impl
 - `legend()` (basic position control),
 - `ax.twinx()`,
 - `ax.set()`.
+There is a limited support for built-in styles (e.g. `plt.style.use("default")`), you may also define your own style using `plt.style.set_profile()`. Currently supported features are: color cycle (hex colors sequence), line width (in pt), grid (with matplotlib kwargs), background (latex style key=value), additional settings (raw latex code for optional arguments to axis: key=value).
 
 #### Supported common **kwargs
 - `color/c` (all matplotlib formats, except color schemes which are not yet implemented),
@@ -86,6 +87,6 @@ For plot configurations (default sizes, paddings, etc.), use `from tikzplot impo
 Currently supported parameters are listed with their default values in `src/tikzplot/config.py`.
 
 ## More features coming soon...
-- basic color schemes,
+- more developed styles,
 - improved 3D plots (currently only basic support: plot, errorbar, fill_between, scatter, plot_wireframe, plot_surface),
 - ... 
