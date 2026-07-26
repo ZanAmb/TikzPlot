@@ -16,7 +16,7 @@ class BaseGraph:
     _classic: bool
     _style: dict[str, Any]
     _label: str | None
-    _settings: list[str]
+    _settings: dict[str, Any]
     _opacity: float
     _path_name: str | None
     _has_color: bool
@@ -52,7 +52,7 @@ class Graph(BaseGraph):
         self,
         axes: Any,
         coordinates: tuple[Sequence[float], Sequence[float]] | Any,
-        settings: list[str] = ...,
+        settings: dict[str, Any] = ...,
         xerr: ErrorLike | None = ...,
         yerr: ErrorLike | None = ...,
         path_name: str | None = ...,
@@ -74,7 +74,7 @@ class Graph3(BaseGraph):
         self,
         axes: Any,
         coordinates: tuple[Sequence[float], Sequence[float], Sequence[float]] | Any,
-        settings: list[str] = ...,
+        settings: dict[str, Any] = ...,
         xerr: ErrorLike | None = ...,
         yerr: ErrorLike | None = ...,
         zerr: ErrorLike | None = ...,

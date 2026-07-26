@@ -1,6 +1,5 @@
 from typing import Any, Optional, Sequence, Tuple, Union, Literal
 import numpy as np
-from pyrsistent import T
 from .colorbar import Colorbar
 
 ArrayLike = Union[Sequence[float], np.ndarray]
@@ -482,7 +481,7 @@ class BaseAxes:
         Set y-axis tick labels.
         """
         ...
-    def legend(self, *args: Any, loc: Optional[Union[int,str,Tuple[float,float]]] = ...) -> None:
+    def legend(self, *args: Any, loc: Optional[Union[int,str,Tuple[float,float]]] = ..., facecolor: Optional[ColorLike] = ..., edgecolor: Optional[ColorLike] = ..., labelcolor: Optional[ColorLike] = ..., frameon: Optional[bool] = ...) -> None:
         """
         Show legend for the selected axis. Despite arguments requires at least one plotted element on the axis (not necesarily with label) to show up (LaTeX does not allow legend on empty axis).
 
@@ -510,7 +509,7 @@ class BaseAxes:
     def _get_limit(self, which: Literal["xmin","xmax","ymin","ymax"]) -> Tuple[float,bool,str]: ...
     def _set_range(self, which: Literal["xmin","xmax","ymin","ymax"], value: Union[float, int]): ...
     def _num_points(self) -> list[int]: ...
-    # def _add_color(self, ?) -> None: ...
+    def _add_col(self, r: float, g: float, b: float) -> None: ...
     
 class Axes(BaseAxes):
     def __init__(self, nrows: int, ncols: int, index: int, fig: Any, pol: bool) -> None: ...
@@ -661,6 +660,16 @@ class Axes(BaseAxes):
     def twinx(self) -> "Secondary": 
         """
         Initialize secondary y-axis.
+        """
+        ...
+    def set_facecolor(self, color: ColorLike) -> None:
+        """
+        Set axis background color.
+
+        Parameters
+        ----------
+        color: all matplotlib color formats (without X11/xkcd)
+            Background color of axis: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
         """
         ...
     def _export_imshow(self, *args: Any, **kwargs: Any) -> str: ...

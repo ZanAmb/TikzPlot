@@ -11,9 +11,11 @@
  set layers=standard, cell picture=true, grid style={on layer=axis grid},
 alias=p0,
 grid=major,
-legend style={at={(0.97,0.97)},anchor=north east},
+legend style={at={(0.97,0.97)},
+anchor=north east},
 width=8.0cm,
-height=6.666666666666667cm]
+height=6.666666666666667cm,
+]
 \addplot [color={blue},
 line width=1.5pt] table [x=x,y=y] {datapoints/figure_1.dat};\addlegendentry{sin(x)}
 \node[color=blue, fill=cyan, rotate=30] at (axis cs:1.5,0.5) {text $\alpha$};
@@ -25,12 +27,14 @@ dashed] table [x=x,y=y] {datapoints/figure_2.dat};\addlegendentry{cos(x)}
  set layers=standard, cell picture=true, grid style={on layer=axis grid},
 alias=p1,
 grid=major,
-legend style={at={(0.5,0.97)},anchor=north },
+legend style={at={(0.5,0.97)},
+anchor=north },
 legend columns=2,
 width=8.0cm,
 height=6.666666666666667cm,
 xmin=\xmina,
-xmax=\xmaxa]
+xmax=\xmaxa,
+]
 \addplot [color={green},
 only marks,
 mark=*] table [x=x,y=y] {datapoints/figure_3.dat};\addlegendentry{noisy}
@@ -47,33 +51,37 @@ color={c012204670706}}
 alias=p2,
 ymode=log,
 grid=both,
+legend style={},
 title={Semilog Y},
 width=8.0cm,
-height=6.666666666666667cm]
+height=6.666666666666667cm,
+]
 \addplot [color={violet}] table [x=x,y=y] {datapoints/figure_7.dat};\addlegendentry{$|\sin(x)|$}
 \nextgroupplot
 [/pgf/number format/.cd, use comma, 1000 sep={},
  set layers=standard, cell picture=true, grid style={on layer=axis grid},
 alias=p3,
+legend style={},
 xmin=0,
 xmax=10,
 ymin=-1.5,
 ymax=1.5,
 width=8.0cm,
-height=6.666666666666667cm]
+height=6.666666666666667cm,
+]
 \addplot [solid,
 color={black},
 error bars/.cd,
 y dir=both,
 y explicit] table [x=x,y=y,y error=yerror] {datapoints/figure_8.dat};\addlegendentry{data}
 \addplot [forget plot,
-name path=path1,
 opacity=0,
-color={c012204670706}] table [x=x,y=y] {datapoints/figure_9.dat};
+color={c012204670706},
+name path=path1] table [x=x,y=y] {datapoints/figure_9.dat};
 \addplot [forget plot,
-name path=path2,
 opacity=0,
-color={c100004980055}] table [x=x,y=y] {datapoints/figure_10.dat};
+color={c100004980055},
+name path=path2] table [x=x,y=y] {datapoints/figure_10.dat};
 \addplot [forget plot,
 color={gray},
 opacity=0.3] fill between [of=path1 and path2];
@@ -82,10 +90,11 @@ opacity=0.3] fill between [of=path1 and path2];
  set layers=standard, cell picture=true, grid style={on layer=axis grid},
 alias=p4,
 width=8.0cm,
-height=6.666666666666667cm]
+height=6.666666666666667cm,
+]
 \addplot [forget plot,
-ybar interval,
 fill,
+ybar interval,
 color={orange}] table [x=x,y=y] {datapoints/figure_11.dat};
 \nextgroupplot
 [/pgf/number format/.cd, use comma, 1000 sep={},
@@ -95,6 +104,7 @@ enlargelimits=false,
 grid=major,
 width=8.0cm,
 height=6.666666666666667cm,
+,
 colormap={urgb}{
     rgb=(0.2670, 0.0049, 0.3294)
     rgb=(0.2297, 0.3224, 0.5457)
@@ -130,7 +140,8 @@ ylabel={$y$-axis 2},
 width=8.0cm,
 height=6.666666666666667cm,
 xmin=\xmina,
-xmax=\xmaxa]
+xmax=\xmaxa,
+]
 \addplot [forget plot,
 line width=2pt,
 color={c012204670706}] table [x=x,y=y] {datapoints/figure_4.dat};

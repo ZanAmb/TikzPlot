@@ -14,7 +14,7 @@ class BaseGraph:
     _LINE_MAP = {"--": "dashed", ":": "dotted", "-.": "dashdotted", "-":"solid"}
     _MARKER_MAP = {'o':'*', ".": "*", 's':'square*', '^':'triangle', 'v':'triangle*', 'd':'diamond', '+':'+', 'x':'x', '*':'star'}
 
-    _settings: list[str]
+    _settings: dict[str, Any]
     _style: dict[str, Any]
     _style_str: str | None
     _x: np.ndarray
@@ -26,7 +26,7 @@ class BaseGraph:
         self._classic = False
         self._style = {}
         self._label = None
-        self._settings = []
+        self._settings = {}
 
         self._sizes = None
 
@@ -50,7 +50,7 @@ class BaseGraph:
         if self._style_str != None:
             return self._style_str
         assert self._axes is not None
-        opts = []
+        opts = {}
         cmap = None
         def match_ls(input):
             if input in self._LINE_MAP.keys():
@@ -92,18 +92,18 @@ class BaseGraph:
             fmt = self._style["fmt"]
             col = list(set(self._COLOR_MAP.keys()) & set(fmt))
             if col:
-                opts.append(f"color={self._COLOR_MAP[col[0]]}")
+                opts["color"] = self._COLOR_MAP[col[0]]
                 fmt = fmt.replace(col[0], "")
                 self._has_color = True
             mark = list(set(self._MARKER_MAP.keys()) & set(fmt))
             if mark:
-                opts.append(f"mark={self._MARKER_MAP[mark[0]]}")
+                opts["mark"] = self._MARKER_MAP[mark[0]]
                 fmt = fmt.replace(mark[0], "")
             ls = None
             if fmt:
                 ls = match_ls(fmt)
             if ls:
-                opts.append(ls)
+                opts[ls] = None
 
         if "c" in self._style or "color" in self._style:
             if "scatter" in self._settings:
@@ -119,40 +119,40 @@ class BaseGraph:
                 c = self._style.get("c", self._style.get("color"))
                 sel_col = match_color(c)
                 if sel_col:
-                    opts.append(f"color={{{sel_col}}}")
+                    opts["color"] = f"{{{sel_col}}}"
 
         if "ls" in self._style or "linestyle" in self._style:
             ls = self._style.get("ls", self._style.get("linestyle"))
             if ls == "":
-                opts.append("only marks")
+                opts["only marks"] = None
             else:
                 sel_ls = match_ls(ls)
                 if sel_ls:
-                    opts.append(sel_ls)
+                    opts[sel_ls] = None
         if "lw" in self._style or "linewidth" in self._style:
             lw = self._style.get("lw", self._style.get("linewidth"))
-            opts.append(f"line width={lw}pt")
+            opts["line width"] = f"{lw}pt"
         else:
             if hasattr(self, "_x") and self._axes._style._get_line_width() is not None:
-                opts.append(f"line width={self._axes._style._get_line_width()}pt")
+                opts["line width"] = f"{self._axes._style._get_line_width()}pt"
         if "marker" in self._style:
             sel_mark = match_mark(self._style['marker'])
             if sel_mark:
-                opts.append(f"mark={sel_mark}")
+                opts["mark"] = sel_mark
         if "ms" in self._style or "markersize" in self._style:
             ms = self._style.get("ms", self._style.get("markersize"))
             if not ("scatter" in self._settings and self._sizes is not None):
-                opts.append(f"mark size={ms}pt")
+                opts["mark size"] = f"{ms}pt"
         if "markerfmt" in self._style:
             fmt = self._style["markerfmt"]
             col = list(set(self._COLOR_MAP.keys()) & set(fmt))
             if col:
-                opts.append(f"mark options={{{self._COLOR_MAP[col[0]]}}}")
+                opts["mark options"] = f"{{{self._COLOR_MAP[col[0]]}}}"
                 fmt = fmt.replace(col[0], "")
                 self._has_color = True
             mark = list(set(self._MARKER_MAP.keys()) & set(fmt))
             if mark:
-                opts.append(f"mark={self._MARKER_MAP[mark[0]]}")
+                opts["mark"] = self._MARKER_MAP[mark[0]]
                 fmt = fmt.replace(mark[0], "")
         if "label" in self._style:
             self._label = self._style["label"]
@@ -161,41 +161,36 @@ class BaseGraph:
             self._opacity = self._style["alpha"]
 
         if "onlayer" in self._style:
-            opts.append(f"on layer={self._style['onlayer']}")
+            opts["on layer"] = self._style['onlayer']
 
         if self._opacity < 1:
-            opts.append(f"opacity={self._opacity}")
+            opts["opacity"] = self._opacity
         if not self._has_color and self._classic:
-            opts.append(f"color={{{match_color(f'C{self._axes._get_defcol()}')}}}")
+            opts["color"] = f"{{{match_color(f'C{self._axes._get_defcol()}')}}}"
         if self._classic:
             if isinstance(self, Graph) and (self._xerr is not None or self._yerr is not None) or (isinstance(self, Graph3) and self._zerr is not None):
-                opts.append("error bars/.cd")
+                opts["error bars/.cd"] = None
                 if self._xerr is not None:
-                    opts.append("x dir=both")
-                    opts.append("x explicit")
+                    opts["x dir"] = "both"
+                    opts["x explicit"] = None
                 if self._yerr is not None:
-                    opts.append("y dir=both")
-                    opts.append("y explicit")
+                    opts["y dir"] = "both"
+                    opts["y explicit"] = None
                 if isinstance(self, Graph3) and self._zerr is not None:
-                    opts.append("z dir=both")
-                    opts.append("z explicit")
-        keys = {}
-        for i in reversed(range(len(opts))):
-            key = str(opts[i]).split("=")
-            if key[0] in keys:
-                del opts[i]
+                    opts["z dir"] = "both"
+                    opts["z explicit"] = None
         if self._classic:
-            opts = self._settings + opts
+            opts = self._settings | opts
             if self._path_name:
-                opts.insert(0, f"name path={self._path_name}")
+                opts["name path"] = self._path_name
         if "scatter" in self._settings and (self._colors is not None or self._sizes is not None):
             if self._sizes is not None:
                     if self._p_dict:
-                        opts.append("visualization depends on=\\thisrow{size} \\as \\perpointsize,")
+                        opts["visualization depends on"] = "\\thisrow{size} \\as \\perpointsize"
                     else:
-                        opts.append("visualization depends on=\\thisrow{size} \\as \\perpointsize,\n scatter/@pre marker code/.append code={ \\pgfplotsset{mark size=\\perpointsize}},")
+                        opts["visualization depends on"] = "\\thisrow{size} \\as \\perpointsize,\n scatter/@pre marker code/.append code={ \\pgfplotsset{mark size=\\perpointsize}},"
             if "cmap" in self._style:
-                opts.append("scatter src=explicit")
+                opts["scatter src"] = "explicit"
             else:
                 last = 0
                 for i in range(len(self._x)):
@@ -209,9 +204,9 @@ class BaseGraph:
                         self._st_dict[st] = "s" + str(last+1)
                         last += 1
                     self._p_dict[i] = self._st_dict[st]
-                opts.append("point meta=explicit symbolic")
-                opts.append(f"scatter/classes={{\n" + ',\n'.join(f"{v}={{{k}}}" for k,v in self._st_dict.items()) + "\n}")
-        self._style_str = ",\n".join(str(o) for o in opts)
+                opts["point meta"] = "explicit symbolic"
+                opts["scatter/classes"] = f"{{\n" + ',\n'.join(f"{v}={{{k}}}" for k,v in self._st_dict.items()) + "\n}"
+        self._style_str = ",\n".join(o if opts[o] is None else f"{o}={opts[o]}" for o in opts)
         return self._style_str
     
     def _save_data(self, points, filename):
@@ -241,18 +236,18 @@ class BaseGraph:
         self._style["label"] = lab
 
 class Graph(BaseGraph):
-    def __init__(self, axes, coordinates, settings=[], xerr=None, yerr=None, path_name=None, **style):
+    def __init__(self, axes, coordinates, settings={}, xerr=None, yerr=None, path_name=None, **style):
         super().__init__()
         self._axes = axes
         #self._classic = False
         self._style = style
-        if settings is not None:
+        if settings != {}:
             self._settings = settings
         if "scatter" in self._settings:
             self._st_dict = {}
             self._p_dict = {}
             self._colors = None
-        if settings == "axvline" or settings == "axhline" or settings == "axvspan" or settings == "axhspan":
+        if "axvline" in settings or "axhline" in settings or "axvspan" in settings or "axhspan" in settings:
             self._x,self._y=coordinates
         elif isinstance(coordinates, tuple):
             self._classic = True
@@ -286,11 +281,11 @@ class Graph(BaseGraph):
                             self._sizes = np.asarray(s)[mask]
                     except: pass
                 if self._colors is None and self._sizes is None:
-                    self._settings.remove("scatter")
+                    self._settings.pop("scatter")
         else:
             self._special = coordinates
         self._label = None
-        if self._settings == None: self._settings = []
+        if self._settings == None: self._settings = {}
 
         self._opacity = 1
         self._path_name = path_name
@@ -344,7 +339,7 @@ class Graph(BaseGraph):
             rows.append(" ".join(str(v) for v in line))
         return "\n".join(rows)
     
-    def _to_tex(self, filename):
+    def _to_tex(self, filename, label_opts=None):
         style = self._style_string()
 
         def rel_coor(which, m, M, v):
@@ -372,26 +367,32 @@ class Graph(BaseGraph):
             lower, upper = rel_coor("x", xm, xM, self._x)
             self._special = f"coordinates {{({lower}, {self._y}) ({upper}, {self._y})}}"
 
-        if "axvspan" == self._settings:
+        if "axvspan" in self._settings:
             ym, yM = self._axes._axis_options["ymin"], self._axes._axis_options["ymax"]
             ym = self._axes._fig._get_limname("ymin", ym)
             yM = self._axes._fig._get_limname("ymax", yM)
             lower, upper = rel_coor("y", ym, yM, self._y)
             rect = f"\\fill[{style}] (axis cs:{self._x[0]}, {lower}) rectangle (axis cs:{self._x[1]}, {upper});"
             if self._label and self._axes._legend_on:
-                rect += f"\\addlegendentry{{{self._label}}}"
+                if label_opts:
+                    rect += f"\\addlegendentry[{label_opts}]{{{self._label}}}"
+                else:
+                    rect += f"\\addlegendentry{{{self._label}}}"
             if TikzConfig.USE_GROUPPLOTS:
                 return f"\\begin{{pgfonlayer}}{{axis background}}{rect}\\end{{pgfonlayer}}"
             return rect
         
-        if "axhspan" == self._settings:
+        if "axhspan" in self._settings:
             xm, xM = self._axes._axis_options["xmin"], self._axes._axis_options["xmax"]
             xm = self._axes._fig._get_limname("xmin", xm)
             xM = self._axes._fig._get_limname("xmax", xM)
             lower, upper = rel_coor("x", xm, xM, self._x)
             rect = f"\\fill[{style}] (axis cs:{lower}, {self._y[0]}) rectangle (axis cs:{upper}, {self._y[1]});"
             if self._label and self._axes._legend_on:
-                rect += f"\\addlegendentry{{{self._label}}}"
+                if label_opts:
+                    rect += f"\\addlegendentry[{label_opts}]{{{self._label}}}"
+                else:
+                    rect += f"\\addlegendentry{{{self._label}}}"
             if TikzConfig.USE_GROUPPLOTS:
                 return f"\\begin{{pgfonlayer}}{{axis background}}{rect}\\end{{pgfonlayer}}"
             return rect
@@ -414,11 +415,15 @@ class Graph(BaseGraph):
                 datapoints = self._save_data(datapoints, filename)
             if not TikzConfig.SAVE_DATAPOINTS or (TikzConfig.SAVE_DATAPOINTS and not TikzConfig.UPDATE_DATA_ONLY):
                 if self._label and self._axes._legend_on:
+                    if label_opts:
+                        return f"\\addplot [{style}] table [{table_opts}] {{{datapoints}}};\\addlegendentry[{label_opts}]{{{self._label}}}"
                     return f"\\addplot [{style}] table [{table_opts}] {{{datapoints}}};\\addlegendentry{{{self._label}}}"
                 return f"\\addplot [forget plot,\n{style}] table [{table_opts}] {{{datapoints}}};"
             return ""
         elif TikzConfig.SAVE_DATAPOINTS or not (TikzConfig.SAVE_DATAPOINTS and not TikzConfig.UPDATE_STYLE_ONLY):
             if self._label and self._axes._legend_on:
+                if label_opts:
+                    return f"\\addplot [{style}] {self._special};\\addlegendentry[{label_opts}]{{{self._label}}}"
                 return f"\\addplot [{style}] {self._special};\\addlegendentry{{{self._label}}}"
             return f"\\addplot [forget plot,\n{style}] {self._special};"
         else:
@@ -562,7 +567,7 @@ class Graph(BaseGraph):
                                 self._sizes = self._sizes[mask]
 
 class Graph3(BaseGraph):
-    def __init__(self, axes, coordinates, settings=[], xerr=None, yerr=None, zerr=None, path_name=None, **style):
+    def __init__(self, axes, coordinates, settings={}, xerr=None, yerr=None, zerr=None, path_name=None, **style):
         super().__init__()
         self._axes = axes
         self._classic = False
@@ -591,7 +596,7 @@ class Graph3(BaseGraph):
         self._style = style
         self._label = None
         self._settings = settings
-        if self._settings == None: self._settings = []
+        if self._settings == None: self._settings = {}
 
         self._opacity = 1
         self._path_name = path_name

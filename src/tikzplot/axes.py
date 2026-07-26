@@ -1,3 +1,5 @@
+from typing import Any
+
 import numpy as _np
 import matplotlib.pyplot as _plt
 
@@ -7,6 +9,7 @@ from .config import TikzConfig
 from .colorbar import Colorbar
 from .state import _next_imshow_num, main_name
 from .latex_special import tex_text
+from .colors import _tex_color
 
 class BaseAxes:
     def __init__(self):
@@ -22,17 +25,18 @@ class BaseAxes:
             self._axis_args.add(f"/pgf/number format/.cd, 1000 sep={{{TikzConfig.THOUSANDS_SEP}}}")
 
         self._add_legend = []
+        self._legend_lab_col: Any = None
         self._coordinates = {}
         self._cmap_bar = None
 
         self._ext_ymin = False
         self._ext_ymax = False
 
-    def _plot(self, x, y, settings=[], xerr=None, yerr=None, **style):
+    def _plot(self, x, y, settings={}, xerr=None, yerr=None, **style):
         if isinstance(self, Axes) and self._polar:
             x = _np.rad2deg(x)
         e = Graph(self, (x, y), settings, xerr=xerr, yerr=yerr, **style)
-        if TikzConfig.USE_GROUPPLOTS and ("axvspan" == settings or "axhspan" == settings):
+        if TikzConfig.USE_GROUPPLOTS and ("axvspan" in settings or "axhspan" in settings):
             self._elements.insert(0, e)
         else:
             self._elements.append(e)
@@ -88,7 +92,7 @@ class BaseAxes:
                         self._cmap_bar = kwargs["cmap"]
         except: pass
         
-        return self._plot(x, y, **kwargs, ls="", settings=["scatter"])
+        return self._plot(x, y, **kwargs, ls="", settings={"scatter": None})
                         
     def semilogy(self, x, y, *args, **kwargs):
         kws = {"fmt", "base", "alpha", "color", "c", "linestyle", "ls", "linewidth", "lw", "marker", "markersize", "ms", "label"}
@@ -126,9 +130,9 @@ class BaseAxes:
             if o == "horizontal":
                 vert = False
         if vert:
-            return self._plot(x,y,settings=["ycomb"], **kwargs)
+            return self._plot(x,y,settings={"ycomb": None}, **kwargs)
         else:
-            return self._plot(y,x,settings=["xcomb"], **kwargs)
+            return self._plot(y,x,settings={"xcomb": None}, **kwargs)
 
     def fill_between(self, x, y1, y2=None, **kwargs):
         kws = {"fmt", "alpha", "color", "c", "label"}
@@ -166,7 +170,7 @@ class BaseAxes:
                 self._plot(xs,ys,path_name=name2, alpha=0)
             else:
                 name2 = inst
-        e = Graph(self, f"fill between [of={name1} and {name2}]",settings=[], xerr=None, yerr=None, **kwargs)
+        e = Graph(self, f"fill between [of={name1} and {name2}]",settings={}, xerr=None, yerr=None, **kwargs)
         self._elements.append(e)
         return e
         
@@ -226,18 +230,23 @@ class BaseAxes:
         all_data = _np.concatenate(datasets)
         edges = _np.histogram_bin_edges(all_data, bins=bins)
         widths = edges[1:] - edges[:-1]
-        settings = []
+        settings = {}
         if "orientation" in kwargs and kwargs["orientation"] == "horizontal":
-            settings.append("xbar")
+            settings["xbar"] = None
         else:
-            settings.append("ybar")
-        settings.append("fill")
+            settings["ybar"] = None
+        settings["fill"] = None
         if "rwidth" in kwargs:
-            settings.append(f"bar width={widths.mean()*kwargs['rwidth']}")
+            settings["bar width"] = f"{widths.mean()*kwargs['rwidth']}"
         else:
-            settings[0] += " interval"
+            if "xbar" in settings:
+                settings.pop("xbar")
+                settings["xbar interval"] = None
+            elif "ybar" in settings:
+                settings.pop("ybar")
+                settings["ybar interval"] = None
         if "range" in kwargs:
-            if settings[0] == "xbar":
+            if "xbar" in settings:
                 self.set_ylim(kwargs["range"])
             elif isinstance(self, Axes):
                 self.set_xlim(kwargs["range"])
@@ -257,7 +266,7 @@ class BaseAxes:
         kwargs = self._check_kwargs("step", kws, **kwargs)
         WHERE_DICT = {"pre": "left", "post": "right", "mid": "mid"}
         where = WHERE_DICT.get(kwargs.pop("where", "pre"), None)
-        settings = [f"const plot mark {where}"]
+        settings = {f"const plot mark {where}": None}
         if len(args) == 1:
             kwargs["fmt"] = args[0]
         return self._plot(x,y,settings=settings, **kwargs)
@@ -266,7 +275,7 @@ class BaseAxes:
         kws = {"fmt", "base", "alpha", "color", "c", "linestyle", "ls", "linewidth", "lw", "label"}
         kwargs = self._check_kwargs("axvline", kws, **kwargs)
         self._ext_ymin = self._ext_ymax = True
-        self._plot(x, (ymin, ymax), settings="axvline", **kwargs)
+        self._plot(x, (ymin, ymax), settings={"axvline": None}, **kwargs)
 
     def axhline(self, y, xmin=0, xmax=1, **kwargs):
         kws = {"fmt", "base", "alpha", "color", "c", "linestyle", "ls", "linewidth", "lw", "label"}
@@ -275,7 +284,7 @@ class BaseAxes:
             self._primary._ext_xmin = self._primary._ext_xmax = True
         else:
             self._ext_xmin = self._ext_xmax = True
-        self._plot((xmin, xmax), y, settings="axhline", **kwargs)
+        self._plot((xmin, xmax), y, settings={"axhline": None}, **kwargs)
 
     def axvspan(self, xmin, xmax, ymin=0, ymax=1, **kwargs):
         kws = {"c", "color", "alpha", "label"}
@@ -283,7 +292,7 @@ class BaseAxes:
         self._ext_ymin = self._ext_ymax = True
         if TikzConfig.USE_GROUPPLOTS:
             self._axis_args.add("set layers")
-        self._plot([xmin, xmax], [ymin, ymax], settings="axvspan", **kwargs)
+        self._plot([xmin, xmax], [ymin, ymax], settings={"axvspan": None}, **kwargs)
 
     def axhspan(self, ymin, ymax, xmin=0, xmax=1, **kwargs):
         kws = {"c", "color", "alpha", "label"}
@@ -294,7 +303,7 @@ class BaseAxes:
             self._ext_xmin = self._ext_xmax = True
         if TikzConfig.USE_GROUPPLOTS:
             self._axis_args.add("set layers")
-        self._plot([xmin, xmax], [ymin, ymax], settings="axhspan", **kwargs)
+        self._plot([xmin, xmax], [ymin, ymax], settings={"axhspan": None}, **kwargs)
 
     def set_ylabel(self, label):
         self._axis_options["ylabel"] = f"{{{tex_text(label)}}}"
@@ -355,6 +364,7 @@ class BaseAxes:
     _ANCHOR_MAP = {"top": "north", "bottom": "south", "upper": "north", "lower": "south", "left": "west", "right": "east", "center": "center"}
 
     def legend(self, *args, **kwargs):
+        legend_string = {}
         if "loc" in kwargs:
             loc = kwargs["loc"]
             lx = ly = posit = None
@@ -381,20 +391,46 @@ class BaseAxes:
                 elif "east" in posit:
                     lx = 1 - TikzConfig.LEGEND_REL_X
 
-            legend_string = []
             if lx is not None and ly is not None:
-                legend_string.append(r"at={(" + f"{lx},{ly}" + r")}")
+                legend_string["at"] = "{(" + f"{lx},{ly}" + r")}"
             if posit is not None and len(posit):
-                legend_string.append(r"anchor=" + posit)
-            if "legend style" in self._axis_options:
-                self._axis_options["legend style"] = self._axis_options["legend style"].rstrip("}") + f" ,{','.join(legend_string)}}}"
-            else:
-                self._axis_options["legend style"] = f"{{{','.join(legend_string)}}}"
+                legend_string["anchor"] = posit
+
+        def match_color(input):
+            if isinstance(self, Axes) or isinstance(self, Secondary):
+                if input == "none":
+                    return "none"
+                ccode, op = _tex_color(input, self._style)
+                if isinstance(ccode, str):
+                    return ccode
+                r,g,b = ccode
+                self._add_col(r,g,b)
+                return f"c{r:.3f}{g:.3f}{b:.3f}".replace(".", "")
+
+
+        if "facecolor" in kwargs and (isinstance(self, Axes) or isinstance(self, Secondary)):
+            ccode = match_color(kwargs["facecolor"])
+            if ccode is not None:
+                legend_string["fill"] = ccode
+        if "edgecolor" in kwargs and (isinstance(self, Axes) or isinstance(self, Secondary)):
+            ccode = match_color(kwargs["edgecolor"])
+            if ccode is not None:
+                legend_string["draw"] = ccode
+        if "labelcolor" in kwargs and (isinstance(self, Axes) or isinstance(self, Secondary)):
+            ccode = match_color(kwargs["labelcolor"])
+            if ccode is not None:
+                self._legend_lab_col = ccode
+        if "frameon" in kwargs and not kwargs["frameon"]:
+            legend_string["draw"] = "none"                      
+        if "legend style" in self._axis_options:
+            self._axis_options["legend style"].update(legend_string)
+        else:
+            self._axis_options["legend style"] = legend_string
         self._legend_on = True
         if "ncols" in kwargs:
             self._axis_options["legend columns"] = kwargs["ncols"]
         if len(args) == 2:
-            self._add_legend = args
+            self._add_legend = list(args)
         elif len(args) == 1:
             labs = args[0]
             if len(labs) > len(self._elements):
@@ -433,11 +469,14 @@ class BaseAxes:
             return ""
         for i in range(len(axs)):
             output += f"\n\\addlegendimage{{{axs[i]._style_string()}}}"
-            output += f"\n\\addlegendentry{{{tex_text(labs[i])}}}"
+            if self._legend_lab_col:
+                output += f"\n\\addlegendentry[{self._legend_lab_col}]{{{tex_text(labs[i])}}}"
+            else:
+                output += f"\n\\addlegendentry{{{tex_text(labs[i])}}}"
         return output
         
     def _content_tex(self, filename):
-        ouptut = "\n".join(e._to_tex(filename) for e in self._elements)
+        ouptut = "\n".join(e._to_tex(filename, self._legend_lab_col) for e in self._elements)
         ouptut += self._add_legend_entries()
         for coord in self._coordinates:
             x,y = self._coordinates[coord]
@@ -654,7 +693,7 @@ class Axes(BaseAxes):
         if kwargs:
             accepted_kwargs = {"color", "c", "linestyle", "ls", "linewidth", "lw", "alpha"}
             kwargs = self._check_kwargs("grid", accepted_kwargs, **kwargs)
-            g = Graph(self, None, [], None, None, **kwargs)._style_string()
+            g = Graph(self, None, {}, None, None, **kwargs)._style_string()
             self._axis_options[f"{selector}grid style"] = f"{{{g}}}"
             
     def set_minorticks_num(self, num):
@@ -754,7 +793,7 @@ class Axes(BaseAxes):
             if "extent" in self._imshow[1]:
                 bounds = self._imshow[1]["extent"]
             xm, xM, ym, yM = bounds
-            self._elements.insert(0, Graph(self, f"graphics [xmin={xm}, xmax={xM}, ymin={ym}, ymax={yM}] {{{im_name}}}",settings=[], xerr=None, yerr=None, onlayer="axis background"))
+            self._elements.insert(0, Graph(self, f"graphics [xmin={xm}, xmax={xM}, ymin={ym}, ymax={yM}] {{{im_name}}}",settings={}, xerr=None, yerr=None, onlayer="axis background"))
         axis_opt_str = ""
         if self._axis_args:
             axis_opt_str += ",\n".join(self._axis_args)
@@ -787,7 +826,13 @@ class Axes(BaseAxes):
                 self._axis_options["ymax"] = self._fig._next_limname("ymax", self._axis_options.get("ymax", yM))
         if self._axis_options:
             if axis_opt_str: axis_opt_str += ",\n"
-            axis_opt_str += ",\n".join(f"{k}={v}" for k, v in self._axis_options.items())
+            for k, v in self._axis_options.items():
+                if isinstance(v, dict):
+                    axis_opt_str += f"{k}={{"
+                    axis_opt_str += ",\n".join(f"{kk}={vv}" for kk, vv in v.items())
+                    axis_opt_str += "},\n"
+                else:
+                    axis_opt_str += f"{k}={v},\n"
         if self._colorbar:
             axis_opt_str += self._colorbar
         elif self._cmap_bar:
@@ -859,6 +904,15 @@ class Axes(BaseAxes):
                 defined[attr](kwargs.pop(attr))
 
         super().set(**kwargs)
+
+    def set_facecolor(self, color):
+        ccode, _ = _tex_color(color, self._style)
+        if isinstance(ccode, str):
+            self._axis_options["axis background/.style"] = f"{{fill={ccode}}}"
+        else:
+            r,g,b = ccode
+            self._add_col(r,g,b)
+            self._axis_options["axis background/.style"] = f"{{fill=c{r:.3f}{g:.3f}{b:.3f}}}".replace(".", "")
     
 class Secondary(BaseAxes):
     def __init__(self, primary):
@@ -900,7 +954,13 @@ class Secondary(BaseAxes):
         self._axis_options["xmax"] = self._primary._axis_options["xmax"]
         if self._axis_options:
             if axis_opt_str: axis_opt_str += ",\n"
-            axis_opt_str += ",\n".join(f"{k}={v}" for k, v in self._axis_options.items())
+            for k, v in self._axis_options.items():
+                if isinstance(v, dict):
+                    axis_opt_str += f"{k}={{"
+                    axis_opt_str += ",\n".join(f"{kk}={vv}" for kk, vv in v.items())
+                    axis_opt_str += "},\n"
+                else:
+                    axis_opt_str += f"{k}={v},\n"
         return axis_opt_str
     
     def _padding(self):

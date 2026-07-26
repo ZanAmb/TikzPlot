@@ -261,7 +261,7 @@ class Figure:
         for ax in self._axes:
             ax._reduce_points(limit)
 
-    def _to_tex(self, filename):
+    def _to_tex(self, filename, png=False):
         single = self._nrows * self._ncols == 1
         if not self._axes:
             return ""
@@ -270,7 +270,10 @@ class Figure:
             self._reduce_points()
         preambule = ""
         if TikzConfig.STANDALONE:
-            preambule += "\\documentclass[tikz,border=2pt]{standalone}\n"
+            if png:
+                preambule += "\\documentclass[tikz,border=2pt,convert={density=300,outext=.png}]{standalone}\n"
+            else:
+                preambule += "\\documentclass[tikz,border=2pt]{standalone}\n"
             preambule += "\\usepackage{tikz}\n"
             preambule += "\\usepackage{pgfplots}\n"
             if TikzConfig.USE_GROUPPLOTS and not single:
@@ -328,6 +331,12 @@ class Figure:
 
     def _save(self, filename):
         content = self._to_tex(filename)
+        if not TikzConfig.SAVE_DATAPOINTS or (TikzConfig.SAVE_DATAPOINTS and not TikzConfig.UPDATE_DATA_ONLY):
+            with open(filename, "w", encoding="utf-8") as f:
+                f.write(content)
+
+    def _save_image(self, filename):
+        content = self._to_tex(filename, png=True)
         if not TikzConfig.SAVE_DATAPOINTS or (TikzConfig.SAVE_DATAPOINTS and not TikzConfig.UPDATE_DATA_ONLY):
             with open(filename, "w", encoding="utf-8") as f:
                 f.write(content)

@@ -259,10 +259,21 @@ def yscale( *args, **kwargs):
     _current_axes.set_yscale(*args, **kwargs)
 
 def savefig(filename):
+    _im = False
+    if filename.endswith(".png"):
+        if not TikzConfig.STANDALONE:
+            print("Must be in standalone mode to create code for image. TikzConfig.STANDALONE is now set to True.")
+            TikzConfig.modifyParam(STANDALONE=True)
+        _im = True
+        print("If .png is not generated on compile while running in vs-code, edit latex.workshop.latex.tools in settings.json: under args, add: -shell-escape.")
+        filename = filename.removesuffix(".png") + ".tex"
     if not(filename.endswith(".tex") or filename.endswith(".tikz")):
         filename += ".tex"
     assert _current_figure
-    _current_figure._save(filename)
+    if _im:
+        _current_figure._save_image(filename)
+    else:
+        _current_figure._save(filename)
 
 def show():
     assert _current_figure

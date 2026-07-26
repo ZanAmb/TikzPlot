@@ -74,7 +74,7 @@ class Axes3:
         if _add_settgs is not None:
             self._axis_options = _add_settgs | self._axis_options
 
-    def _plot(self, xs, ys, zs, zdir="z", settings=[], xerr=None, yerr=None, zerr=None, **style):
+    def _plot(self, xs, ys, zs, zdir="z", settings={}, xerr=None, yerr=None, zerr=None, **style):
         if isinstance(zs, (float,int)):
             zs = [zs] * len(xs)
         if zdir == "y":
@@ -110,12 +110,12 @@ class Axes3:
     def plot_surface(self, X, Y, Z, **kwargs):
         kws = {"alpha", "color", "c", "linestyle", "ls", "linewidth", "lw", "label"}
         kwargs = self._check_kwargs("plot", kws, **kwargs)
-        return self._plot(X, Y, Z, settings=["surf",  f"mesh/rows={X.shape[0]}"] , **kwargs)
+        return self._plot(X, Y, Z, settings={"surf": None,  "mesh/rows": X.shape[0]} , **kwargs)
     
     def plot_wireframe(self, X, Y, Z, **kwargs):
         kws = {"alpha", "color", "c", "linestyle", "ls", "linewidth", "lw", "label"}
         kwargs = self._check_kwargs("plot", kws, **kwargs)
-        return self._plot(X, Y, Z, settings=["mesh",  f"mesh/rows={X.shape[0]}"] , **kwargs)
+        return self._plot(X, Y, Z, settings={"mesh": None,  "mesh/rows": X.shape[0]} , **kwargs)
 
     def errorbar(self, x, y, z, zerr=None, yerr=None, xerr=None, **kwargs):
         kws = {"fmt", "alpha", "color", "c", "linestyle", "ls", "linewidth", "lw", "marker", "markersize", "ms", "label"}
@@ -171,7 +171,7 @@ class Axes3:
                 self._plot(xs,ys,path_name=name2, alpha=0)
             else:
                 name2 = inst"""
-        e = Graph3(self, f"fill between [of={name1} and {name2}]",settings=[], xerr=None, yerr=None, zerr=None, **kwargs)
+        e = Graph3(self, f"fill between [of={name1} and {name2}]",settings={}, xerr=None, yerr=None, zerr=None, **kwargs)
         self._elements.append(e)
         return e
 

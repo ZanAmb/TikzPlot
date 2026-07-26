@@ -781,7 +781,7 @@ def savefig(filename: str) -> None:
     """
     Save figure to .tex/.tikz file.
 
-    If no extension is provided, '.tex' is appended.
+    If no suitable extension is provided, '.tex' is appended. If using .png extension, the code generated will compile to a .png image.
     """
     ...
 
@@ -802,3 +802,5 @@ def gca() -> Axes:
     Get current axis.
     """
     ...
+
+def tight_layout() -> None: ...
