@@ -77,7 +77,7 @@ class Text:
         return ", ".join(output)
 
 
-    def _to_tex(self, _):
+    def _to_tex(self, *args, **kwargs):
         if self._visible:
             if self._coordinate is not None:
                 return f"\\coordinate {self._coordinate} at (axis cs:{self._x},{self._y});"
@@ -116,7 +116,7 @@ class Text3(Text):
         super().__init__(ax, x, y, s, **kwargs)
         self._z = z
 
-    def _to_tex(self, _):
+    def _to_tex(self, *args, **kwargs):
         if self._visible:
             return f"\\node[{self._style_string()}] at (axis cs:{self._x},{self._y},{self._z}) {{{self._fsize or ''}{self._s}}};"
         else:

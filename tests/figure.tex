@@ -93,9 +93,10 @@ width=8.0cm,
 height=6.666666666666667cm,
 ]
 \addplot [forget plot,
-fill,
 ybar interval,
-color={orange}] table [x=x,y=y] {datapoints/figure_11.dat};
+forget plot,
+fill=orange,
+draw=none] table [x=x,y=y] {datapoints/figure_11.dat};
 \nextgroupplot
 [/pgf/number format/.cd, use comma, 1000 sep={},
  set layers=standard, cell picture=true, grid style={on layer=axis grid},

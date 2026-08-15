@@ -33,35 +33,37 @@
 \begin{groupplot}[group style={group size=2 by 2, horizontal sep=3.6cm, vertical sep=1.5cm}]
 \nextgroupplot
 [/pgf/number format/.cd, use comma, 1000 sep={},
- axis on top,
+ set layers=standard, cell picture=true, grid style={on layer=axis grid},
 alias=p0,
 xmin=\xmina,
 xmax=\xmaxa,
 xlabel={$x$},
 ylabel={$y_1$},
 grid=both,
-legend style={at={(0.97,0.97)},anchor=north east},
+legend style={at={(0.97,0.97)},
+anchor=north east},
 legend columns=3,
 minor grid style={dotted,
 opacity=0.5},
 minor tick num=4,
 width=6.0cm,
-height=5.0cm]
-\addplot [name path=path1,
-color={orange},
+height=5.0cm,
+]
+\addplot [color={orange},
 dashdotted,
-line width=1.2pt] table [x=x,y=y] {datapoints/demo_1.dat};\addlegendentry{$f_1$}
+line width=1.2pt,
+name path=path1] table [x=x,y=y] {datapoints/demo_1.dat};\addlegendentry{$f_1$}
 \addplot [color={teal},
 line width=1.2pt] table [x=x,y=y] {datapoints/demo_2.dat};\addlegendentry{$f_2$}
 \addplot [forget plot,
-name path=path2,
 opacity=0,
-color={c012204670706}] table [x=x,y=y] {datapoints/demo_3.dat};
+color={c012204670706},
+name path=path2] table [x=x,y=y] {datapoints/demo_3.dat};
 \addplot [color={blue},
 opacity=0.35] fill between [of=path1 and path2];\addlegendentry{area}
 \nextgroupplot
 [/pgf/number format/.cd, use comma, 1000 sep={},
- axis on top,
+ set layers=standard, cell picture=true, grid style={on layer=axis grid},
 alias=p1,
 xmin=-4,
 xmax=4,
@@ -70,17 +72,18 @@ ymin=0,
 ymax=200,
 ylabel={count},
 width=6.0cm,
-height=5.0cm]
+height=5.0cm,
+]
 \addplot [forget plot,
 ybar interval,
-fill,
-color={gray},
-opacity=0.55] table [x=x,y=y] {datapoints/demo_5.dat};
+forget plot,
+fill=gray,
+draw=none] table [x=x,y=y] {datapoints/demo_5.dat};
 \addplot [forget plot,
 color={black}] table [x=x,y=y] {datapoints/demo_6.dat};
 \nextgroupplot
 [/pgf/number format/.cd, use comma, 1000 sep={},
- axis on top,
+ set layers=standard, cell picture=true, grid style={on layer=axis grid},
 alias=p2,
 enlargelimits=false,
 xlabel={$x$},
@@ -88,6 +91,7 @@ ylabel={$y$},
 grid=major,
 width=6.0cm,
 height=5.0cm,
+,
 colormap={urgb}{
     rgb=(0.0000, 0.0000, 0.3000)
     rgb=(0.0000, 0.0000, 0.6953)
@@ -112,7 +116,7 @@ title style={at={(4,0.5)}, anchor=base, yshift=-7pt, rotate=-90},
 point meta min={-0.6862867517677813},
 point meta max={1.0565609304470274}]
 \addplot [forget plot,
-] graphics [xmin=0, xmax=120, ymin=0, ymax=120] {demo_imshow1.pdf};
+on layer=axis background] graphics [xmin=0, xmax=120, ymin=0, ymax=120] {demo_imshow1.pdf};
 \nextgroupplot
 [/pgf/number format/use comma,
 grid=major,
@@ -151,101 +155,101 @@ height=0.8*\pgfkeysvalueof{/pgfplots/parent axis height},
 point meta min={1},
 point meta max={10}]
 \addplot3 [forget plot,
-name path=path3,
 opacity=0,
-color={c012204670706}] table [x=x,y=y,z=z] {datapoints/demo_7.dat};
+color={c012204670706},
+name path=path3] table [x=x,y=y,z=z] {datapoints/demo_7.dat};
 \addplot3 [forget plot,
-name path=path4,
 opacity=0,
-color={c100004980055}] table [x=x,y=y,z=z] {datapoints/demo_8.dat};
+color={c100004980055},
+name path=path4] table [x=x,y=y,z=z] {datapoints/demo_8.dat};
 \addplot3 [forget plot,
 color={c100000000750},
 opacity=0.5] fill between [of=path3 and path4];
 \addplot3 [forget plot,
-name path=path5,
 opacity=0,
-color={c017306270173}] table [x=x,y=y,z=z] {datapoints/demo_9.dat};
+color={c017306270173},
+name path=path5] table [x=x,y=y,z=z] {datapoints/demo_9.dat};
 \addplot3 [forget plot,
-name path=path6,
 opacity=0,
-color={c083901530157}] table [x=x,y=y,z=z] {datapoints/demo_10.dat};
+color={c083901530157},
+name path=path6] table [x=x,y=y,z=z] {datapoints/demo_10.dat};
 \addplot3 [forget plot,
 color={c057900001000},
 opacity=0.5] fill between [of=path5 and path6];
 \addplot3 [forget plot,
-name path=path7,
 opacity=0,
-color={c058004040741}] table [x=x,y=y,z=z] {datapoints/demo_11.dat};
+color={c058004040741},
+name path=path7] table [x=x,y=y,z=z] {datapoints/demo_11.dat};
 \addplot3 [forget plot,
-name path=path8,
 opacity=0,
-color={c054903370294}] table [x=x,y=y,z=z] {datapoints/demo_12.dat};
+color={c054903370294},
+name path=path8] table [x=x,y=y,z=z] {datapoints/demo_12.dat};
 \addplot3 [forget plot,
 color={c004201401000},
 opacity=0.5] fill between [of=path7 and path8];
 \addplot3 [forget plot,
-name path=path9,
 opacity=0,
-color={c089004670761}] table [x=x,y=y,z=z] {datapoints/demo_13.dat};
+color={c089004670761},
+name path=path9] table [x=x,y=y,z=z] {datapoints/demo_13.dat};
 \addplot3 [forget plot,
-name path=path10,
 opacity=0,
-color={c049804980498}] table [x=x,y=y,z=z] {datapoints/demo_14.dat};
+color={c049804980498},
+name path=path10] table [x=x,y=y,z=z] {datapoints/demo_14.dat};
 \addplot3 [forget plot,
 color={c000007260941},
 opacity=0.5] fill between [of=path9 and path10];
 \addplot3 [forget plot,
-name path=path11,
 opacity=0,
-color={c073707410133}] table [x=x,y=y,z=z] {datapoints/demo_15.dat};
+color={c073707410133},
+name path=path11] table [x=x,y=y,z=z] {datapoints/demo_15.dat};
 \addplot3 [forget plot,
-name path=path12,
 opacity=0,
-color={c009007450812}] table [x=x,y=y,z=z] {datapoints/demo_16.dat};
+color={c009007450812},
+name path=path12] table [x=x,y=y,z=z] {datapoints/demo_16.dat};
 \addplot3 [forget plot,
 color={c000010000538},
 opacity=0.5] fill between [of=path11 and path12];
 \addplot3 [forget plot,
-name path=path13,
 opacity=0,
-color={c012204670706}] table [x=x,y=y,z=z] {datapoints/demo_17.dat};
+color={c012204670706},
+name path=path13] table [x=x,y=y,z=z] {datapoints/demo_17.dat};
 \addplot3 [forget plot,
-name path=path14,
 opacity=0,
-color={c100004980055}] table [x=x,y=y,z=z] {datapoints/demo_18.dat};
+color={c100004980055},
+name path=path14] table [x=x,y=y,z=z] {datapoints/demo_18.dat};
 \addplot3 [forget plot,
 color={c022510000087},
 opacity=0.5] fill between [of=path13 and path14];
 \addplot3 [forget plot,
-name path=path15,
 opacity=0,
-color={c017306270173}] table [x=x,y=y,z=z] {datapoints/demo_19.dat};
+color={c017306270173},
+name path=path15] table [x=x,y=y,z=z] {datapoints/demo_19.dat};
 \addplot3 [forget plot,
-name path=path16,
 opacity=0,
-color={c083901530157}] table [x=x,y=y,z=z] {datapoints/demo_20.dat};
+color={c083901530157},
+name path=path16] table [x=x,y=y,z=z] {datapoints/demo_20.dat};
 \addplot3 [forget plot,
 color={c082110000000},
 opacity=0.5] fill between [of=path15 and path16];
 \addplot3 [forget plot,
-name path=path17,
 opacity=0,
-color={c058004040741}] table [x=x,y=y,z=z] {datapoints/demo_21.dat};
+color={c058004040741},
+name path=path17] table [x=x,y=y,z=z] {datapoints/demo_21.dat};
 \addplot3 [forget plot,
-name path=path18,
 opacity=0,
-color={c054903370294}] table [x=x,y=y,z=z] {datapoints/demo_22.dat};
+color={c054903370294},
+name path=path18] table [x=x,y=y,z=z] {datapoints/demo_22.dat};
 \addplot3 [forget plot,
 color={c099705020000},
 opacity=0.5] fill between [of=path17 and path18];
 \addplot3 [forget plot,
-name path=path19,
 opacity=0,
-color={c089004670761}] table [x=x,y=y,z=z] {datapoints/demo_23.dat};
+color={c089004670761},
+name path=path19] table [x=x,y=y,z=z] {datapoints/demo_23.dat};
 \addplot3 [forget plot,
-name path=path20,
 opacity=0,
-color={c049804980498}] table [x=x,y=y,z=z] {datapoints/demo_24.dat};
+color={c049804980498},
+name path=path20] table [x=x,y=y,z=z] {datapoints/demo_24.dat};
 \addplot3 [forget plot,
 color={c100000000160},
 opacity=0.5] fill between [of=path19 and path20];
@@ -264,7 +268,8 @@ ylabel={$y_2$},
 width=6.0cm,
 height=5.0cm,
 xmin=\xmina,
-xmax=\xmaxa]
+xmax=\xmaxa,
+]
 \addplot [forget plot,
 color=blue,
 mark=*,

@@ -289,7 +289,10 @@ class Graph(BaseGraph):
 
         self._opacity = 1
         self._path_name = path_name
-        self._has_color = False
+        if self._settings.get("fill"):
+            self._has_color = True
+        else:
+            self._has_color = False
         self._style_str = None
 
     def _header(self):

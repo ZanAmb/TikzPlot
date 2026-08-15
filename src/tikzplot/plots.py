@@ -289,4 +289,5 @@ def gca():
     return _current_axes
 
 def tight_layout():
-    pass
+    assert _current_figure
+    _current_figure.tight_layout()

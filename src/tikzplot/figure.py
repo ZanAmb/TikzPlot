@@ -367,3 +367,6 @@ class Figure:
     
     def _add_text(self, text):
         self.texts.append(text)
+
+    def tight_layout(self):
+        pass

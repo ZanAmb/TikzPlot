@@ -276,15 +276,24 @@ class BaseAxes:
     def hist(
         self,
         x: Union[ArrayLike, Sequence[ArrayLike]],
-        bins: int = ...,
-        density: bool = ...,
+        bins: int | Sequence[float] = 10,
         *,
-        cumulative: bool = ...,
+        weight: ArrayLike | None = None,
+        density: bool = False,
+        cumulative: bool = False,
+        histtype: Literal["bar", "barstacked", "step", "stepfilled"] = "bar",
         orientation: Literal["horizontal","vertical"] = "vertical",
-        rwidth: Optional[float] = ...,
-        range: Optional[Tuple[float,float]] = ...,
-        color: Optional[ColorLike] = ...,
-        **kwargs: Any
+        rwidth: float | None = None,
+        range: Tuple[float,float] | None = None,
+        color: ColorLike = ...,
+        facecolor: ColorLike = ...,
+        fc: ColorLike = ...,
+        edgecolor: ColorLike = ...,
+        ec: ColorLike = ...,
+        align: Literal["left", "mid", "right"] = ...,
+        stacked: bool = False,
+        fill: bool = True,
+        #**kwargs: Any
     ) -> None: 
         """
         Draw histogram to the selected axis.

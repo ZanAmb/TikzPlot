@@ -1,4 +1,5 @@
 from typing import Any
+from xml.dom import XMLNS_NAMESPACE
 
 import numpy as _np
 import matplotlib.pyplot as _plt
@@ -31,6 +32,8 @@ class BaseAxes:
 
         self._ext_ymin = False
         self._ext_ymax = False
+
+        self._reverse_elements = []
 
     def _plot(self, x, y, settings={}, xerr=None, yerr=None, **style):
         if isinstance(self, Axes) and self._polar:
@@ -219,25 +222,64 @@ class BaseAxes:
                 self._plot([xs[i]]*2, [ymins[i], ymaxs[i]], None, None, None, c=colorss[i], ls=lss[i])
 
     def hist(self, x, bins=10, density=False,**kwargs):
-        #kws = {"alpha", "color", "c", "label"}
-        #kwargs = self._check_kwargs("hist", kws, **kwargs)
-        try:
-            iter(x)
-            iter(x[0])
-            datasets = x
-        except:
-            datasets = [x]
+        kws = {"alpha", "color", "c", "label", "facecolor", "fc", "edgecolor", "ec", "orientation", "rwidth", "cumulative", "range", "histtype", "weights", "cumulative", "align", "stacked", "fill"}
+        kwargs = self._check_kwargs("hist", kws, **kwargs)
+        if isinstance(x, (list, tuple)) and len(x) > 0 and isinstance(x[0], (list, tuple, _np.ndarray)):
+            try:
+                datasets = [_np.asarray(ds, dtype=_np.float64) for ds in x]
+                if any(ds.ndim != 1 for ds in datasets):
+                    raise ValueError("Nested datasets must all be 1-dimensional.")
+            except (ValueError, TypeError):
+                x_arr = _np.asarray(x)
+                if x_arr.ndim == 2:
+                    datasets = [x_arr[:, i] for i in range(x_arr.shape[1])]
+                else:
+                    raise ValueError("Invalid dataset structure.")
+        else:
+            x_arr = _np.asarray(x)
+            if x_arr.ndim == 1:
+                datasets = [x_arr]
+            elif x_arr.ndim == 2:
+                datasets = [x_arr[:, i] for i in range(x_arr.shape[1])]
+            else:
+                raise ValueError(f"Input must be 1D or 2D, got {x_arr.ndim}D.")
+
+        stack = kwargs.pop("stacked", False)
+        datas = {}
+        for kw in ["color", "c", "facecolor", "fc", "edgecolor", "ec", "label"]:
+            if kw in kwargs:
+                if isinstance(kwargs[kw], (list)):
+                    if len(kwargs[kw]) != len(datasets):
+                        raise Warning(f"Length of {kw} does not match number of datasets.")
+                    prop = kwargs.pop(kw)
+                else:
+                    prop = [kwargs.pop(kw)] * len(datasets)
+                for i in range(len(datasets)):
+                    if i not in datas:
+                        datas[i] = {}
+                    datas[i][kw] = prop[i]
         all_data = _np.concatenate(datasets)
-        edges = _np.histogram_bin_edges(all_data, bins=bins)
+        edges = _np.histogram_bin_edges(all_data, bins=bins, weights=kwargs.get("weights", None), range=kwargs.get("range", None))
         widths = edges[1:] - edges[:-1]
+        offset = 0
         settings = {}
+        hist_type = kwargs.pop("histtype", "bar")
+        if hist_type not in ["bar", "barstacked", "step", "stepfilled"]:
+            raise Warning(f"Invalid histtype: {hist_type}.")
         if "orientation" in kwargs and kwargs["orientation"] == "horizontal":
             settings["xbar"] = None
         else:
             settings["ybar"] = None
-        settings["fill"] = None
-        if "rwidth" in kwargs:
-            settings["bar width"] = f"{widths.mean()*kwargs['rwidth']}"
+        if ("rwidth" in kwargs or (len(datasets) > 1 and not stack)) and isinstance(bins, int):
+            if stack or len(datasets) == 1:
+                settings["bar width"] = f"{widths.mean()*kwargs['rwidth']}"
+            else:
+                if "rwidth" in kwargs:
+                    settings["bar width"] = f"{widths.mean()*kwargs['rwidth']/(len(datasets)+1)}"
+                    offset = widths.mean() * kwargs['rwidth'] / (len(datasets) + 1)
+                else:
+                    settings["bar width"] = f"{widths.mean()/(len(datasets)+1)}"
+                    offset = widths.mean() / (len(datasets) + 1)
         else:
             if "xbar" in settings:
                 settings.pop("xbar")
@@ -252,13 +294,70 @@ class BaseAxes:
                 self.set_xlim(kwargs["range"])
             elif  isinstance(self, Secondary):
                 self._primary.set_xlim(kwargs["range"])
+        base_settings = settings.copy()
         outputs = []
-        for data in datasets:
-            counts, _ = _np.histogram(data, edges, density=density)
-            centers = (edges[:-1] + edges[1:]) / 2
+        old_counts = _np.zeros(len(edges), dtype=_np.float64)
+        totals, _ = _np.histogram(all_data, edges, density=False, weights=kwargs.get("weights", None), range=kwargs.get("range", None))
+        tot_sum = totals.sum()
+        for i in range(len(datasets)):
+            data = datasets[i]
+            settings = base_settings.copy()
+            kws = datas.get(i, {})
+            if "label" in kws:
+                if "xbar" in settings or "xbar interval" in settings:
+                    settings["xbar legend"] = None
+                else:
+                    settings["ybar legend"] = None
+            else:
+                settings["forget plot"] = None
+            fill = kws.pop("facecolor", kws.pop("fc", kws.pop("color", kws.pop("c", None))))
+            draw = kws.pop("edgecolor", kws.pop("ec", None))
+            if fill:
+                fill = self._match_color(fill)
+            settings["fill"] = fill
+            if draw and hist_type != "stepfilled":
+                draw = self._match_color(draw)
+                settings["draw"] = draw
+            else:
+                settings["draw"] = "none"
+            counts, _ = _np.histogram(data, edges, density=density, weights=kwargs.get("weights", None), range=kwargs.get("range", None))
+            if "xbar interval" in settings or "ybar interval" in settings: # edges for interval
+                if "rwidth" in kwargs:
+                    xs = [edges[0] + widths[0]*(1-kwargs["rwidth"])/2]
+                    new_counts = []
+                    for j in range(len(widths)):  # Changed 'i' to 'j' to avoid overwriting dataset index 'i'
+                        xs.append(xs[-1] + widths[j]*kwargs["rwidth"])
+                        new_counts.append(counts[j])
+                        if j < len(counts)-1:
+                            xs.append(xs[-1] + (widths[j] + widths[j+1])*(1-kwargs["rwidth"])/2)
+                            new_counts.append(0)
+                    counts = new_counts + [0]
+                else:
+                    xs = edges
+                    counts = _np.concatenate([counts, [0]])
+            else: # centers
+                xs = (edges[:-1] + edges[1:]) / 2
+                if offset > 0:
+                    settings["bar shift"] = f"{offset*(i - len(datasets)/2 + 0.5)}"
             if "cumulative" in kwargs and kwargs["cumulative"]:
                 counts = _np.cumsum(counts)
-            outputs.append(self._plot(centers, counts, settings=settings, **kwargs))
+            if stack:
+                if density:
+                    set_counts, _ = _np.histogram(data, edges, density=False, weights=kwargs.get("weights", None), range=kwargs.get("range", None))
+                    counts = counts * _np.sum(set_counts) / tot_sum
+                counts = _np.asarray(counts, dtype=_np.float64)
+                counts += old_counts
+                old_counts = counts.copy()
+            if hist_type == "step":
+                    kwargs.pop("facecolor", None)
+                    kwargs.pop("fc", None)
+                    kwargs.pop("fill", None)
+                    self.step([edges[0]] + list(edges), [0] + list(counts), where="pre", **kws)
+            else:
+                e = self._plot(xs, counts, settings=settings, **kws)
+                outputs.append(e)
+        if outputs and stack:
+            self._reverse_elements.append([id(e) for e in outputs])
         return outputs
     
     def step(self, x, y, *args, **kwargs):
@@ -363,6 +462,17 @@ class BaseAxes:
     _LEGEND_LOC_MAP = ["best", "upper right", "upper left", "lower_left", "lower right", "right", "center left", "center right", "lower center", "upper center", "center"]
     _ANCHOR_MAP = {"top": "north", "bottom": "south", "upper": "north", "lower": "south", "left": "west", "right": "east", "center": "center"}
 
+    def _match_color(self, input):
+        if isinstance(self, Axes) or isinstance(self, Secondary):
+            if input == "none":
+                return "none"
+            ccode, op = _tex_color(input, self._style)
+            if isinstance(ccode, str):
+                return ccode
+            r,g,b = ccode
+            self._add_col(r,g,b)
+            return f"c{r:.3f}{g:.3f}{b:.3f}".replace(".", "")
+
     def legend(self, *args, **kwargs):
         legend_string = {}
         if "loc" in kwargs:
@@ -396,28 +506,16 @@ class BaseAxes:
             if posit is not None and len(posit):
                 legend_string["anchor"] = posit
 
-        def match_color(input):
-            if isinstance(self, Axes) or isinstance(self, Secondary):
-                if input == "none":
-                    return "none"
-                ccode, op = _tex_color(input, self._style)
-                if isinstance(ccode, str):
-                    return ccode
-                r,g,b = ccode
-                self._add_col(r,g,b)
-                return f"c{r:.3f}{g:.3f}{b:.3f}".replace(".", "")
-
-
         if "facecolor" in kwargs and (isinstance(self, Axes) or isinstance(self, Secondary)):
-            ccode = match_color(kwargs["facecolor"])
+            ccode = self._match_color(kwargs["facecolor"])
             if ccode is not None:
                 legend_string["fill"] = ccode
         if "edgecolor" in kwargs and (isinstance(self, Axes) or isinstance(self, Secondary)):
-            ccode = match_color(kwargs["edgecolor"])
+            ccode = self._match_color(kwargs["edgecolor"])
             if ccode is not None:
                 legend_string["draw"] = ccode
         if "labelcolor" in kwargs and (isinstance(self, Axes) or isinstance(self, Secondary)):
-            ccode = match_color(kwargs["labelcolor"])
+            ccode = self._match_color(kwargs["labelcolor"])
             if ccode is not None:
                 self._legend_lab_col = ccode
         if "frameon" in kwargs and not kwargs["frameon"]:
@@ -476,12 +574,29 @@ class BaseAxes:
         return output
         
     def _content_tex(self, filename):
-        ouptut = "\n".join(e._to_tex(filename, self._legend_lab_col) for e in self._elements)
-        ouptut += self._add_legend_entries()
+        element_strings = {id(e): e._to_tex(filename, self._legend_lab_col) for e in self._elements}
+        seq_map = {seq[0]: seq for seq in self._reverse_elements}
+        output_list = []
+        visited = set()
+        for e in self._elements:
+            e_id = id(e)
+            if e_id in visited:
+                continue
+            if e_id in seq_map:
+                seq = seq_map[e_id]
+                for el in reversed(seq):
+                    output_list.append(element_strings[el])
+                    visited.add(el)
+            else:
+                output_list.append(element_strings[e_id])
+                visited.add(e_id)
+
+        output = "\n".join(output_list)
+        output += self._add_legend_entries()
         for coord in self._coordinates:
             x,y = self._coordinates[coord]
-            ouptut += f"\n\\coordinate ({coord}) at ({x},{y});"
-        return ouptut
+            output += f"\n\\coordinate ({coord}) at ({x},{y});"
+        return output
     
     def _get_hard_range(self,which):
         arg = f"{which[0]}mode"
@@ -557,6 +672,10 @@ class BaseAxes:
         for attr in defined:
             if attr in kwargs:
                 defined[attr](kwargs.pop(attr))
+
+    def _reoreder_last_elements(self, n):
+        if n <= 0: return
+        self._elements = self._elements[:-n] + self._elements[:-n-1:-1]
 
 class Axes(BaseAxes):
 
@@ -772,7 +891,7 @@ class Axes(BaseAxes):
         _plt.axis("off")
         _plt.imshow(*args, **kwargs)
         im_name = f"{str(main_name()[1]).removesuffix('.py')}_{TikzConfig.IMSHOW_SAVENAME}{_next_imshow_num()}.pdf"
-        _plt.savefig(im_name,bbox_inches='tight', pad_inches=0)
+        _plt.savefig(im_name, bbox_inches='tight', pad_inches=0)
         return im_name
 
     def _axis_option_string(self):
@@ -793,7 +912,7 @@ class Axes(BaseAxes):
             if "extent" in self._imshow[1]:
                 bounds = self._imshow[1]["extent"]
             xm, xM, ym, yM = bounds
-            self._elements.insert(0, Graph(self, f"graphics [xmin={xm}, xmax={xM}, ymin={ym}, ymax={yM}] {{{im_name}}}",settings={}, xerr=None, yerr=None, onlayer="axis background"))
+            self._elements.insert(0, Graph(self, f"graphics [xmin={xm}, xmax={xM}, ymin={ym}, ymax={yM}] {{{im_name}}}", settings={}, xerr=None, yerr=None, onlayer="axis background"))
         axis_opt_str = ""
         if self._axis_args:
             axis_opt_str += ",\n".join(self._axis_args)
