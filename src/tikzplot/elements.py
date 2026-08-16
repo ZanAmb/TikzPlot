@@ -13,6 +13,7 @@ class BaseGraph:
     _COLOR_MAP = {'b':'blue', 'g':'teal', 'r':'red', 'c':'cyan', 'm':'magenta', 'y':'yellow', 'k':'black', 'w':'white', "orange":"orange", "green": "green", "cyan":"cyan", "peru": "brown", "lime": "lime", "gray": "gray", "magenta": "magetna", "purple": "violet"}
     _LINE_MAP = {"--": "dashed", ":": "dotted", "-.": "dashdotted", "-":"solid"}
     _MARKER_MAP = {'o':'*', ".": "*", 's':'square*', '^':'triangle', 'v':'triangle*', 'd':'diamond', '+':'+', 'x':'x', '*':'star'}
+    _HATCH_MAP = {"-": {"Lines": {"angle": 0}}, "|": {"Lines": {"angle": 90}}, "+": {"Hatch": {}}, "x": {"Hatch": {"angle": 45}}, "/": {"Lines": {"angle": 45}}, "\\": {"Lines": {"angle": 135}}, ".": {"Dots": {"angle": 45}}, "*": {"Stars": {"angle": 45}}}
 
     _settings: dict[str, Any]
     _style: dict[str, Any]
@@ -119,7 +120,10 @@ class BaseGraph:
                 c = self._style.get("c", self._style.get("color"))
                 sel_col = match_color(c)
                 if sel_col:
-                    opts["color"] = f"{{{sel_col}}}"
+                    if "axhspan" in self._settings or "axvspan" in self._settings:
+                        opts["fill"] = f"{{{sel_col}}}"
+                    else:
+                        opts["color"] = f"{{{sel_col}}}"
 
         if "ls" in self._style or "linestyle" in self._style:
             ls = self._style.get("ls", self._style.get("linestyle"))
@@ -167,6 +171,49 @@ class BaseGraph:
             opts["opacity"] = self._opacity
         if not self._has_color and self._classic:
             opts["color"] = f"{{{match_color(f'C{self._axes._get_defcol()}')}}}"
+
+        if "hatch" in self._style:
+            def match_hatch(input):
+                chars = list(input)
+                hatches = []
+                while chars:
+                    if chars[0] in self._HATCH_MAP.keys():
+                        hatches.append(self._HATCH_MAP[chars[0]])
+                        chars.pop(0)
+                    elif len(chars) > 1 and chars[0] + chars[1] in self._HATCH_MAP.keys():
+                        hatches.append(self._HATCH_MAP[chars[0] + chars[1]])
+                        chars.pop(0)
+                        chars.pop(0)
+                    else:
+                        raise ValueError(f"Unrecognized hatch pattern {input}")
+                return hatches
+            hatch = match_hatch(self._style["hatch"])
+            hatch_args = {}
+            hatch_color = match_color(self._style.get("hatch_color", "black"))
+            if "hatch_linewidth" in self._style:
+                hatch_args["line width"] = f"{self._style['hatch_linewidth']}pt"
+            if "hatch_distance" in self._style:
+                hatch_args["distance"] = f"{self._style['hatch_distance']}"
+            opts["postaction"] = []
+            types = [list(h.keys())[0] for h in hatch]
+            duplicated_hatchs = set(k for k in types if types.count(k) > 1)
+            dhs = duplicated_hatchs.copy()
+            hatch = [h for h in hatch if list(h.keys())[0] not in duplicated_hatchs or duplicated_hatchs.remove(list(h.keys())[0])]
+            for i in range(len(hatch)):  
+                h = hatch[i]
+                h_type = list(h.keys())[0]
+                h_args = {"distance": 3.0} | h[h_type] | hatch_args
+                if h_type in dhs:
+                    h_args["distance"] = f"{h_args.get('distance', 3.0)/2}"
+                if h_type in ["Dots", "Stars", "Hatch"]:
+                    if h_type in ["Dots", "Stars"] and "line width" in h_args:
+                        h_args["radius"] = f"{h_args.pop('line width')}"
+                    if h_args.get("angle", 0) != 0:
+                        h_args["xshift"] = f"{0.5 * float(h_args.get('distance', 0)) / np.sin(np.radians(h_args.get('angle', 0)))}"
+                    else:
+                        h_args["yshift"] = f"{0.5 * float(h_args.get('distance', 0)) / np.cos(np.radians(h_args.get('angle', 0)))}"
+                opts["postaction"].append(f"pattern={{{h_type}[{', '.join(f'{k}={v}' for k,v in h_args.items())}]}}, pattern color={hatch_color}")
+            
         if self._classic:
             if isinstance(self, Graph) and (self._xerr is not None or self._yerr is not None) or (isinstance(self, Graph3) and self._zerr is not None):
                 opts["error bars/.cd"] = None
@@ -206,7 +253,16 @@ class BaseGraph:
                     self._p_dict[i] = self._st_dict[st]
                 opts["point meta"] = "explicit symbolic"
                 opts["scatter/classes"] = f"{{\n" + ',\n'.join(f"{v}={{{k}}}" for k,v in self._st_dict.items()) + "\n}"
-        self._style_str = ",\n".join(o if opts[o] is None else f"{o}={opts[o]}" for o in opts)
+        self._style_str = ""
+        for o in opts:
+            if opts[o] is None:
+                self._style_str += f"{o},\n"
+            elif isinstance(opts[o], list):
+                for q in opts[o]:
+                    self._style_str += f"{o}={{{q}}},\n"
+            else:
+                self._style_str += f"{o}={opts[o]},\n"
+        self._style_str.removesuffix(",\n")
         return self._style_str
     
     def _save_data(self, points, filename):
@@ -378,9 +434,9 @@ class Graph(BaseGraph):
             rect = f"\\fill[{style}] (axis cs:{self._x[0]}, {lower}) rectangle (axis cs:{self._x[1]}, {upper});"
             if self._label and self._axes._legend_on:
                 if label_opts:
-                    rect += f"\\addlegendentry[{label_opts}]{{{self._label}}}"
+                    rect += f"\\addlegendimage{{area legend, {style}}}\\addlegendentry[{label_opts}]{{{self._label}}}"
                 else:
-                    rect += f"\\addlegendentry{{{self._label}}}"
+                    rect += f"\\addlegendimage{{area legend, {style}}}\\addlegendentry{{{self._label}}}"
             if TikzConfig.USE_GROUPPLOTS:
                 return f"\\begin{{pgfonlayer}}{{axis background}}{rect}\\end{{pgfonlayer}}"
             return rect
@@ -393,9 +449,9 @@ class Graph(BaseGraph):
             rect = f"\\fill[{style}] (axis cs:{lower}, {self._y[0]}) rectangle (axis cs:{upper}, {self._y[1]});"
             if self._label and self._axes._legend_on:
                 if label_opts:
-                    rect += f"\\addlegendentry[{label_opts}]{{{self._label}}}"
+                    rect += f"\\addlegendimage{{area legend, {style}}}\\addlegendentry[{label_opts}]{{{self._label}}}"
                 else:
-                    rect += f"\\addlegendentry{{{self._label}}}"
+                    rect += f"\\addlegendimage{{area legend, {style}}}\\addlegendentry{{{self._label}}}"
             if TikzConfig.USE_GROUPPLOTS:
                 return f"\\begin{{pgfonlayer}}{{axis background}}{rect}\\end{{pgfonlayer}}"
             return rect

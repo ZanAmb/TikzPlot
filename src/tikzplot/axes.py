@@ -138,7 +138,7 @@ class BaseAxes:
             return self._plot(y,x,settings={"xcomb": None}, **kwargs)
 
     def fill_between(self, x, y1, y2=None, **kwargs):
-        kws = {"fmt", "alpha", "color", "c", "label"}
+        kws = {"fmt", "alpha", "color", "c", "label", "hatch", "hatch_color", "hatch_linewidth", "hatch_distance"}
         kwargs = self._check_kwargs("fill_between", kws, **kwargs)
         def _check_instance(xs, ys, pname):
             for el in self._elements:
@@ -222,7 +222,7 @@ class BaseAxes:
                 self._plot([xs[i]]*2, [ymins[i], ymaxs[i]], None, None, None, c=colorss[i], ls=lss[i])
 
     def hist(self, x, bins=10, density=False,**kwargs):
-        kws = {"alpha", "color", "c", "label", "facecolor", "fc", "edgecolor", "ec", "orientation", "rwidth", "cumulative", "range", "histtype", "weights", "cumulative", "align", "stacked", "fill"}
+        kws = {"alpha", "color", "c", "label", "facecolor", "fc", "edgecolor", "ec", "orientation", "rwidth", "cumulative", "range", "histtype", "weights", "cumulative", "align", "stacked", "fill", "hatch", "hatch_color", "hatch_linewidth", "hatch_distance"}
         kwargs = self._check_kwargs("hist", kws, **kwargs)
         if isinstance(x, (list, tuple)) and len(x) > 0 and isinstance(x[0], (list, tuple, _np.ndarray)):
             try:
@@ -246,7 +246,7 @@ class BaseAxes:
 
         stack = kwargs.pop("stacked", False)
         datas = {}
-        for kw in ["color", "c", "facecolor", "fc", "edgecolor", "ec", "label"]:
+        for kw in ["color", "c", "facecolor", "fc", "edgecolor", "ec", "label", "hatch", "hatch_color", "hatch_linewidth", "hatch_distance"]:
             if kw in kwargs:
                 if isinstance(kwargs[kw], (list)):
                     if len(kwargs[kw]) != len(datasets):
@@ -299,17 +299,29 @@ class BaseAxes:
         old_counts = _np.zeros(len(edges), dtype=_np.float64)
         totals, _ = _np.histogram(all_data, edges, density=False, weights=kwargs.get("weights", None), range=kwargs.get("range", None))
         tot_sum = totals.sum()
+        align_offset = 0
+        if "align" in kwargs:
+            if kwargs["align"] not in ["left", "mid", "right"]:
+                raise Warning(f"Invalid align value: {kwargs['align']}. Must be 'left', 'mid', or 'right'.")
+            if kwargs["align"] == "left":
+                align_offset = -widths.mean()/2
+            elif kwargs["align"] == "mid":
+                align_offset = 0
+            elif kwargs["align"] == "right":
+                align_offset = widths.mean()/2
         for i in range(len(datasets)):
             data = datasets[i]
             settings = base_settings.copy()
             kws = datas.get(i, {})
             if "label" in kws:
-                if "xbar" in settings or "xbar interval" in settings:
+                if "xbar" in settings:
                     settings["xbar legend"] = None
-                else:
+                elif "xbar interval" in settings:
+                    settings["xbar interval legend"] = None
+                elif "ybar" in settings:
                     settings["ybar legend"] = None
-            else:
-                settings["forget plot"] = None
+                else:
+                    settings["ybar interval legend"] = None
             fill = kws.pop("facecolor", kws.pop("fc", kws.pop("color", kws.pop("c", None))))
             draw = kws.pop("edgecolor", kws.pop("ec", None))
             if fill:
@@ -325,7 +337,7 @@ class BaseAxes:
                 if "rwidth" in kwargs:
                     xs = [edges[0] + widths[0]*(1-kwargs["rwidth"])/2]
                     new_counts = []
-                    for j in range(len(widths)):  # Changed 'i' to 'j' to avoid overwriting dataset index 'i'
+                    for j in range(len(widths)):
                         xs.append(xs[-1] + widths[j]*kwargs["rwidth"])
                         new_counts.append(counts[j])
                         if j < len(counts)-1:
@@ -339,6 +351,7 @@ class BaseAxes:
                 xs = (edges[:-1] + edges[1:]) / 2
                 if offset > 0:
                     settings["bar shift"] = f"{offset*(i - len(datasets)/2 + 0.5)}"
+            xs = xs + align_offset * _np.ones_like(xs)
             if "cumulative" in kwargs and kwargs["cumulative"]:
                 counts = _np.cumsum(counts)
             if stack:
@@ -386,7 +399,7 @@ class BaseAxes:
         self._plot((xmin, xmax), y, settings={"axhline": None}, **kwargs)
 
     def axvspan(self, xmin, xmax, ymin=0, ymax=1, **kwargs):
-        kws = {"c", "color", "alpha", "label"}
+        kws = {"c", "color", "alpha", "label", "hatch", "hatch_color", "hatch_linewidth", "hatch_distance"}
         kwargs = self._check_kwargs("axvspan", kws, **kwargs)
         self._ext_ymin = self._ext_ymax = True
         if TikzConfig.USE_GROUPPLOTS:
@@ -394,7 +407,7 @@ class BaseAxes:
         self._plot([xmin, xmax], [ymin, ymax], settings={"axvspan": None}, **kwargs)
 
     def axhspan(self, ymin, ymax, xmin=0, xmax=1, **kwargs):
-        kws = {"c", "color", "alpha", "label"}
+        kws = {"c", "color", "alpha", "label", "hatch", "hatch_color", "hatch_linewidth", "hatch_distance"}
         kwargs = self._check_kwargs("axhspan", kws, **kwargs)
         if isinstance(self, Secondary):
             self._primary._ext_xmin = self._primary._ext_xmax = True

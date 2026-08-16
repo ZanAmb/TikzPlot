@@ -7,6 +7,7 @@ ColorLike = Union[str, Sequence[float], Sequence[Sequence[float] | ArrayLike], n
 LineStyle = Literal["-", "--", "-.", ":", "solid", "dashed", "dashdot", "none", ""]
 MarkerStyle = Literal["o", "s", "^", "v", "x", "+", ".", "*", "None", ""]
 FontSize = Literal["xx-small", "x-small", "small", "medium", "large", "x-large", "xx-large"]
+HatchStyle = Literal["/", "\\", "|", "-", "+", "x", ".", "*"]
 
 
 class BaseAxes:   
@@ -190,7 +191,12 @@ class BaseAxes:
         y2: Optional[ArrayLike] = ...,
         alpha: Optional[float] = ...,
         color: Optional[ColorLike] = ...,
-        c: Optional[ColorLike] = ...
+        c: Optional[ColorLike] = ...,
+        label: Optional[str] = ...,
+        hatch: Optional[str] = ...,
+        hatch_color: Optional[ColorLike] = ...,
+        hatch_linewidth: Optional[float] = ...,
+        hatch_distance: Optional[float] = ...,
     ) -> None: 
         """
         Fill space between two plots (or a single plot and x-axis).
@@ -209,6 +215,17 @@ class BaseAxes:
         label: str, optional
             Legend entry
 
+        hatch: str, optional
+            The hatch pattern to use for filling the bars. Can be a string of characters that define the hatch pattern (e.g., '/', '\\', '|', '-', '+', 'x', '.', '*'). If not provided, no hatching is applied.
+
+        hatch_color: ColorLike, optional
+            The color of the hatch pattern. If not provided, the default color cycle is used.
+
+        hatch_linewidth: float, optional
+            The line width of the hatch pattern in points. If not provided, the default line width is used.
+
+        hatch_distance: float, optional
+            The distance between hatch lines in points. If not provided, the default distance is used.
         """
         ...
 
@@ -293,10 +310,64 @@ class BaseAxes:
         align: Literal["left", "mid", "right"] = ...,
         stacked: bool = False,
         fill: bool = True,
+        hatch: str = ...,
+        hatch_color: ColorLike = ...,
+        hatch_linewidth: float = ...,
+        hatch_distance: float = ...,
         #**kwargs: Any
     ) -> None: 
         """
         Draw histogram to the selected axis.
+
+        Parameters
+        ----------
+        x: ArrayLike or sequence of ArrayLike
+            Data to be histogrammed. If a sequence of arrays is given, each array is histogrammed separately and the result is stacked (if stacked=True) or overlaid.
+        
+        bins: int or sequence of float, optional
+            Number of bins or bin edges. If an integer is given, it defines the number of equal-width bins in the given range (10 by default). If a sequence is given, it defines the bin edges, including the rightmost edge.
+        
+        density: bool, optional
+            If True, the histogram is normalized to form a probability density, i.e., the area under the histogram will sum to 1. Default is False.
+        
+        cumulative: bool, optional
+            If True, the histogram is cumulative, i.e., each bin will contain the sum of all previous bins. Default is False.
+
+        histtype: {"bar", "barstacked", "step", "stepfilled"}, optional
+            The type of histogram to draw. "bar" (default) draws a traditional bar histogram, "barstacked" draws a stacked bar histogram, "step" draws a line plot that represents the histogram, and "stepfilled" draws a filled step plot.
+
+        orientation: {"horizontal", "vertical"}, optional
+            The orientation of the histogram. "vertical" (default) draws vertical bars, while "horizontal" draws horizontal bars.
+
+        rwidth: float, optional
+            The relative width of the bars as a fraction of the bin width. If None (default), the bars will be drawn with full width.
+
+        range: tuple of float, optional
+            The lower and upper range of the bins. If not provided, the range is automatically determined from the data.
+
+        color, facecolor, fc, edgecolor, ec: ColorLike, optional
+            The color of the bars. Can be a single color or a sequence of colors for multiple datasets. If not provided, the default color cycle is used.
+
+        align: {"left", "mid", "right"}, optional
+            The alignment of the bars. "mid" (default) centers the bars on the bin edges, "left" aligns the left edge of the bars with the bin edges, and "right" aligns the right edge of the bars with the bin edges.
+
+        stacked: bool, optional
+            If True, multiple datasets are stacked on top of each other. Default is False.
+
+        fill: bool, optional
+            If True (default), the bars are filled. If False, only the edges of the bars are drawn.
+
+        hatch: str, optional
+            The hatch pattern to use for filling the bars. Can be a string of characters that define the hatch pattern (e.g., '/', '\\', '|', '-', '+', 'x', '.', '*'). If not provided, no hatching is applied.
+
+        hatch_color: ColorLike, optional
+            The color of the hatch pattern. If not provided, the default color cycle is used.
+
+        hatch_linewidth: float, optional
+            The line width of the hatch pattern in points. If not provided, the default line width is used.
+
+        hatch_distance: float, optional
+            The distance between hatch lines in points. If not provided, the default distance is used.
         """
         ...
 
@@ -394,7 +465,7 @@ class BaseAxes:
             Legend entry
         """
 
-    def axvspan(self, xmin:float, xmax:float, ymin:float=0, ymax:float=1, alpha:Optional[float] = ..., color:Optional[ColorLike] = ..., label:Optional[str] = ...) -> None:
+    def axvspan(self, xmin:float, xmax:float, ymin:float=0, ymax:float=1, alpha:Optional[float] = ..., color:Optional[ColorLike] = ..., label:Optional[str] = ..., hatch:Optional[str] = ..., hatch_color:Optional[ColorLike] = ..., hatch_linewidth:Optional[float] = ..., hatch_distance:Optional[float] = ...) -> None:
         """
         Draw a background vertical span to the selected axis between given x coordinates.
 
@@ -414,9 +485,21 @@ class BaseAxes:
 
         label: str, optional
             Legend entry
+
+        hatch: str, optional
+            The hatch pattern to use for filling the bars. Can be a string of characters that define the hatch pattern (e.g., '/', '\\', '|', '-', '+', 'x', '.', '*'). If not provided, no hatching is applied.
+
+        hatch_color: ColorLike, optional
+            The color of the hatch pattern. If not provided, the default color cycle is used.
+
+        hatch_linewidth: float, optional
+            The line width of the hatch pattern in points. If not provided, the default line width is used.
+
+        hatch_distance: float, optional
+            The distance between hatch lines in points. If not provided, the default distance is used.
         """
 
-    def axhspan(self, ymin:float, ymax:float, xmin:float=0, xmax:float=1, alpha:Optional[float] = ..., color:Optional[ColorLike] = ..., label:Optional[str] = ...) -> None:
+    def axhspan(self, ymin:float, ymax:float, xmin:float=0, xmax:float=1, alpha:Optional[float] = ..., color:Optional[ColorLike] = ..., label:Optional[str] = ..., hatch:Optional[str] = ..., hatch_color:Optional[ColorLike] = ..., hatch_linewidth:Optional[float] = ..., hatch_distance:Optional[float] = ...) -> None:
         """
         Draw a background horizontal span to the selected axis between given y coordinates.
 
@@ -436,6 +519,19 @@ class BaseAxes:
 
         label: str, optional
             Legend entry
+        
+        hatch: str, optional
+            The hatch pattern to use for filling the bars. Can be a string of characters that define the hatch pattern (e.g., '/', '\\', '|', '-', '+', 'x', '.', '*'). If not provided, no hatching is applied.
+
+        hatch_color: ColorLike, optional
+            The color of the hatch pattern. If not provided, the default color cycle is used.
+
+        hatch_linewidth: float, optional
+            The line width of the hatch pattern in points. If not provided, the default line width is used.
+
+        hatch_distance: float, optional
+            The distance between hatch lines in points. If not provided, the default distance is used.
+        
         """
 
     def magnify(self, x_p: float, y_p: float, x_m: float, y_m: float, zoom: float, size: float, **kwargs) -> int:
