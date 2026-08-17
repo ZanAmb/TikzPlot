@@ -1,10 +1,8 @@
 \documentclass[tikz,border=2pt]{standalone}
 \usepackage{tikz}
 \usepackage{pgfplots}
-\usepgfplotslibrary{fillbetween}
-\usepgfplotslibrary{polar}
-\pgfplotsset{compat=1.18}
 \usepackage{xcolor}
+\pgfplotsset{compat=1.18}
 \begin{document}
 
 \begin{tikzpicture}
@@ -18,9 +16,11 @@
 alias=p0,
 ylabel={$y$},
 grid=both,
-minor grid style={dotted},
+minor grid style={dotted,
+},
 major grid style={color={teal},
-opacity=0.5},
+opacity=0.5,
+},
 minor tick num=2,
 xmin=0,
 xmax=10,
@@ -29,15 +29,18 @@ height=10.0cm,
 extra x ticks={0},
 ]
 \addplot [forget plot,
-color={blue}] table [x=x,y=y] {datapoints/figure1_1.dat};
+color={blue},
+] table [x=x,y=y] {datapoints/figure1_1.dat};
 \addplot [forget plot,
 color={red},
-only marks] table [x=x,y=y] {datapoints/figure1_2.dat};
+only marks,
+] table [x=x,y=y] {datapoints/figure1_2.dat};
 \addplot [forget plot,
 color={black},
 error bars/.cd,
 y dir=both,
-y explicit] table [x=x,y=y,y error=yerror] {datapoints/figure1_3.dat};
+y explicit,
+] table [x=x,y=y,y error=yerror] {datapoints/figure1_3.dat};
 \end{axis}
 \end{tikzpicture}
 \end{document}

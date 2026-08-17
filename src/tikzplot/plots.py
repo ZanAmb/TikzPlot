@@ -258,7 +258,7 @@ def yscale( *args, **kwargs):
     assert _current_axes
     _current_axes.set_yscale(*args, **kwargs)
 
-def savefig(filename):
+def savefig(filename, standalone=None, print_requirements=False):
     _im = False
     if filename.endswith(".png"):
         if not TikzConfig.STANDALONE:
@@ -273,11 +273,11 @@ def savefig(filename):
     if _im:
         _current_figure._save_image(filename)
     else:
-        _current_figure._save(filename)
+        _current_figure._save(filename, standalone=standalone, print_requirements=print_requirements)
 
-def show():
+def show(standalone=None, print_requirements=False):
     assert _current_figure
-    _current_figure._save(f"{str(main_name()[1]).removesuffix('.py')}_{TikzConfig.SHOW_SAVENAME}{next_show_num()}.tex")
+    _current_figure._save(f"{str(main_name()[1]).removesuffix('.py')}_{TikzConfig.SHOW_SAVENAME}{next_show_num()}.tex", standalone=standalone, print_requirements=print_requirements)
     clf()
 
 def clf():

@@ -15,13 +15,15 @@ Alternativley, download this package and install using: `pip install [path]`, wh
 Instead of using `import matplotlib.pyplot (as plt)`, use `import tikzplot.plots (as plt)`.
 
 ## LaTeX requirements
+All required packages are automatically detected and can be printed at save using kwarg `print_requirements=True` (for standalone files, preambule is automatically added).
 - `\usepackage{tikz}`,
 - `\usepackage{pgfplots}`,
 - `\pgfplotsset{compat=1.18}` (may be lower, but compilation is not guaranteed),
 - `\usepgfplotslibrary{fillbetween}` (if you use fill-between plots),
 - `\usepgfplotslibrary{groupplots}` (recommended for best results, enabled by default, may be avoided by setting TikzConfig USE_GROUPPLOTS=False),
 - `\usepackage{xcolor}` (recommended for best colors, works without but needs change of TikzConfig USE_XCOLOR=False),
-- `\usepgfplotslibrary{polar}` required for polar axis.
+- `\usepgfplotslibrary{polar}` required for polar axis,
+- `\usetikzlibrary{patterns.meta}` for hatch patterns (available for fill_between, hist and axvspan/axhspan).
 
 Export using `plt.savefig("example_graph.tex")` (recommended) or `plt.show()`.
 Then use the generated file as `\input{example_graph.tex}`.
@@ -88,6 +90,7 @@ For plot configurations (default sizes, paddings, etc.), use `from tikzplot impo
 Currently supported parameters are listed with their default values in `src/tikzplot/config.py`.
 
 ## More features coming soon...
+- bar plots,
 - more developed styles,
 - improved 3D plots (currently only basic support: plot, errorbar, fill_between, scatter, plot_wireframe, plot_surface),
 - ... 

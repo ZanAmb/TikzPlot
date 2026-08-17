@@ -37,6 +37,8 @@ class Figure:
 
         self._lims = {"xmin": {}, "xmax": {}, "ymin": {}, "ymax": {}}
 
+        self._required_packages: dict[str, int] = {} # int for priority: 0-tikz, 1-pgfplots, 2-other packages, 3-pgfplotsset, 4-tikzlibraries, 5-pgfplotslibraries
+
     def add_subplot(self, nrows=1, ncols=1, index=1, sharex=None, sharey=None, projection=None, polar=False):
         if projection=="3d":
             ax = Axes3(nrows, ncols, index, self)
@@ -261,32 +263,13 @@ class Figure:
         for ax in self._axes:
             ax._reduce_points(limit)
 
-    def _to_tex(self, filename, png=False):
+    def _to_tex(self, filename, png=False, standalone=None, print_requirements=False):
         single = self._nrows * self._ncols == 1
         if not self._axes:
             return ""
         self._shared_ranges()
         if TikzConfig.REDUCE_NUM_POINTS:
             self._reduce_points()
-        preambule = ""
-        if TikzConfig.STANDALONE:
-            if png:
-                preambule += "\\documentclass[tikz,border=2pt,convert={density=300,outext=.png}]{standalone}\n"
-            else:
-                preambule += "\\documentclass[tikz,border=2pt]{standalone}\n"
-            preambule += "\\usepackage{tikz}\n"
-            preambule += "\\usepackage{pgfplots}\n"
-            if TikzConfig.USE_GROUPPLOTS and not single:
-                preambule += "\\usepgfplotslibrary{groupplots}\n"
-            preambule += "\\usepgfplotslibrary{fillbetween}\n"
-            preambule += "\\usepgfplotslibrary{polar}\n"
-            preambule += f"\\pgfplotsset{{compat={TikzConfig.TIKZ_COMPAT}}}\n"
-            if TikzConfig.USE_XCOLOR:
-                preambule += "\\usepackage{xcolor}\n"
-            if self._spies:
-                 preambule += "\\usetikzlibrary{spy}\n"
-            preambule += "\\begin{document}\n"
-            
         lines0 = [g for g in self._globals]
         lines = []
         lines2 = []
@@ -319,8 +302,23 @@ class Figure:
         for c in self._col_dict:
             r,g,b=self._col_dict[c]
             lines0.insert(1,f"\\definecolor{{{c}}}{{rgb}}{{{r:.3f}, {g:.3f}, {b:.3f}}}")
+        preambule = ""
+        stdalone = TikzConfig.STANDALONE if standalone is None else standalone
+        if stdalone:
+            if png:
+                preambule += "\\documentclass[tikz,border=2pt,convert={density=300,outext=.png}]{standalone}\n"
+            else:
+                preambule += "\\documentclass[tikz,border=2pt]{standalone}\n"
+            self._check_required_packages()
+            preambule += "\n".join(self._required_packages.keys()) + "\n"
+            preambule += "\\begin{document}\n"
+        if print_requirements and not stdalone:
+            self._check_required_packages()
+            print("Required packages:")
+            for p in self._required_packages.keys():
+                print(p)
         fin = ""
-        if TikzConfig.STANDALONE:
+        if stdalone:
             fin += "\\end{document}"
         for k in self._lims.keys():
             for j in self._lims[k]:
@@ -329,8 +327,8 @@ class Figure:
         output = preambule + "\n" + "\n".join(lines) + "\n" + fin
         return output
 
-    def _save(self, filename):
-        content = self._to_tex(filename)
+    def _save(self, filename, standalone=None, print_requirements=False):
+        content = self._to_tex(filename, png=False, standalone=standalone, print_requirements=print_requirements)
         if not TikzConfig.SAVE_DATAPOINTS or (TikzConfig.SAVE_DATAPOINTS and not TikzConfig.UPDATE_DATA_ONLY):
             with open(filename, "w", encoding="utf-8") as f:
                 f.write(content)
@@ -370,3 +368,29 @@ class Figure:
 
     def tight_layout(self):
         pass
+
+    def _add_required_package(self, package):
+        if package not in self._required_packages:
+            if package.startswith("\\usepackage"):
+                self._required_packages[package] = 2
+            elif package.startswith("\\pgfplotsset"):
+                self._required_packages[package] = 3
+            elif package.startswith("\\usetikzlibrary"):
+                self._required_packages[package] = 4
+            elif package.startswith("\\usepgfplotslibrary"):
+                self._required_packages[package] = 5
+            else:
+                self._required_packages[package] = 6
+
+    def _check_required_packages(self):
+        single = self._nrows * self._ncols == 1
+        self._required_packages["\\usepackage{tikz}"] = 0
+        self._required_packages["\\usepackage{pgfplots}"] = 1
+        if TikzConfig.USE_GROUPPLOTS and not single:
+            self._required_packages["\\usepgfplotslibrary{groupplots}"] = 5
+        self._required_packages[f"\\pgfplotsset{{compat={TikzConfig.TIKZ_COMPAT}}}"] = 3
+        if TikzConfig.USE_XCOLOR:
+            self._required_packages["\\usepackage{xcolor}"] = 2
+        if self._spies:
+            self._required_packages["\\usetikzlibrary{spy}"] = 4
+        self._required_packages = dict(sorted(self._required_packages.items(), key=lambda item: item[1]))

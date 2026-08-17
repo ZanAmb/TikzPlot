@@ -173,6 +173,7 @@ class BaseGraph:
             opts["color"] = f"{{{match_color(f'C{self._axes._get_defcol()}')}}}"
 
         if "hatch" in self._style:
+            self._axes._fig._add_required_package("\\usetikzlibrary{patterns.meta}")
             def match_hatch(input):
                 chars = list(input)
                 hatches = []

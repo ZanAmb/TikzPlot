@@ -147,6 +147,7 @@ class BaseAxes:
                 else:
                     return None
         assert self._fig is not None
+        self._fig._add_required_package("\\usepgfplotslibrary{fillbetween}")
         name1 = self._fig._get_free_path_name()
         name2 = self._fig._get_free_path_name()
         if isinstance(y1, (int, float)):
@@ -1002,6 +1003,8 @@ class Axes(BaseAxes):
     def _to_tex(self, filename, single):
         lines = []
         lines2 = []
+        if self._polar:
+            self._fig._add_required_package("\\usepgfplotslibrary{polar}")
         if self._polar and TikzConfig.USE_GROUPPLOTS and not single:
             lines.append(f"\\nextgroupplot[alias={self._axis_options['alias']}, width={self._width}, height={self._height}, hide axis]")
             lines2.append("\\begin{polaraxis}")
