@@ -125,7 +125,7 @@ class BaseAxes:
         ...
     def errorbar(self, x: ArrayLike = ..., y: ArrayLike = ..., yerr: Optional[ArrayLike | float] = ..., xerr: Optional[ArrayLike | float] = ..., fmt: Optional[str] = ..., *, alpha: Optional[float] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ...,
              linestyle: Optional[LineStyle] = ..., ls: Optional[LineStyle] = ..., linewidth: Optional[float]= ..., lw: Optional[float] = ...,
-             marker: Optional[MarkerStyle] = ..., markersize: Optional[float] = ..., ms: Optional[float] = ...,  label:Optional[str]=...) -> None:
+             marker: Optional[MarkerStyle] = ..., markersize: Optional[float] = ..., ms: Optional[float] = ...,  label: Optional[str]= ..., ecolor: Optional[ColorLike] = ..., elinewidth: Optional[float] = ..., capsize: Optional[float] = ..., elinestyle: Optional[LineStyle] = ...) -> None:
         """
         Draw a plot with errrorbars to the selected axis.
 
@@ -160,6 +160,18 @@ class BaseAxes:
 
         markersize or ms: float, optional
             Mark size in pt
+
+        ecolor: float, optional
+            Color of errorbar
+
+        elinewidth: float, optional
+            Errorbar line width in pt
+
+        capsize: float, optional
+            Errorbar cap length in pt
+
+        elinestyle: str, optional
+            Errorbar line style
         """
         ...
     def stem(self, *args: Any, orientation: Literal["horizontal","vertical"] = "vertical", linefmt:Optional[str] = ..., markerfmt:Optional[str]=...,

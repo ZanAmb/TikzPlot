@@ -36,6 +36,8 @@ class BaseGraph:
         self._has_color = False
         self._style_str = None
 
+        self._errorbar_style = {}
+
     def _normalize_error(self, err, n):
         if err is None:
             return None, False
@@ -214,7 +216,20 @@ class BaseGraph:
                     else:
                         h_args["yshift"] = f"{0.5 * float(h_args.get('distance', 0)) / np.cos(np.radians(h_args.get('angle', 0)))}"
                 opts["postaction"].append(f"pattern={{{h_type}[{', '.join(f'{k}={v}' for k,v in h_args.items())}]}}, pattern color={hatch_color}")
-            
+
+        if "ecolor" in self._style:
+            sel_col = match_color(self._style['ecolor'])
+            if sel_col:
+                self._errorbar_style["color"] = f"{{{sel_col}}}"
+        if "elinewidth" in self._style:
+            self._errorbar_style["line width"] = f"{self._style['elinewidth']}pt"
+        if "capsize" in self._style:
+            self._errorbar_style["mark size"] = f"{self._style['capsize']}pt"
+        if "elinestyle" in self._style:
+            sel_ls = match_ls(self._style['elinestyle'])
+            if sel_ls:
+                self._errorbar_style[sel_ls] = None
+
         if self._classic:
             if isinstance(self, Graph) and (self._xerr is not None or self._yerr is not None) or (isinstance(self, Graph3) and self._zerr is not None):
                 opts["error bars/.cd"] = None
@@ -224,6 +239,8 @@ class BaseGraph:
                 if self._yerr is not None:
                     opts["y dir"] = "both"
                     opts["y explicit"] = None
+                if self._errorbar_style:
+                    opts["error bar style"] = self._errorbar_style
                 if isinstance(self, Graph3) and self._zerr is not None:
                     opts["z dir"] = "both"
                     opts["z explicit"] = None
@@ -261,6 +278,8 @@ class BaseGraph:
             elif isinstance(opts[o], list):
                 for q in opts[o]:
                     self._style_str += f"{o}={{{q}}},\n"
+            elif isinstance(opts[o], dict):
+                self._style_str += f"{o}={{{', '.join(f'{k}={v}' if v is not None else f'{k}' for k,v in opts[o].items())}}},\n"
             else:
                 self._style_str += f"{o}={opts[o]},\n"
         self._style_str.removesuffix(",\n")

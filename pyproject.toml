@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tikzplot42"
-version = "0.4.7"
+version = "0.4.8"
 description = "TikzPlot to make TikZ/PGFPlots plots with matplotlib.pyplot-like syntax."
 authors = [
     { name = "Zan Ambrozic", email = "zan.ambrozic7@gmail.com" }
 ]
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.12"
 license = { file = "LICENSE" }
 keywords = ["tikz", "pgfplots", "matplotlib", "latex", "plotting"]
 classifiers = [
@@ -18,12 +18,9 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Scientific/Engineering :: Visualization",
 ]
 dependencies = ["numpy", "matplotlib"]

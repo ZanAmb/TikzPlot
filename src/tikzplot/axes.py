@@ -106,7 +106,7 @@ class BaseAxes:
         return self._plot(x, y, **kwargs)
 
     def errorbar(self, x, y, *args, **kwargs):
-        kws = {"xerr", "yerr", "fmt", "alpha", "color", "c", "linestyle", "ls", "linewidth", "lw", "marker", "markersize", "ms", "label"}
+        kws = {"xerr", "yerr", "fmt", "alpha", "color", "c", "linestyle", "ls", "linewidth", "lw", "marker", "markersize", "ms", "label", "capsize", "ecolor", "elinewidth", "elinestyle"}
         kwargs = self._check_kwargs("errorbar", kws, **kwargs)
         if len(args) == 1:
             return self._plot(x, y, **kwargs, yerr=args[0])

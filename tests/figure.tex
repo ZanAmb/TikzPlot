@@ -81,6 +81,7 @@ color={black},
 error bars/.cd,
 y dir=both,
 y explicit,
+error bar style={color={gray}, line width=0.5pt, mark size=3pt},
 ] table [x=x,y=y,y error=yerror] {datapoints/figure_8.dat};\addlegendentry{data}
 \addplot [forget plot,
 opacity=0,

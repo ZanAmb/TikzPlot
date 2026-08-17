@@ -284,6 +284,18 @@ def errorbar(self, x: ArrayLike = ..., y: ArrayLike = ..., yerr: Optional[ArrayL
     
     markersize or ms: float, optional
         Mark size in pt
+
+    ecolor: float, optional
+        Color of errorbar
+
+    elinewidth: float, optional
+        Errorbar line width in pt
+
+    capsize: float, optional
+        Errorbar cap length in pt
+
+    elinestyle: str, optional
+        Errorbar line style
     """
     ...
 def scatter(self, x: ArrayLike = ..., y: ArrayLike = ..., fmt: Optional[str] = ..., *,alpha: Optional[float] = ..., color: Optional[Union[Sequence[ColorLike], ColorLike]] = ..., c: Optional[ColorLike] = ...,

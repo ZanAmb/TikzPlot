@@ -57,7 +57,7 @@ ax.set_title("Semilog Y")
 ax = axs[1, 1]
 x = x[::10]
 y = y[::10]
-ax.errorbar(x, y, yerr=0.2, fmt="-", color="black", label="data")
+ax.errorbar(x, y, yerr=0.2, fmt="-", color="black", label="data", ecolor="gray", elinewidth=0.5, capsize=3)
 ax.fill_between(x, y - 0.1, y + 0.1, alpha=0.3, color="gray")
 ax.legend()
 ax.set(xlim=(0,10), ylim=(-1.5,1.5))
