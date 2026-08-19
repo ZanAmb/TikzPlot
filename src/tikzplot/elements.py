@@ -171,7 +171,7 @@ class BaseGraph:
 
         if self._opacity < 1:
             opts["opacity"] = self._opacity
-        if not self._has_color and self._classic:
+        if not self._has_color and self._classic and self._opacity > 0:
             opts["color"] = f"{{{match_color(f'C{self._axes._get_defcol()}')}}}"
 
         if "hatch" in self._style:
@@ -279,7 +279,8 @@ class BaseGraph:
                 for q in opts[o]:
                     self._style_str += f"{o}={{{q}}},\n"
             elif isinstance(opts[o], dict):
-                self._style_str += f"{o}={{{', '.join(f'{k}={v}' if v is not None else f'{k}' for k,v in opts[o].items())}}},\n"
+                if opts[o] != {}:
+                    self._style_str += f"{o}={{{', '.join(f'{k}={v}' if v is not None else f'{k}' for k,v in opts[o].items())}}},\n"
             else:
                 self._style_str += f"{o}={opts[o]},\n"
         self._style_str.removesuffix(",\n")
@@ -316,6 +317,7 @@ class Graph(BaseGraph):
         super().__init__()
         self._axes = axes
         #self._classic = False
+        self._range_with_error = False
         self._style = style
         if settings != {}:
             self._settings = settings
@@ -419,7 +421,7 @@ class Graph(BaseGraph):
         return "\n".join(rows)
     
     def _to_tex(self, filename, label_opts=None):
-        style = self._style_string()
+        style = self._style_string().removesuffix(",\n")
 
         def rel_coor(which, m, M, v):
             if self._axes._axis_options.get(f"{which}mode") == "log":
@@ -452,11 +454,15 @@ class Graph(BaseGraph):
             yM = self._axes._fig._get_limname("ymax", yM)
             lower, upper = rel_coor("y", ym, yM, self._y)
             rect = f"\\fill[{style}] (axis cs:{self._x[0]}, {lower}) rectangle (axis cs:{self._x[1]}, {upper});"
-            if self._label and self._axes._legend_on:
+            if self._label and (self._axes._legend_on or self._axes._overlay_legend):
                 if label_opts:
-                    rect += f"\\addlegendimage{{area legend, {style}}}\\addlegendentry[{label_opts}]{{{self._label}}}"
+                    l = f"\\addlegendimage{{area legend, {style.replace('\n', ' ')}}}\\addlegendentry[{label_opts}]{{{self._label}}}"
                 else:
-                    rect += f"\\addlegendimage{{area legend, {style}}}\\addlegendentry{{{self._label}}}"
+                    l = f"\\addlegendimage{{area legend, {style.replace('\n', ' ')}}}\\addlegendentry{{{self._label}}}"
+                if self._axes._legend_on:
+                    rect += l
+                else:
+                    self._axes._add_overlay_legend_entry(l)
             if TikzConfig.USE_GROUPPLOTS:
                 return f"\\begin{{pgfonlayer}}{{axis background}}{rect}\\end{{pgfonlayer}}"
             return rect
@@ -467,11 +473,15 @@ class Graph(BaseGraph):
             xM = self._axes._fig._get_limname("xmax", xM)
             lower, upper = rel_coor("x", xm, xM, self._x)
             rect = f"\\fill[{style}] (axis cs:{lower}, {self._y[0]}) rectangle (axis cs:{upper}, {self._y[1]});"
-            if self._label and self._axes._legend_on:
+            if self._label and (self._axes._legend_on or self._axes._overlay_legend):
                 if label_opts:
-                    rect += f"\\addlegendimage{{area legend, {style}}}\\addlegendentry[{label_opts}]{{{self._label}}}"
+                    l = f"\\addlegendimage{{area legend, {style.replace('\n', ' ')}}}\\addlegendentry[{label_opts}]{{{self._label}}}"
                 else:
-                    rect += f"\\addlegendimage{{area legend, {style}}}\\addlegendentry{{{self._label}}}"
+                    l = f"\\addlegendimage{{area legend, {style.replace('\n', ' ')}}}\\addlegendentry{{{self._label}}}"
+                if self._axes._legend_on:
+                    rect += l
+                else:
+                    self._axes._add_overlay_legend_entry(l)
             if TikzConfig.USE_GROUPPLOTS:
                 return f"\\begin{{pgfonlayer}}{{axis background}}{rect}\\end{{pgfonlayer}}"
             return rect
@@ -479,7 +489,10 @@ class Graph(BaseGraph):
         if self._classic:
             header = self._header()
             rows = self._rows()
-            table_opts = "x=x,y=y"
+            if "xbar" in self._settings or "xbar interval" in self._settings:
+                table_opts = "x=y,y=x"
+            else:
+                table_opts = "x=x,y=y"
             if self._xerr is not None:
                 table_opts += ",x error=xerror"
             if self._yerr is not None:
@@ -493,10 +506,15 @@ class Graph(BaseGraph):
             if TikzConfig.SAVE_DATAPOINTS:
                 datapoints = self._save_data(datapoints, filename)
             if not TikzConfig.SAVE_DATAPOINTS or (TikzConfig.SAVE_DATAPOINTS and not TikzConfig.UPDATE_DATA_ONLY):
-                if self._label and self._axes._legend_on:
+                if self._label and (self._axes._legend_on or self._axes._overlay_legend):
                     if label_opts:
-                        return f"\\addplot [{style}] table [{table_opts}] {{{datapoints}}};\\addlegendentry[{label_opts}]{{{self._label}}}"
-                    return f"\\addplot [{style}] table [{table_opts}] {{{datapoints}}};\\addlegendentry{{{self._label}}}"
+                        l = f"\\addlegendentry[{label_opts}]{{{self._label}}}"
+                    else:
+                        l = f"\\addlegendentry{{{self._label}}}"
+                    if self._axes._legend_on:
+                        return f"\\addplot [{style}] table [{table_opts}] {{{datapoints}}};{l}"
+                    self._axes._add_overlay_legend_entry(f"\\addlegendimage{{{style.replace('\n', ' ')}}}{l}")
+                    return f"\\addplot [forget plot,\n{style}] table [{table_opts}] {{{datapoints}}};"
                 return f"\\addplot [forget plot,\n{style}] table [{table_opts}] {{{datapoints}}};"
             return ""
         elif TikzConfig.SAVE_DATAPOINTS or not (TikzConfig.SAVE_DATAPOINTS and not TikzConfig.UPDATE_STYLE_ONLY):
@@ -516,13 +534,45 @@ class Graph(BaseGraph):
     def _get_erange(self, which):
         if self._classic:
             if which == "xmin":
-                return min(self._x)
+                data = self._x
+                if self._range_with_error and self._xerr is not None:
+                    if self._x_asym:
+                        data = self._x - self._xerr[:,0]
+                    else:
+                        data = self._x - self._xerr
+                if "ybar" in self._settings:
+                    return min(data) - float(self._settings.get("bar width", 0)) / 2
+                return min(data)
             if which == "xmax":
-                return max(self._x)
+                data = self._x
+                if self._range_with_error and self._xerr is not None:
+                    if self._x_asym:
+                        data = self._x + self._xerr[:,1]
+                    else:
+                        data = self._x + self._xerr
+                if "ybar" in self._settings:
+                    return max(data) + float(self._settings.get("bar width", 0)) / 2
+                return max(data)
             if which == "ymin":
-                return min(self._y)
+                data = self._y
+                if self._range_with_error and self._yerr is not None:
+                    if self._y_asym:
+                        data = self._y - self._yerr[:,0]
+                    else:
+                        data = self._y - self._yerr
+                if "xbar" in self._settings:
+                    return min(data) - float(self._settings.get("bar width", 0)) / 2
+                return min(data)
             if which == "ymax":
-                return max(self._y)
+                data = self._y
+                if self._range_with_error and self._yerr is not None:
+                    if self._y_asym:
+                        data = self._y + self._yerr[:,1]
+                    else:
+                        data = self._y + self._yerr
+                if "xbar" in self._settings:
+                    return max(data) + float(self._settings.get("bar width", 0)) / 2
+                return max(data)
         elif "axvline" == self._settings and which in ["xmin", "xmax"]:
             return self._x
         elif "axhline" == self._settings and which in ["ymin", "ymax"]:
@@ -530,6 +580,8 @@ class Graph(BaseGraph):
         
     def _filter(self, which, value):
         if self._classic:
+            if isinstance(value, str):
+                value = self._axes._fig._lims[which][value]
             if which == "xmin":
                 mask = self._x >= value
                 idx_keep = np.where(self._x < value)[0]
@@ -575,6 +627,10 @@ class Graph(BaseGraph):
         if self._classic:
             return np.array_equal(np.asarray(x),self._x) and np.array_equal(np.asarray(y),self._y)
         return False
+    def _get_points(self):
+        if self._classic:
+            return self._x, self._y
+        return None, None
     
     def _reduce_points(self, limit):
         if self._classic:

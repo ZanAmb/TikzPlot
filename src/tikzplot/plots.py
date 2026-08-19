@@ -196,6 +196,20 @@ def hist(*args, **kwargs):
         raise ValueError("hist is not supported for 3D axes.")
     return _current_axes.hist(*args, **kwargs)
 
+def bar(*args, **kwargs):
+    _ensure_axes()
+    assert _current_axes
+    if isinstance(_current_axes, Axes3):
+        raise ValueError("bar is not supported for 3D axes.")
+    return _current_axes.bar(*args, **kwargs)
+
+def barh(*args, **kwargs):
+    _ensure_axes()
+    assert _current_axes
+    if isinstance(_current_axes, Axes3):
+        raise ValueError("barh is not supported for 3D axes.")
+    return _current_axes.barh(*args, **kwargs)
+
 def step(*args, **kwargs):
     _ensure_axes()
     assert _current_axes

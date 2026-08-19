@@ -1,14 +1,14 @@
 # TikzPlot
 A clean version of PltToTikz, this time as Python package. Easy to use: only replace import matplotlib.pyplot with this library.
 
-Please let me know if you find any bugs or unexpected behaviour. Examples may be found in repository under `tests/` directory.
+Please report any bugs or unexpected behaviour in Issues. Examples may be found in repository under `tests/` directory.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/ZanAmb/TikzPlot/main/tests/demo.png" width="60%">
 </p>
 
 # Installation
-NEW: PyPI: `pip install tikzplot42`.
+PyPI: `pip install tikzplot42`.
 Alternativley, download this package and install using: `pip install [path]`, where [path] is the path to the directory, containing `pyproject.toml`.
 
 ## Python usage
@@ -39,7 +39,8 @@ Some basic plot commands are already implemented with commonly used arguments:
 - `stem()`,
 - `fill_between()`,
 - `hlines()/vlines()`,
-- `histogram()`,
+- `hist()`,
+- `bar()/barh()`,
 - `step()`,
 - `imshow()`,
 - `text()`,
@@ -90,7 +91,6 @@ For plot configurations (default sizes, paddings, etc.), use `from tikzplot impo
 Currently supported parameters are listed with their default values in `src/tikzplot/config.py`.
 
 ## More features coming soon...
-- bar plots,
-- more developed styles,
+- additional arguments supprot for implemented commands,
 - improved 3D plots (currently only basic support: plot, errorbar, fill_between, scatter, plot_wireframe, plot_surface),
 - ... 

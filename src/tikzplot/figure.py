@@ -327,17 +327,41 @@ class Figure:
         output = preambule + "\n" + "\n".join(lines) + "\n" + fin
         return output
 
+    def _add_indents(self, content):
+        lines = content.split("\n")
+        depth = 0
+        mathmode = False
+        output = []
+        for line in lines:
+            if len(line.strip()) == 0 or line.strip() == ",":
+                continue
+            if line.strip().startswith("\\end{") and depth > 0:
+                depth -= 1
+            output.append("\t" * depth + line)
+            if line.strip().startswith("\\begin{"):
+                depth += 1
+            for c in line.strip():
+                if c == "$":
+                    mathmode = not mathmode
+                if not mathmode:
+                    if c == "{" or c == "[":
+                        depth += 1
+                    elif c == "}" or c == "]" and depth > 0:
+                        depth -= 1
+        return "\n".join(output)
+            
+
     def _save(self, filename, standalone=None, print_requirements=False):
         content = self._to_tex(filename, png=False, standalone=standalone, print_requirements=print_requirements)
         if not TikzConfig.SAVE_DATAPOINTS or (TikzConfig.SAVE_DATAPOINTS and not TikzConfig.UPDATE_DATA_ONLY):
             with open(filename, "w", encoding="utf-8") as f:
-                f.write(content)
+                f.write(self._add_indents(content))
 
     def _save_image(self, filename):
         content = self._to_tex(filename, png=True)
         if not TikzConfig.SAVE_DATAPOINTS or (TikzConfig.SAVE_DATAPOINTS and not TikzConfig.UPDATE_DATA_ONLY):
             with open(filename, "w", encoding="utf-8") as f:
-                f.write(content)
+                f.write(self._add_indents(content))
 
     def _get_width(self):
         return self._width

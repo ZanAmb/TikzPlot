@@ -383,6 +383,132 @@ class BaseAxes:
         """
         ...
 
+    def bar(self, x: ArrayLike | float, height: ArrayLike | float, width: ArrayLike | float = 0.8, bottom: ArrayLike | float = 0.0, align: Literal["center", "edge"] = "center", color: Optional[ColorLike] = None, c: Optional[ColorLike] = None, facecolor: Optional[ColorLike] = None, fc: Optional[ColorLike] = None, edgecolor: Optional[ColorLike] = None, ec: Optional[ColorLike] = None, linewidth: Optional[float] = None, lw: Optional[float] = None, tick_label: Optional[str] = None, label: Optional[str] = None, xerr: Optional[ArrayLike] = None, yerr: Optional[ArrayLike] = None, ecolor: Optional[ColorLike] = None, capsize: Optional[float] = None, hatch: Optional[str] = None, hatch_color: Optional[ColorLike] = None, hatch_linewidth: Optional[float] = None, hatch_distance: Optional[float] = None) -> None:
+        """
+        Draw a bar plot to the selected axis.
+
+        Parameters
+        ----------
+        x: ArrayLike or float
+            X coordinates or labels of the bars
+        
+        height: ArrayLike or float
+            Heights of the bars
+
+        width: ArrayLike or float, optional
+            Widths (on x scale) of the bars (default 0.8)
+
+        bottom: ArrayLike or float, optional
+            Y coordinates of the bottom of the bars (default 0.0)
+
+        align: {"center", "edge"}, optional
+            Alignment of the bars: "center" (default) or "edge"
+
+        color or c: all matplotlib color formats (without X11/xkcd), optional
+            Fill color of the bars
+
+        facecolor or fc: all matplotlib color formats (without X11/xkcd), optional
+            Fill color of the bars (same as color)
+
+        edgecolor or ec: all matplotlib color formats (without X11/xkcd), optional
+            Edge color of the bars
+
+        linewidth or lw: float, optional
+            Line width of the edges in pt
+
+        tick_label: str or list of str, optional
+            Tick labels for the bars
+
+        label: str, optional
+            Legend entry for the bars
+
+        xerr, yerr: ArrayLike or float, optional
+            Error bar sizes for the bars
+
+        ecolor: all matplotlib color formats (without X11/xkcd), optional
+            Color of the error bars
+
+        capsize: float, optional
+            Size of the error bar caps in pt
+
+        hatch: str, optional
+            The hatch pattern to use for filling the bars. Can be a string of characters that define the hatch pattern (e.g., '/', '\\', '|', '-', '+', 'x', '.', '*'). If not provided, no hatching is applied.
+
+        hatch_color: ColorLike, optional
+            The color of the hatch pattern. If not provided, the default color cycle is used.
+
+        hatch_linewidth: float, optional
+            The line width of the hatch pattern in points. If not provided, the default line width is used.
+
+        hatch_distance: float, optional
+            The distance between hatch lines in points. If not provided, the default distance is used.
+
+        """
+
+    def barh(self, y: ArrayLike | float, width: ArrayLike | float, height: ArrayLike | float = 0.8, left: ArrayLike | float = 0.0, align: Literal["center", "edge"] = "center", color: Optional[ColorLike] = None, c: Optional[ColorLike] = None, facecolor: Optional[ColorLike] = None, fc: Optional[ColorLike] = None, edgecolor: Optional[ColorLike] = None, ec: Optional[ColorLike] = None, linewidth: Optional[float] = None, lw: Optional[float] = None, tick_label: Optional[str | list[str]] = None, label: Optional[str] = None, xerr: Optional[ArrayLike] = None, yerr: Optional[ArrayLike] = None, ecolor: Optional[ColorLike] = None, capsize: Optional[float] = None, hatch: Optional[str] = None, hatch_color: Optional[ColorLike] = None, hatch_linewidth: Optional[float] = None, hatch_distance: Optional[float] = None) -> None:
+        """
+        Draw a horizontal bar plot to the selected axis.
+
+        Parameters
+        ----------
+        y: ArrayLike or float
+            Y coordinates or labels of the bars
+        
+        width: ArrayLike or float
+            Widths (on x scale) of the bars
+
+        height: ArrayLike or float, optional
+            Heights (on y scale) of the bars (default 0.8)
+
+        left: ArrayLike or float, optional
+            X coordinates of the left side of the bars (default 0.0)
+
+        align: {"center", "edge"}, optional
+            Alignment of the bars: "center" (default) or "edge"
+
+        color or c: all matplotlib color formats (without X11/xkcd), optional
+            Fill color of the bars
+
+        facecolor or fc: all matplotlib color formats (without X11/xkcd), optional
+            Fill color of the bars (same as color)
+
+        edgecolor or ec: all matplotlib color formats (without X11/xkcd), optional
+            Edge color of the bars
+
+        linewidth or lw: float, optional
+            Line width of the edges in pt
+
+        tick_label: str or list of str, optional
+            Tick labels for the bars
+
+        label: str, optional
+            Legend entry for the bars
+
+        xerr, yerr: ArrayLike or float, optional
+            Error bar sizes for the bars
+
+        ecolor: all matplotlib color formats (without X11/xkcd), optional
+            Color of the error bars
+
+        capsize: float, optional
+            Size of the error bar caps in pt
+
+        hatch: str, optional
+            The hatch pattern to use for filling the bars. Can be a string of characters that define the hatch pattern (e.g., '/', '\\', '|', '-', '+', 'x', '.', '*'). If not provided, no hatching is applied.
+
+        hatch_color: ColorLike, optional
+            The color of the hatch pattern. If not provided, the default color cycle is used.
+
+        hatch_linewidth: float, optional
+            The line width of the hatch pattern in points. If not provided, the default line width is used.
+
+        hatch_distance: float, optional
+            The distance between hatch lines in points. If not provided, the default distance is used.
+        """
+
+    def _common_bar(self, k: ArrayLike | float, v: ArrayLike | float, thickness: ArrayLike | float = 0.8, edge: ArrayLike | float = 0.0, group_offset: float = 0.0, align: Literal["center", "edge"] = "center", color: Optional[ColorLike] = None, c: Optional[ColorLike] = None, facecolor: Optional[ColorLike] = None, fc: Optional[ColorLike] = None, edgecolor: Optional[ColorLike] = None, ec: Optional[ColorLike] = None, linewidth: Optional[float] = None, lw: Optional[float] = None, tick_label: Optional[str | list[str]] = None, label: Optional[str] = None, xerr: Optional[ArrayLike] = None, yerr: Optional[ArrayLike] = None, ecolor: Optional[ColorLike] = None, capsize: Optional[float] = None, hatch: Optional[str] = None, hatch_color: Optional[ColorLike] = None, hatch_linewidth: Optional[float] = None, hatch_distance: Optional[float] = None) -> None: ...
+
+
     def step(self, x: ArrayLike, y: ArrayLike, *args: Any, where: Literal["pre","post","mid"] = "pre", **kwargs: Any) -> None:
         """
         Draw a step plot to the selected axis.
@@ -598,7 +724,7 @@ class BaseAxes:
         Set y-axis tick labels.
         """
         ...
-    def legend(self, *args: Any, loc: Optional[Union[int,str,Tuple[float,float]]] = ..., facecolor: Optional[ColorLike] = ..., edgecolor: Optional[ColorLike] = ..., labelcolor: Optional[ColorLike] = ..., frameon: Optional[bool] = ...) -> None:
+    def legend(self, *args: Any, loc: Optional[Union[int,str,Tuple[float,float]]] = ..., facecolor: Optional[ColorLike] = ..., edgecolor: Optional[ColorLike] = ..., labelcolor: Optional[ColorLike] = ..., frameon: Optional[bool] = ..., anchor: Optional[Literal["north", "south", "east", "west", "center", "north west", "north east", "south west", "south east"]] = ..., fontsize: Optional[Literal["xx-small", "x-small", "small", "medium", "large", "x-large", "xx-large"] | int] = ...) -> None:
         """
         Show legend for the selected axis. Despite arguments requires at least one plotted element on the axis (not necesarily with label) to show up (LaTeX does not allow legend on empty axis).
 
@@ -612,6 +738,15 @@ class BaseAxes:
             Location of legend (as in matplotlib: 1 - upper right, 2 - upper left, ... or with tuple of relative coordinates).
 
         ncols: int, optional: number of columns in legend, default 1
+
+        facecolor, edgecolor, labelcolor: all matplotlib color formats (without X11/xkcd), optional
+            Color of legend box, edge and text, respectively"
+
+        fontsize: FontSize or int, optional
+            Font size of legend text
+
+        anchor: {"north", "south", "east", "west", "center", "north west", "north east", "south west", "south east"}, optional
+            Anchor of legend box, default "north east" (for custom loc)
         """
         ...
     def set(self, **kwargs) -> None:

@@ -234,7 +234,7 @@ class _Colorbar:
                 lines.append(f"{'x' if self._horizontal else 'y'}tick =\\empty,")
         lines.append(r"},")
         lines.append(f"point meta min={{{self._lower}}},")
-        lines.append(f"point meta max={{{self._upper}}}")
+        lines.append(f"point meta max={{{self._upper}}},\n")
 
         return "\n".join(lines)
     
@@ -269,5 +269,8 @@ class _Colorbar:
             idx = int(norm_val * self._divs)
             rgb = self._get_samples(colors, self._divs)[idx]
         return tuple(rgb)
+
+    def colors(self, values):
+        return [self.color(v) for v in values]
     
 Colorbar = _Colorbar

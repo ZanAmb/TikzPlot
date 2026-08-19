@@ -126,3 +126,19 @@ class Colorbar:
             RGB color as (r, g, b), each in [0, 1].
         """
         ...
+
+    def colors(self, values: Iterable[float]) -> Sequence[Tuple[float, float, float]]:
+        """
+        Map a sequence of scalar values to RGB colors using the current colormap.
+
+        Parameters
+        ----------
+        values : iterable of float
+            Values within the range [lower, upper].
+
+        Returns
+        -------
+        list of tuple of float
+            List of RGB colors as (r, g, b), each in [0, 1].
+        """
+        ...

@@ -1,3 +1,4 @@
+from multiprocessing import parent_process
 from typing import Any
 from xml.dom import XMLNS_NAMESPACE
 
@@ -14,10 +15,13 @@ from .colors import _tex_color
 
 class BaseAxes:
     def __init__(self):
-        self._elements = []
+        self._elements: dict[int, list] = {0: []}
         self._axis_options = {}
         self._axis_args = set()
         self._legend_on = False
+        self._overlay_legend = False
+        self._overlay_legend_entries = []
+        self._overlay_special = {}
         self._yticks = True
         self._fig = None
         if TikzConfig.USE_DECIMAL_COMMA:
@@ -33,16 +37,55 @@ class BaseAxes:
         self._ext_ymin = False
         self._ext_ymax = False
 
-        self._reverse_elements = []
+        self._int_ymin = None
+        self._int_ymax = None
 
-    def _plot(self, x, y, settings={}, xerr=None, yerr=None, **style):
+        self._preferred_lims = {}
+
+    def _get_overlay(self):
+        return sorted(self._elements.keys())[-1]
+    def _get_all_elements(self):
+        return [i for l in self._elements.values() for i in l]
+    def _get_free_overlay(self):
+        if len(self._elements[self._get_overlay()]) > 0:
+            new_overlay = self._get_overlay() + 1
+            self._elements[new_overlay] = []
+            return new_overlay
+        return self._get_overlay()
+    def _add_overlay_legend_entry(self, entry):
+        self._overlay_legend_entries.append(entry)
+    def _get_element_overlay(self, element):
+        for overlay, elements in self._elements.items():
+            if element in elements:
+                return overlay
+        return None
+    def _update_levels(self, which, new_level):
+        if which not in self._preferred_lims:
+            self._preferred_lims[which] = new_level
+        else:
+            if which in ["xmin", "ymin"]:
+                self._preferred_lims[which] = min(self._preferred_lims[which], new_level)
+            elif which in ["xmax", "ymax"]:
+                self._preferred_lims[which] = max(self._preferred_lims[which], new_level)
+    def _check_approximate_equal(self, a, b, tol=1e-5):
+        return _np.count_nonzero(_np.abs(_np.asarray(a) - _np.asarray(b))/_np.max(_np.abs(b)) > tol) == 0
+
+    def _plot(self, x, y, settings={}, xerr=None, yerr=None, overlay=None, note=None, **style):
+        spec = None
+        if self._get_overlay() in self._overlay_special:
+            spec = self._overlay_special[self._get_overlay()]
+        if note != spec:
+            self._get_free_overlay()
+            
         if isinstance(self, Axes) and self._polar:
             x = _np.rad2deg(x)
         e = Graph(self, (x, y), settings, xerr=xerr, yerr=yerr, **style)
+        if overlay is None:
+            overlay = self._get_overlay()
         if TikzConfig.USE_GROUPPLOTS and ("axvspan" in settings or "axhspan" in settings):
-            self._elements.insert(0, e)
+            self._elements[overlay].insert(0, e)
         else:
-            self._elements.append(e)
+            self._elements[overlay].append(e)
         return e
 
     def _check_kwargs(self, func, allowed, **kwargs):
@@ -141,7 +184,7 @@ class BaseAxes:
         kws = {"fmt", "alpha", "color", "c", "label", "hatch", "hatch_color", "hatch_linewidth", "hatch_distance"}
         kwargs = self._check_kwargs("fill_between", kws, **kwargs)
         def _check_instance(xs, ys, pname):
-            for el in self._elements:
+            for el in self._elements[self._get_overlay()]:
                 if el._check_equal(xs,ys):
                     return el._try_set_pname(pname)
                 else:
@@ -175,7 +218,7 @@ class BaseAxes:
             else:
                 name2 = inst
         e = Graph(self, f"fill between [of={name1} and {name2}]",settings={}, xerr=None, yerr=None, **kwargs)
-        self._elements.append(e)
+        self._elements[self._get_overlay()].append(e)
         return e
         
     def hlines(self, y, xmin, xmax, colors="k", linestyles="solid", **kwargs):
@@ -264,32 +307,35 @@ class BaseAxes:
         widths = edges[1:] - edges[:-1]
         offset = 0
         settings = {}
+        if "rwidth" not in kwargs:
+            kwargs["rwidth"] = 1
+        orientation = kwargs.pop("orientation", "vertical")
         hist_type = kwargs.pop("histtype", "bar")
         if hist_type not in ["bar", "barstacked", "step", "stepfilled"]:
             raise Warning(f"Invalid histtype: {hist_type}.")
-        if "orientation" in kwargs and kwargs["orientation"] == "horizontal":
-            settings["xbar"] = None
-        else:
-            settings["ybar"] = None
+        if hist_type == "barstacked":
+            stack = True
+            hist_type = "bar"
+        elif hist_type == "stepfilled":
+            hist_type = "bar"
+            kwargs["rwidth"] = 1
+        elif hist_type == "step":
+            kwargs["rwidth"] = 1
+        intervals = False
         if ("rwidth" in kwargs or (len(datasets) > 1 and not stack)) and isinstance(bins, int):
             if stack or len(datasets) == 1:
-                settings["bar width"] = f"{widths.mean()*kwargs['rwidth']}"
+                settings["thickness"] = widths.mean()*kwargs['rwidth']
             else:
                 if "rwidth" in kwargs:
-                    settings["bar width"] = f"{widths.mean()*kwargs['rwidth']/(len(datasets)+1)}"
+                    settings["thickness"] = widths.mean()*kwargs['rwidth']/(len(datasets)+1)
                     offset = widths.mean() * kwargs['rwidth'] / (len(datasets) + 1)
                 else:
-                    settings["bar width"] = f"{widths.mean()/(len(datasets)+1)}"
+                    settings["thickness"] = widths.mean()/(len(datasets)+1)
                     offset = widths.mean() / (len(datasets) + 1)
         else:
-            if "xbar" in settings:
-                settings.pop("xbar")
-                settings["xbar interval"] = None
-            elif "ybar" in settings:
-                settings.pop("ybar")
-                settings["ybar interval"] = None
+            intervals = True
         if "range" in kwargs:
-            if "xbar" in settings:
+            if orientation == "horizontal":
                 self.set_ylim(kwargs["range"])
             elif isinstance(self, Axes):
                 self.set_xlim(kwargs["range"])
@@ -297,62 +343,42 @@ class BaseAxes:
                 self._primary.set_xlim(kwargs["range"])
         base_settings = settings.copy()
         outputs = []
-        old_counts = _np.zeros(len(edges), dtype=_np.float64)
         totals, _ = _np.histogram(all_data, edges, density=False, weights=kwargs.get("weights", None), range=kwargs.get("range", None))
         tot_sum = totals.sum()
-        align_offset = 0
-        if "align" in kwargs:
-            if kwargs["align"] not in ["left", "mid", "right"]:
-                raise Warning(f"Invalid align value: {kwargs['align']}. Must be 'left', 'mid', or 'right'.")
-            if kwargs["align"] == "left":
-                align_offset = -widths.mean()/2
-            elif kwargs["align"] == "mid":
-                align_offset = 0
-            elif kwargs["align"] == "right":
-                align_offset = widths.mean()/2
+        align = kwargs.pop("align", "mid")
+        if align not in ["left", "mid", "right"]:
+            raise Warning(f"Invalid align: {align}. Must be 'left', 'mid', or 'right'.")
+        bottom = None
+        old_counts = _np.zeros(len(edges)-1, dtype=_np.float64)
+        
         for i in range(len(datasets)):
             data = datasets[i]
             settings = base_settings.copy()
             kws = datas.get(i, {})
-            if "label" in kws:
-                if "xbar" in settings:
-                    settings["xbar legend"] = None
-                elif "xbar interval" in settings:
-                    settings["xbar interval legend"] = None
-                elif "ybar" in settings:
-                    settings["ybar legend"] = None
-                else:
-                    settings["ybar interval legend"] = None
-            fill = kws.pop("facecolor", kws.pop("fc", kws.pop("color", kws.pop("c", None))))
-            draw = kws.pop("edgecolor", kws.pop("ec", None))
-            if fill:
-                fill = self._match_color(fill)
-            settings["fill"] = fill
-            if draw and hist_type != "stepfilled":
-                draw = self._match_color(draw)
-                settings["draw"] = draw
-            else:
-                settings["draw"] = "none"
+            passing_args = ["facecolor", "fc", "color", "c", "edgecolor", "ec", "label", "hatch", "hatch_color", "hatch_linewidth", "hatch_distance"]
+            for a in passing_args:
+                if a in kws:
+                    settings[a] = kws[a]
             counts, _ = _np.histogram(data, edges, density=density, weights=kwargs.get("weights", None), range=kwargs.get("range", None))
-            if "xbar interval" in settings or "ybar interval" in settings: # edges for interval
-                if "rwidth" in kwargs:
-                    xs = [edges[0] + widths[0]*(1-kwargs["rwidth"])/2]
-                    new_counts = []
-                    for j in range(len(widths)):
-                        xs.append(xs[-1] + widths[j]*kwargs["rwidth"])
-                        new_counts.append(counts[j])
-                        if j < len(counts)-1:
-                            xs.append(xs[-1] + (widths[j] + widths[j+1])*(1-kwargs["rwidth"])/2)
-                            new_counts.append(0)
-                    counts = new_counts + [0]
-                else:
-                    xs = edges
-                    counts = _np.concatenate([counts, [0]])
-            else: # centers
+            if intervals and "rwidth" in kwargs:
+                ws = widths
+                if align == "mid":
+                    xs = edges[:-1] + widths * (1-kwargs["rwidth"])/2
+                    ws = widths * kwargs["rwidth"]
+                elif align == "left":
+                    xs = edges[:-1]
+                    ws = widths * kwargs["rwidth"]
+                else: # align == "right"
+                    xs = edges[1:] - widths * kwargs["rwidth"]
+                    ws = widths * kwargs["rwidth"]
+
+                if self._check_approximate_equal(ws, ws[0]*_np.ones_like(ws)):
+                    ws = float(ws[0])
+                settings["thickness"] = ws
+            else:
                 xs = (edges[:-1] + edges[1:]) / 2
-                if offset > 0:
-                    settings["bar shift"] = f"{offset*(i - len(datasets)/2 + 0.5)}"
-            xs = xs + align_offset * _np.ones_like(xs)
+            if offset > 0:
+                settings["group_offset"] = f"{offset*(i - len(datasets)/2 + 0.5)}"
             if "cumulative" in kwargs and kwargs["cumulative"]:
                 counts = _np.cumsum(counts)
             if stack:
@@ -360,20 +386,192 @@ class BaseAxes:
                     set_counts, _ = _np.histogram(data, edges, density=False, weights=kwargs.get("weights", None), range=kwargs.get("range", None))
                     counts = counts * _np.sum(set_counts) / tot_sum
                 counts = _np.asarray(counts, dtype=_np.float64)
-                counts += old_counts
-                old_counts = counts.copy()
-            if hist_type == "step":
-                    kwargs.pop("facecolor", None)
-                    kwargs.pop("fc", None)
-                    kwargs.pop("fill", None)
-                    self.step([edges[0]] + list(edges), [0] + list(counts), where="pre", **kws)
+                new_counts = counts + old_counts
+                bottom = old_counts.copy()
+                old_counts = new_counts.copy()
+            if intervals:
+                settings["align"] = "edge"
             else:
-                e = self._plot(xs, counts, settings=settings, **kws)
+                settings["align"] = "center"
+                if align == "left":
+                    xs += widths.mean()*kwargs.get("rwidth", 1)/2
+                elif align == "right":
+                    xs -= widths.mean()*kwargs.get("rwidth", 1)/2
+            if hist_type == "step":
+                    if stack:
+                        counts += old_counts
+                        old_counts = counts.copy()
+                    settings.pop("facecolor", None)
+                    settings.pop("fc", None)
+                    settings.pop("fill", None)
+                    settings.pop("thickness", None)
+                    settings.pop("align", None)
+                    self.step([edges[0]] + list(edges), [0] + list(counts) + [0], where="pre", **settings)
+            else:
+                if bottom is not None:
+                    settings["edge"] = bottom
+                e = self._common_bar(xs, counts, settings=settings, **settings)
                 outputs.append(e)
-        if outputs and stack:
-            self._reverse_elements.append([id(e) for e in outputs])
         return outputs
-    
+
+    def bar(self, x, height, *args, **kwargs):
+        kws = {"alpha", "width", "bottom", "align", "color", "c", "facecolor", "fc", "edgecolor", "ec", "linewidth", "lw", "tick_label", "label", "xerr", "yerr", "ecolor", "capsize", "hatch", "hatch_color", "hatch_linewidth", "hatch_distance", "tick_label"}
+        kwargs = self._check_kwargs("bar", kws, **kwargs)
+        if "width" in kwargs:
+            kwargs["thickness"] = kwargs.pop("width")
+        kwargs["edge"] = kwargs.pop("bottom", 0)
+
+        return self._common_bar(x, height, orientation="vertical", **kwargs)
+
+    def barh(self, y, width, *args, **kwargs):
+        kws = {"alpha", "height", "left", "align", "color", "c", "facecolor", "fc", "edgecolor", "ec", "linewidth", "lw", "tick_label", "label", "xerr", "yerr", "ecolor", "capsize", "hatch", "hatch_color", "hatch_linewidth", "hatch_distance"}
+        kwargs = self._check_kwargs("barh", kws, **kwargs)
+        if "height" in kwargs:
+            kwargs["thickness"] = kwargs.pop("height")
+        kwargs["edge"] = kwargs.pop("left", 0)
+
+        return self._common_bar(y, width, orientation="horizontal", **kwargs)
+
+    def _common_bar(self, k, v, orientation="vertical", **kwargs):
+        #if orientation == "vertical":
+        #    self._int_ymax = self._int_ymin = 0
+        #else:
+        #    self._int_xmax = self._int_xmin = 0
+        settings = {}
+        element_args = {}
+        bar_type = None
+        overlay = None
+        if isinstance(k, float):
+            k = _np.asarray([k])
+        else:
+            k = _np.asarray(k)
+        def set_tick_labels(labels):
+            if orientation == "vertical":
+                if isinstance(self, Axes):
+                    self.set_xticks(k, labels)
+                elif isinstance(self, Secondary):
+                    self._primary.set_xticks(k, labels)
+            else:
+                if isinstance(self, Axes):
+                    self.set_yticks(k, labels)
+                elif isinstance(self, Secondary):
+                    self._primary.set_yticks(k, labels)
+        if isinstance(k[0], str):
+            labels = k
+            k = range(len(labels))
+            set_tick_labels(labels)
+        elif "tick_label" in kwargs:
+            labels = kwargs.pop("tick_label")
+            if len(labels) != len(k):
+                raise Warning("Length of tick_label does not match length of values.")
+            set_tick_labels(labels)
+        k = _np.asarray(k, dtype=_np.float64)
+        if isinstance(v, float):
+            v = _np.asarray([v], dtype=_np.float64)
+        else:
+            v = _np.asarray(v, dtype=_np.float64)
+        edge = kwargs.pop("edge", 0)
+        thickness = kwargs.pop("thickness", 0.8)
+        align = kwargs.pop("align", "center")
+        if isinstance(edge, float):
+            edge = _np.asarray([edge] * len(v))
+        else:
+            edge = _np.asarray(edge)
+        const_thick = isinstance(thickness, float | int)
+        if const_thick:
+            settings["bar width"] = thickness
+            offset = kwargs.pop("group_offset", 0)
+            if isinstance(offset, float | int):
+                k = k + _np.array([offset] * len(k), dtype=_np.float64)
+            else:
+                k = k + _np.asarray(offset, dtype=_np.float64)
+            if align == "edge":
+                if const_thick:
+                    k = k + _np.asarray([thickness/2] * len(k))
+                else:
+                    k = k + _np.asarray(thickness)/2
+        else:
+            coordinates, values = [], []
+            thickness = _np.asarray(thickness)
+            for i in range(len(k)):
+                if align == "edge":
+                    coordinates.append(k[i])
+                    coordinates.append(k[i] + thickness[i])
+                else:
+                    coordinates.append(k[i] - thickness[i]/2)
+                    coordinates.append(k[i] + thickness[i]/2)
+                if i < len(v):
+                    values.append(v[i])
+                else:
+                    values.append(0)
+                values.append(0)
+            k, v = _np.asarray(coordinates), _np.asarray(values)
+        if const_thick:
+            bar_type = "ybar" if orientation == "vertical" else "xbar"
+        else:
+            bar_type = "ybar interval" if orientation == "vertical" else "xbar interval"
+        settings[bar_type] = None
+        levels = edge + v
+        m, M = min(levels), max(levels)
+        self._update_levels("ymin" if orientation == "vertical" else "xmin", min(m, 0))
+        self._update_levels("ymax" if orientation == "vertical" else "xmax", M)
+
+        if _np.count_nonzero(edge) > 0:
+            lower = self._get_overlay()
+            if self._overlay_special.get(lower, None) == bar_type + " stacked":
+                bedx = _np.zeros_like(edge, dtype=_np.float64)
+                bedy = _np.zeros_like(edge, dtype=_np.float64)
+                for el in self._elements[lower]:
+                    if orientation == "vertical":
+                        bedx = el._get_points()[0] if el._get_points()[0] is not None else 0
+                        bedy += el._get_points()[1] if el._get_points()[1] is not None else 0
+                    else:
+                        bedy = el._get_points()[0] if el._get_points()[0] is not None else 0
+                        bedx += el._get_points()[1] if el._get_points()[1] is not None else 0
+                if orientation == "vertical":
+                    if self._check_approximate_equal(bedx, k) and self._check_approximate_equal(bedy, edge):
+                        overlay = lower
+                else:
+                    if self._check_approximate_equal(bedy, k) and self._check_approximate_equal(bedx, edge):
+                        overlay = lower
+            if overlay is None:
+                if len(self._elements[self._get_overlay()]) > 0 and self._elements[self._get_overlay()][-1]._check_equal(k, edge):
+                    if len(self._elements[lower]) == 1:
+                        self._overlay_special[lower] = bar_type + " stacked"
+                        overlay = lower
+                    else:
+                        current = self._get_free_overlay()
+                        self._elements[current].append(self._elements[lower].pop()) # move the stacking bed to new overlay
+                        self._overlay_special[current] = bar_type + " stacked"
+                        overlay = current
+                else: # no bed, plot invisible bed
+                    current = self._get_free_overlay()
+                    self._overlay_special[current] = bar_type + " stacked"
+                    self._plot(k, edge, alpha=0)
+                    overlay = current
+
+        fill = kwargs.pop("facecolor", kwargs.pop("fc", kwargs.pop("color", kwargs.pop("c", None))))
+        draw = kwargs.pop("edgecolor", kwargs.pop("ec", None))
+        if fill:
+            fill = self._match_color(fill)
+        settings["fill"] = fill
+        if draw:
+            draw = self._match_color(draw)
+            settings["draw"] = draw
+        else:
+            settings["draw"] = "none"
+        for kw in ["label", "hatch", "hatch_color", "hatch_linewidth", "hatch_distance"]:
+            if kw in kwargs:
+                element_args[kw] = kwargs.pop(kw)
+        note = self._overlay_special.get(overlay, None)
+        if "label" in element_args:
+            if orientation == "vertical":
+                settings["ybar legend"] = None
+            else:
+                settings["xbar legend"] = None
+            settings[bar_type] = None
+        return self._plot(k, v, yerr=kwargs.get("yerr", None), xerr=kwargs.get("xerr", None), overlay=overlay, settings=settings, note=note, **element_args)
+
     def step(self, x, y, *args, **kwargs):
         kws = {"fmt", "alpha", "color", "c", "linestyle", "ls", "linewidth", "lw", "marker", "markersize", "ms", "label", "where"}
         kwargs = self._check_kwargs("step", kws, **kwargs)
@@ -388,7 +586,7 @@ class BaseAxes:
         kws = {"fmt", "base", "alpha", "color", "c", "linestyle", "ls", "linewidth", "lw", "label"}
         kwargs = self._check_kwargs("axvline", kws, **kwargs)
         self._ext_ymin = self._ext_ymax = True
-        self._plot(x, (ymin, ymax), settings={"axvline": None}, **kwargs)
+        return self._plot(x, (ymin, ymax), settings={"axvline": None}, **kwargs)
 
     def axhline(self, y, xmin=0, xmax=1, **kwargs):
         kws = {"fmt", "base", "alpha", "color", "c", "linestyle", "ls", "linewidth", "lw", "label"}
@@ -397,7 +595,7 @@ class BaseAxes:
             self._primary._ext_xmin = self._primary._ext_xmax = True
         else:
             self._ext_xmin = self._ext_xmax = True
-        self._plot((xmin, xmax), y, settings={"axhline": None}, **kwargs)
+        return self._plot((xmin, xmax), y, settings={"axhline": None}, **kwargs)
 
     def axvspan(self, xmin, xmax, ymin=0, ymax=1, **kwargs):
         kws = {"c", "color", "alpha", "label", "hatch", "hatch_color", "hatch_linewidth", "hatch_distance"}
@@ -405,7 +603,7 @@ class BaseAxes:
         self._ext_ymin = self._ext_ymax = True
         if TikzConfig.USE_GROUPPLOTS:
             self._axis_args.add("set layers")
-        self._plot([xmin, xmax], [ymin, ymax], settings={"axvspan": None}, **kwargs)
+        return self._plot([xmin, xmax], [ymin, ymax], settings={"axvspan": None}, **kwargs)
 
     def axhspan(self, ymin, ymax, xmin=0, xmax=1, **kwargs):
         kws = {"c", "color", "alpha", "label", "hatch", "hatch_color", "hatch_linewidth", "hatch_distance"}
@@ -416,7 +614,7 @@ class BaseAxes:
             self._ext_xmin = self._ext_xmax = True
         if TikzConfig.USE_GROUPPLOTS:
             self._axis_args.add("set layers")
-        self._plot([xmin, xmax], [ymin, ymax], settings={"axhspan": None}, **kwargs)
+        return self._plot([xmin, xmax], [ymin, ymax], settings={"axhspan": None}, **kwargs)
 
     def set_ylabel(self, label):
         self._axis_options["ylabel"] = f"{{{tex_text(label)}}}"
@@ -457,7 +655,7 @@ class BaseAxes:
         if ticks:
             s_ticks = map(str, ticks)
             self._axis_options["ytick"]=f"{{{','.join(s_ticks)}}}"
-            if labels and len(labels)==len(ticks):
+            if labels is not None and len(labels)==len(ticks):
                 self._axis_options["yticklabels"]=f"{{{tex_text(','.join(labels))}}}"
             elif labels is not None and len(labels) == 0:
                 self._axis_options["yticklabels"]=r"{}"
@@ -475,6 +673,18 @@ class BaseAxes:
 
     _LEGEND_LOC_MAP = ["best", "upper right", "upper left", "lower_left", "lower right", "right", "center left", "center right", "lower center", "upper center", "center"]
     _ANCHOR_MAP = {"top": "north", "bottom": "south", "upper": "north", "lower": "south", "left": "west", "right": "east", "center": "center"}
+    _FONT_SIZE_MAP = {"xx-small": "tiny", "x-small": "scriptsize", "small": "footnotesize", "medium": "small", "large": "normalsize", "x-large": "large", "xx-large": "Large"}
+
+    def _tex_fontsize(self, fs):
+        if isinstance(fs, str):
+            if fs in ["xx-small", "x-small", "small", "medium", "large", "x-large", "xx-large"]:
+                return f"\\{self._FONT_SIZE_MAP[fs]}"
+            else:
+                raise Warning(f"Invalid fontsize: {fs}. Must be one of 'xx-small', 'x-small', 'small', 'medium', 'large', 'x-large', or 'xx-large'.")
+        elif isinstance(fs, int) and fs > 0:
+            return f"\\fontsize{{{fs}}}{{{round(fs*1.2)}}}\\selectfont"
+        else:
+            raise Warning(f"Invalid fontsize: {fs}. Must be a string or a positive integer.")
 
     def _match_color(self, input):
         if isinstance(self, Axes) or isinstance(self, Secondary):
@@ -488,6 +698,7 @@ class BaseAxes:
             return f"c{r:.3f}{g:.3f}{b:.3f}".replace(".", "")
 
     def legend(self, *args, **kwargs):
+        kws = ["loc", "anchor", "ncols", "facecolor", "edgecolor", "labelcolor", "frameon", "fontsize"]
         legend_string = {}
         if "loc" in kwargs:
             loc = kwargs["loc"]
@@ -519,6 +730,12 @@ class BaseAxes:
                 legend_string["at"] = "{(" + f"{lx},{ly}" + r")}"
             if posit is not None and len(posit):
                 legend_string["anchor"] = posit
+        if "anchor" in kwargs:
+            anchor = kwargs["anchor"]
+            if anchor in ["north", "south", "east", "west", "center", "north west", "north east", "south west", "south east"]:
+                legend_string["anchor"] = anchor
+            else:
+                print(f"Invalid anchor: {anchor}. Must be one of 'north', 'south', 'east', 'west', 'center', 'north west', 'north east', 'south west', or 'south east'.")
 
         if "facecolor" in kwargs and (isinstance(self, Axes) or isinstance(self, Secondary)):
             ccode = self._match_color(kwargs["facecolor"])
@@ -538,6 +755,9 @@ class BaseAxes:
             self._axis_options["legend style"].update(legend_string)
         else:
             self._axis_options["legend style"] = legend_string
+        if "fontsize" in kwargs:
+            fs = kwargs["fontsize"]
+            legend_string["font"] = self._tex_fontsize(fs)
         self._legend_on = True
         if "ncols" in kwargs:
             self._axis_options["legend columns"] = kwargs["ncols"]
@@ -548,8 +768,9 @@ class BaseAxes:
             if len(labs) > len(self._elements):
                 print("Legend: more labels than elements")
             else:
+                all_elements = self._get_all_elements()
                 for i in range(len(labs)):
-                    self._elements[i]._set_label(tex_text(labs[i]))
+                    all_elements[i]._set_label(tex_text(labs[i]))
 
     def text(self, x, y, s, **kwargs):
         kws = {"alpha", "color", "c", "fontsize", "on_top", "size", "backgroundcolor", "horizontalalignment", "ha", "verticalalignment", "va", "rotation", "label"}
@@ -562,7 +783,7 @@ class BaseAxes:
             self._fig._add_text(txt)
         else:
             txt = Text(self, x, y, None, s, **kwargs)
-        self._elements.append(txt)
+        self._elements[self._get_overlay()].append(txt)
 
     def magnify(self, x_p, y_p, x_m, y_m, zoom, size, **kwargs):
         kws = {"shape", "connect"}
@@ -580,37 +801,21 @@ class BaseAxes:
             print("Legend: different number of plots and labels, ignoring.")
             return ""
         for i in range(len(axs)):
-            output += f"\n\\addlegendimage{{{axs[i]._style_string()}}}"
+            output += f"\n\\addlegendimage{{{axs[i]._style_string().replace('\n', ' ')}}}"
             if self._legend_lab_col:
-                output += f"\n\\addlegendentry[{self._legend_lab_col}]{{{tex_text(labs[i])}}}"
+                output += f"\\addlegendentry[{self._legend_lab_col}]{{{tex_text(labs[i])}}}"
             else:
-                output += f"\n\\addlegendentry{{{tex_text(labs[i])}}}"
+                output += f"\\addlegendentry{{{tex_text(labs[i])}}}"
         return output
         
     def _content_tex(self, filename):
-        element_strings = {id(e): e._to_tex(filename, self._legend_lab_col) for e in self._elements}
-        seq_map = {seq[0]: seq for seq in self._reverse_elements}
-        output_list = []
-        visited = set()
-        for e in self._elements:
-            e_id = id(e)
-            if e_id in visited:
-                continue
-            if e_id in seq_map:
-                seq = seq_map[e_id]
-                for el in reversed(seq):
-                    output_list.append(element_strings[el])
-                    visited.add(el)
-            else:
-                output_list.append(element_strings[e_id])
-                visited.add(e_id)
-
-        output = "\n".join(output_list)
-        output += self._add_legend_entries()
+        element_strings = {i: "\n".join(e._to_tex(filename, self._legend_lab_col) for e in self._elements[i]) for i in self._elements.keys()}
+        if self._legend_on:
+            element_strings[self._get_overlay()] += self._add_legend_entries()
         for coord in self._coordinates:
             x,y = self._coordinates[coord]
-            output += f"\n\\coordinate ({coord}) at ({x},{y});"
-        return output
+            element_strings[self._get_overlay()] += f"\n\\coordinate ({coord}) at ({x},{y});"
+        return element_strings
     
     def _get_hard_range(self,which):
         arg = f"{which[0]}mode"
@@ -618,7 +823,7 @@ class BaseAxes:
         if arg in self._axis_options:
             mode = self._axis_options[arg]
         if which in self._axis_options:
-            for e in self._elements:
+            for e in self._get_all_elements():
                 e._filter(which, self._axis_options[which])
             return (self._axis_options[which], mode)
         return None, mode
@@ -628,14 +833,16 @@ class BaseAxes:
         mode = "lin"
         if arg in self._axis_options:
             mode = self._axis_options[arg]
-        common = self._elements.copy()
+        common = self._get_all_elements().copy()
         if "x" in which and isinstance(self,Axes) and self._secondary_y:
-            common += self._secondary_y._elements
+            common += self._secondary_y._get_all_elements()
         if which in self._axis_options:
             for e in common:
                 e._filter(which, self._axis_options[which])
             return (self._axis_options[which], True, mode)
         values = [e._get_erange(which) for e in common]
+        if which in self._preferred_lims:
+            values.append(self._preferred_lims[which])
         values = [v for v in values if v is not None]
         if not values:
             return (None, False, mode)
@@ -667,14 +874,14 @@ class BaseAxes:
             self._ext_ymin = True
         if which == "ymax":
             self._ext_ymax = True
-        for e in self._elements:
+        for e in self._get_all_elements():
             e._filter(which, value)
 
     def _num_points(self):
-        return [e._num_points() for e in self._elements]
+        return [e._num_points() for e in self._get_all_elements()]
     
     def _reduce_points(self, limit):
-        for e in self._elements:
+        for e in self._get_all_elements():
             e._reduce_points(limit)
 
     def _add_col(self, r,g,b):
@@ -686,10 +893,6 @@ class BaseAxes:
         for attr in defined:
             if attr in kwargs:
                 defined[attr](kwargs.pop(attr))
-
-    def _reoreder_last_elements(self, n):
-        if n <= 0: return
-        self._elements = self._elements[:-n] + self._elements[:-n-1:-1]
 
 class Axes(BaseAxes):
 
@@ -715,6 +918,9 @@ class Axes(BaseAxes):
 
         self._ext_xmin = False
         self._ext_xmax = False
+
+        self._int_xmin = None
+        self._int_xmax = None
 
         def _posit_string(): # returns neighbour, neighbour corner, anchor
             i = self._index
@@ -868,7 +1074,7 @@ class Axes(BaseAxes):
         if ticks:
             s_ticks = map(str, ticks)
             self._axis_options["xtick"]=f"{{{','.join(s_ticks)}}}"
-            if labels and len(labels)==len(ticks):
+            if labels is not None and len(labels)==len(ticks):
                 self._axis_options["xticklabels"]=f"{{{tex_text(','.join(labels))}}}"
             elif labels is not None and len(labels) == 0:
                 self._axis_options["xticklabels"]=r"{}"
@@ -909,6 +1115,14 @@ class Axes(BaseAxes):
         return im_name
 
     def _axis_option_string(self):
+        if self._elements[self._get_overlay()] == [] and self._get_overlay() > 0:
+            del self._elements[self._get_overlay()]
+        if self._get_overlay() > 0:
+            self._ext_xmax = self._ext_xmin = self._ext_ymax = self._ext_ymin = True
+            if self._legend_on:
+                self._overlay_legend = True
+                self._legend_on = False
+        alias = self._axis_options.pop("alias", self._axis_options.pop("name", None))
         self._update_size()
         if self._width:
             self._axis_options["width"] = self._width
@@ -926,10 +1140,9 @@ class Axes(BaseAxes):
             if "extent" in self._imshow[1]:
                 bounds = self._imshow[1]["extent"]
             xm, xM, ym, yM = bounds
-            self._elements.insert(0, Graph(self, f"graphics [xmin={xm}, xmax={xM}, ymin={ym}, ymax={yM}] {{{im_name}}}", settings={}, xerr=None, yerr=None, onlayer="axis background"))
+            self._elements[0].insert(0, Graph(self, f"graphics [xmin={xm}, xmax={xM}, ymin={ym}, ymax={yM}] {{{im_name}}}", settings={}, xerr=None, yerr=None, onlayer="axis background"))
         axis_opt_str = ""
-        if self._axis_args:
-            axis_opt_str += ",\n".join(self._axis_args)
+        auxiliary_opt_str = ""
         if TikzConfig.SCHOOL_AXIS:
             axis_opt_str += f",\n axis lines=middle,\n xlabel style={{at={{(ticklabel* cs:{1+TikzConfig.SCHOOL_AXIS_LABEL_MARGIN})}},anchor=north}},\n ylabel style={{at={{(ticklabel* cs:{1+TikzConfig.SCHOOL_AXIS_LABEL_MARGIN})}},anchor=east}}"
             if ("xmin" in self._axis_options and self._axis_options["xmin"] == 0) or ("xmax" in self._axis_options and self._axis_options["xmax"] == 0):
@@ -937,10 +1150,18 @@ class Axes(BaseAxes):
             if ("ymin" in self._axis_options and self._axis_options["ymin"] == 0) or ("ymax" in self._axis_options and self._axis_options["ymax"] == 0):
                 self._axis_options["extra y ticks"] = r"{0}"
         if TikzConfig.USE_GROUPPLOTS:
+            if "set layers" in self._axis_args:
+                self._axis_args.remove("set layers")
             if TikzConfig.SCHOOL_AXIS:
                 axis_opt_str += f",\n set layers,\n axis line style={{on layer=axis foreground}}"
+                auxiliary_opt_str += ",\n set layers"
             else:
-                axis_opt_str += f",\n set layers=standard, cell picture=true, grid style={{on layer=axis grid}}"
+                axis_opt_str += f",\nset layers=standard, cell picture=true, grid style={{on layer=axis grid}}"
+                auxiliary_opt_str += "set layers=standard"
+        if self._axis_args:
+            axis_opt_str = ",\n".join(self._axis_args) + axis_opt_str
+            if "set layers" in self._axis_args:
+                auxiliary_opt_str += ",\n set layers"
         if self._ext_xmin or self._ext_xmax:
             lower = self._get_range("xmin")
             upper = self._get_range("xmax")
@@ -949,6 +1170,13 @@ class Axes(BaseAxes):
                 self._axis_options["xmin"] = self._fig._next_limname("xmin", self._axis_options.get("xmin", xm))
             if self._ext_xmax:
                 self._axis_options["xmax"] = self._fig._next_limname("xmax", self._axis_options.get("xmax", xM))
+        elif self._int_xmin is not None or self._int_xmax is not None:
+            lower = self._get_range("xmin")
+            upper = self._get_range("xmax")
+            if self._int_xmin is not None and (lower[0] is None or lower[0] >= self._int_xmin):
+                self._axis_options["xmin"] = self._int_xmin
+            if self._int_xmax is not None and (upper[0] is None or upper[0] <= self._int_xmax):
+                self._axis_options["xmax"] = self._int_xmax
         if self._ext_ymin or self._ext_ymax:
             lower = self._get_range("ymin")
             upper = self._get_range("ymax")
@@ -957,20 +1185,33 @@ class Axes(BaseAxes):
                 self._axis_options["ymin"] = self._fig._next_limname("ymin", self._axis_options.get("ymin", ym))
             if self._ext_ymax:
                 self._axis_options["ymax"] = self._fig._next_limname("ymax", self._axis_options.get("ymax", yM))
+        elif self._int_ymin is not None or self._int_ymax is not None:
+            lower = self._get_range("ymin")
+            upper = self._get_range("ymax")
+            if self._int_ymin is not None and (lower[0] is None or lower[0] >= self._int_ymin):
+                self._axis_options["ymin"] = self._int_ymin
+            if self._int_ymax is not None and (upper[0] is None or upper[0] <= self._int_ymax):
+                self._axis_options["ymax"] = self._int_ymax
         if self._axis_options:
             if axis_opt_str: axis_opt_str += ",\n"
-            for k, v in self._axis_options.items():
+            if auxiliary_opt_str: auxiliary_opt_str += ",\n"
+            def parse_entry(k,v):
                 if isinstance(v, dict):
-                    axis_opt_str += f"{k}={{"
-                    axis_opt_str += ",\n".join(f"{kk}={vv}" for kk, vv in v.items())
-                    axis_opt_str += "},\n"
+                    return f"{k}={{" + ",\n".join(f"{kk}={vv}" for kk, vv in v.items()) + "}"
                 else:
-                    axis_opt_str += f"{k}={v},\n"
+                    return f"{k}={v}"
+            for k, v in self._axis_options.items():
+                entry = parse_entry(k,v)
+                axis_opt_str += entry + ",\n"
+                if k in ["xmin", "xmax", "ymin", "ymax", "xmode", "ymode", "log basis x", "log basis y", "width", "height", "at"]:
+                    auxiliary_opt_str += entry + ",\n"
+        axis_opt_str = axis_opt_str.removesuffix(",,\n")
+        auxiliary_opt_str = auxiliary_opt_str.removesuffix(",,\n")
         if self._colorbar:
             axis_opt_str += self._colorbar
         elif self._cmap_bar:
-            axis_opt_str += f",\n colormap={self._cmap_bar._generate_tex_colormap(self._cmap_bar._cmap)}"
-        return axis_opt_str
+            axis_opt_str += f"colormap={self._cmap_bar._generate_tex_colormap(self._cmap_bar._cmap)},\n"
+        return axis_opt_str, "hide axis,\n" + auxiliary_opt_str, alias
 
     
     def _margins(self):
@@ -1005,31 +1246,73 @@ class Axes(BaseAxes):
         lines2 = []
         if self._polar:
             self._fig._add_required_package("\\usepgfplotslibrary{polar}")
+        main_ax, aux_ax, alias = self._axis_option_string()
+        contents = self._content_tex(filename)
         if self._polar and TikzConfig.USE_GROUPPLOTS and not single:
             lines.append(f"\\nextgroupplot[alias={self._axis_options['alias']}, width={self._width}, height={self._height}, hide axis]")
-            lines2.append("\\begin{polaraxis}")
-            lines2.append(f"[{self._axis_option_string()}]")
-            lines2.append(self._content_tex(filename))
-            lines2.append("\\end{polaraxis}")
+            for i in self._elements.keys():
+                spec = self._overlay_special[i] if i in self._overlay_special else ""
+                lines2.append("\\begin{polaraxis}[")
+                if i == self._get_overlay():
+                    lines2.append(f"{main_ax}{spec}\n]")
+                else:
+                    lines2.append(f"{aux_ax}{spec}\n]")
+                lines2.append(contents[i])
+                lines2.append("\\end{polaraxis}")
         else:
             if TikzConfig.USE_GROUPPLOTS and not single:
-                lines.append("\\nextgroupplot")
+                lines.append("\\nextgroupplot[")
             if self._polar:
-                lines.append("\\begin{polaraxis}")
+                lines.append("\\begin{polaraxis}[")
             elif not TikzConfig.USE_GROUPPLOTS or (TikzConfig.USE_GROUPPLOTS and single):
-                lines.append("\\begin{axis}")
-            lines.append(f"[{self._axis_option_string()}]")
-            lines.append(self._content_tex(filename))
+                lines.append("\\begin{axis}[")
+            if self._get_overlay() == 0:
+                spec = self._overlay_special[0] + ",\n" if 0 in self._overlay_special else ""
+                if self._secondary_y is not None or self._colorbar is not None:
+                    lines.append(f"{main_ax}{spec}alias={alias}\n]")
+                else:
+                    lines.append(f"{main_ax}{spec}\n]")
+                lines.append(contents[0])
+            else:
+                spec = self._overlay_special[0] + ",\n" if 0 in self._overlay_special else ""
+                lines.append(f"{aux_ax}{spec}alias={alias}\n]")
+                lines.append(contents[0])
+                for i in self._elements.keys():
+                    spec = self._overlay_special[i] + ",\n" if i in self._overlay_special else ""
+                    if i == 0: continue
+                    lines2.append("\\begin{axis}[")
+                    if i == self._get_overlay():
+                        lines2.append(f"{main_ax}{spec}at={{({alias}.south west)}}\n]")
+                        lines2.append(contents[i])
+                        lines2 += self._overlay_legend_entries
+                        add_l = self._add_legend_entries()
+                        if add_l:
+                            lines2.append(add_l)
+                    else:
+                        lines2.append(f"{aux_ax}{spec}at={{({alias}.south west)}}\n]")
+                        lines2.append(contents[i])
+                    lines2.append("\\end{axis}")
             if self._polar:
                 lines.append("\\end{polaraxis}")
-            elif not TikzConfig.USE_GROUPPLOTS or (TikzConfig.USE_GROUPPLOTS and single):
-            
+            elif not TikzConfig.USE_GROUPPLOTS or (TikzConfig.USE_GROUPPLOTS and single):            
                 lines.append("\\end{axis}")
             if self._secondary_y is not None:
-                lines2.append("\\begin{axis}")
-                lines2.append(f"[{self._secondary_y._axis_option_string()}]")
-                lines2.append(self._secondary_y._content_tex(filename))
-                lines2.append("\\end{axis}")
+                main_ax2, aux_ax2 = self._secondary_y._axis_option_string()
+                contents2 = self._secondary_y._content_tex(filename)
+                for i in self._secondary_y._elements.keys():
+                    lines2.append("\\begin{axis}[")
+                    spec = self._secondary_y._overlay_special[i] if i in self._secondary_y._overlay_special else ""
+                    if i == sorted(self._secondary_y._elements.keys())[-1]:
+                        lines2.append(f"{main_ax2}{spec}\n]")
+                    else:
+                        lines2.append(f"{aux_ax2}{spec}\n]")
+                    lines2.append(contents2[i])
+                    if i == sorted(self._secondary_y._elements.keys())[-1]:
+                        lines2 += self._secondary_y._overlay_legend_entries
+                        add_l = self._secondary_y._add_legend_entries()
+                        if add_l:
+                            lines2.append(add_l)
+                    lines2.append("\\end{axis}")
         return lines, lines2
 
     def set(self, **kwargs):
@@ -1075,6 +1358,7 @@ class Secondary(BaseAxes):
         if self._primary._height:
             self._axis_options["height"] = self._primary._height
         axis_opt_str = ""
+        auxiliary_opt_str = ""
         if self._axis_args:
             axis_opt_str += ",\n".join(self._axis_args)
         if self._ext_ymin or self._ext_ymax:
@@ -1089,14 +1373,18 @@ class Secondary(BaseAxes):
         self._axis_options["xmax"] = self._primary._axis_options["xmax"]
         if self._axis_options:
             if axis_opt_str: axis_opt_str += ",\n"
-            for k, v in self._axis_options.items():
+            if auxiliary_opt_str: auxiliary_opt_str += ",\n"
+            def parse_entry(k,v):
                 if isinstance(v, dict):
-                    axis_opt_str += f"{k}={{"
-                    axis_opt_str += ",\n".join(f"{kk}={vv}" for kk, vv in v.items())
-                    axis_opt_str += "},\n"
+                    return f"{k}={{" + ",\n".join(f"{kk}={vv}" for kk, vv in v.items()) + "}"
                 else:
-                    axis_opt_str += f"{k}={v},\n"
-        return axis_opt_str
+                    return f"{k}={v}"
+            for k, v in self._axis_options.items():
+                entry = parse_entry(k,v)
+                axis_opt_str += entry + ",\n"
+                if k in ["xmin", "xmax", "ymin", "ymax", "xmode", "ymode", "log basis x", "log basis y", "width", "height", "at"]:
+                    auxiliary_opt_str += entry + ",\n"
+        return axis_opt_str, auxiliary_opt_str
     
     def _padding(self):
         return TikzConfig.SEC_Y_PADDING + TikzConfig.YTICK_PADDING * self._yticks + TikzConfig.SEC_Y_LABEL_PADDING * ("ylabel" in self._axis_options)

@@ -154,39 +154,39 @@ def yticks(ticks: ArrayLike, labels: Optional[Sequence[str]] = ...) -> None:
 
 def grid(self, visible: bool = True, which: Literal["major","minor","both"] = "major", alpha: Optional[float] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ...,
              linestyle: Optional[LineStyle] = ..., ls: Optional[LineStyle] = ..., linewidth: Optional[float]= ..., lw: Optional[float] = ...) -> None: 
-        """
-        Set grid.
+    """
+    Set grid.
 
-        Parameters
-        ----------
-        visible: bool, default True
-            Show grid
+    Parameters
+    ----------
+    visible: bool, default True
+        Show grid
 
-        which: {"major", "minor", "both"}, default "major"
-            Grid selector
+    which: {"major", "minor", "both"}, default "major"
+        Grid selector
 
-        alpha: float, optional
-            Opacity
+    alpha: float, optional
+        Opacity
         
-        color or c: all matplotlib color formats (without X11/xkcd), optional
-            Grid color: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+    color or c: all matplotlib color formats (without X11/xkcd), optional
+        Grid color: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
         
-        linestyle or ls: str, optional
-            Grid line style
+    linestyle or ls: str, optional
+        Grid line style
         
-        linewidth or lw: float, optional
-            Grid line width in pt
-        """
+    linewidth or lw: float, optional
+        Grid line width in pt
+    """
 def set_minorticks_num(num: int) -> None:
-        """
-        Set number of minor ticks between major ticks.
+    """
+    Set number of minor ticks between major ticks.
 
-        Parameters
-        ----------
-        num: int
-            Number of minor ticks between major ticks.
-        """
-def legend(*args: Any, loc: Optional[Union[int,str,Tuple[float,float]]] = ...) -> None:
+    Parameters
+    ----------
+    num: int
+        Number of minor ticks between major ticks.
+    """
+def legend(self, *args: Any, loc: Optional[Union[int,str,Tuple[float,float]]] = ..., facecolor: Optional[ColorLike] = ..., edgecolor: Optional[ColorLike] = ..., labelcolor: Optional[ColorLike] = ..., frameon: Optional[bool] = ..., anchor: Optional[Literal["north", "south", "east", "west", "center", "north west", "north east", "south west", "south east"]] = ..., fontsize: Optional[Literal["xx-small", "x-small", "small", "medium", "large", "x-large", "xx-large"] | int] = ...) -> None:
     """
     Show legend for the selected axis. Despite arguments requires at least one plotted element on the axis (not necesarily with label) to show up (LaTeX does not allow legend on empty axis).
 
@@ -195,12 +195,20 @@ def legend(*args: Any, loc: Optional[Union[int,str,Tuple[float,float]]] = ...) -
     *args:
         - single arg: list/tuple, optional: list of labels to assign to axis elements (in given order assigned to plotted elements in the order of plotting). If label is used on any of the elements, the original label is overwritten.
         - two args: list/tuple, optional: element, label - assign labels to plots (use references of plots which are returned in plot commands). In case that a plot already has a label, both will be displayed. This is the only option to merge the legend entries for double-axis (twinx) plots.
-
+            
     loc: int, str or tuple, optional
         Location of legend (as in matplotlib: 1 - upper right, 2 - upper left, ... or with tuple of relative coordinates).
 
-    ncols: int, optional
-        Number of columns in legend, default 1.
+    ncols: int, optional: number of columns in legend, default 1
+
+    facecolor, edgecolor, labelcolor: all matplotlib color formats (without X11/xkcd), optional
+            Color of legend box, edge and text, respectively"
+
+    fontsize: FontSize or int, optional
+        Font size of legend text
+
+    anchor: {"north", "south", "east", "west", "center", "north west", "north east", "south west", "south east"}, optional
+        Anchor of legend box, default "north east" (for custom loc)
     """
     ...
 
@@ -605,6 +613,118 @@ def hist(
     
     hatch_distance: float, optional
         The distance between hatch lines in points. If not provided, the default distance is used.
+    """
+    ...
+
+def bar(self, x: ArrayLike | float, height: ArrayLike | float, width: ArrayLike | float = 0.8, bottom: ArrayLike | float = 0.0, align: Literal["center", "edge"] = "center", color: Optional[ColorLike] = None, c: Optional[ColorLike] = None, facecolor: Optional[ColorLike] = None, fc: Optional[ColorLike] = None, edgecolor: Optional[ColorLike] = None, ec: Optional[ColorLike] = None, linewidth: Optional[float] = None, lw: Optional[float] = None, tick_label: Optional[str] = None, label: Optional[str] = None, xerr: Optional[ArrayLike] = None, yerr: Optional[ArrayLike] = None, ecolor: Optional[ColorLike] = None, capsize: Optional[float] = None, hatch: Optional[str] = None, hatch_color: Optional[ColorLike] = None, hatch_linewidth: Optional[float] = None, hatch_distance: Optional[float] = None) -> None:
+    """
+    Draw a bar plot to the selected axis.
+
+    Parameters
+    ----------
+    x: ArrayLike or float
+        x coordinates of the bars
+    
+    height: ArrayLike or float
+        Heights of the bars
+    
+    width: ArrayLike or float, optional
+        Widths of the bars, default 0.8
+    
+    bottom: ArrayLike or float, optional
+        y coordinates of the bottom of the bars, default 0.0
+    
+    align: {"center", "edge"}, optional
+        Alignment of the bars, default "center"
+    
+    color, facecolor, fc, edgecolor, ec: ColorLike, optional
+        Color of the bars and edges
+    
+    linewidth or lw: float, optional
+        Line width of the edges in pt
+    
+    tick_label: str, optional
+        Tick label for the bars
+    
+    label: str, optional
+        Legend entry for the bars
+    
+    xerr, yerr: ArrayLike or float, optional
+        Error bar sizes in x and y directions
+    
+    ecolor: ColorLike, optional
+        Color of the error bars
+    
+    capsize: float, optional
+        Size of the error bar caps in pt
+    
+    hatch: str, optional
+        Hatch pattern for the bars
+    
+    hatch_color: ColorLike, optional
+        Color of the hatch pattern
+    
+    hatch_linewidth: float, optional
+        Line width of the hatch pattern in pt
+    
+    hatch_distance: float, optional
+        Distance between hatch lines in pt
+    """
+    ...
+
+def barh(self, y: ArrayLike | float, width: ArrayLike | float, height: ArrayLike | float = 0.8, left: ArrayLike | float = 0.0, align: Literal["center", "edge"] = "center", color: Optional[ColorLike] = None, c: Optional[ColorLike] = None, facecolor: Optional[ColorLike] = None, fc: Optional[ColorLike] = None, edgecolor: Optional[ColorLike] = None, ec: Optional[ColorLike] = None, linewidth: Optional[float] = None, lw: Optional[float] = None, tick_label: Optional[str] = None, label: Optional[str] = None, xerr: Optional[ArrayLike] = None, yerr: Optional[ArrayLike] = None, ecolor: Optional[ColorLike] = None, capsize: Optional[float] = None, hatch: Optional[str] = None, hatch_color: Optional[ColorLike] = None, hatch_linewidth: Optional[float] = None, hatch_distance: Optional[float] = None) -> None:
+    """
+    Draw a horizontal bar plot to the selected axis.
+
+    Parameters
+    ----------
+    y: ArrayLike or float
+        y coordinates of the bars
+    
+    width: ArrayLike or float
+        Widths of the bars
+    
+    height: ArrayLike or float, optional
+        Heights of the bars, default 0.8
+    
+    left: ArrayLike or float, optional
+        x coordinates of the left side of the bars, default 0.0
+    
+    align: {"center", "edge"}, optional
+        Alignment of the bars, default "center"
+    
+    color, facecolor, fc, edgecolor, ec: ColorLike, optional
+        Color of the bars and edges
+    
+    linewidth or lw: float, optional
+        Line width of the edges in pt
+    
+    tick_label: str, optional
+        Tick label for the bars
+    
+    label: str, optional
+        Legend entry for the bars
+    
+    xerr, yerr: ArrayLike or float, optional
+        Error bar sizes in x and y directions
+    
+    ecolor: ColorLike, optional
+        Color of the error bars
+    
+    capsize: float, optional
+        Size of the error bar caps in pt
+    
+    hatch: str, optional
+        Hatch pattern for the bars
+    
+    hatch_color: ColorLike, optional
+        Color of the hatch pattern
+    
+    hatch_linewidth: float, optional
+        Line width of the hatch pattern in pt
+    
+    hatch_distance: float, optional
+        Distance between hatch lines in pt
     """
     ...
 

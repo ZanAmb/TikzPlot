@@ -1,171 +1,149 @@
-
 \begin{tikzpicture}
-\definecolor{c017306270173}{rgb}{0.173, 0.627, 0.173}
-\definecolor{c100004980055}{rgb}{1.000, 0.498, 0.055}
-\definecolor{c012204670706}{rgb}{0.122, 0.467, 0.706}
-\def\xmina{-0.8}
-\def\xmaxa{10.8}
-\begin{groupplot}[group style={group size=2 by 3, horizontal sep=0.8999999999999999cm, vertical sep=1.5cm}]
-\nextgroupplot
-[/pgf/number format/.cd, use comma, 1000 sep={},
- set layers=standard, cell picture=true, grid style={on layer=axis grid},
-alias=p0,
-grid=major,
-legend style={at={(0.97,0.97)},
-anchor=north east},
-width=8.0cm,
-height=6.666666666666667cm,
-]
-\addplot [color={blue},
-line width=1.5pt,
-] table [x=x,y=y] {datapoints/figure_1.dat};\addlegendentry{sin(x)}
-\node[color=blue, fill=cyan, rotate=30] at (axis cs:1.5,0.5) {text $\alpha$};
-\addplot [color={red},
-dashed,
-] table [x=x,y=y] {datapoints/figure_2.dat};\addlegendentry{cos(x)}
-\coordinate (coordinate1) at (axis cs:1.5,-0.5);
-\nextgroupplot
-[/pgf/number format/.cd, use comma, 1000 sep={},
- set layers=standard, cell picture=true, grid style={on layer=axis grid},
-alias=p1,
-grid=major,
-legend style={at={(0.5,0.97)},
-anchor=north },
-legend columns=2,
-width=8.0cm,
-height=6.666666666666667cm,
-xmin=\xmina,
-xmax=\xmaxa,
-]
-\addplot [color={green},
-only marks,
-mark=*,
-] table [x=x,y=y] {datapoints/figure_3.dat};\addlegendentry{noisy}
-\addlegendimage{line width=2pt,
-color={c012204670706},
-}
-\addlegendentry{pl1}
-\addlegendimage{color={c100004980055},
-}
-\addlegendentry{pl2}
-\addlegendimage{color={c017306270173},
-}
-\addlegendentry{pl3}
-\nextgroupplot
-[/pgf/number format/.cd, use comma, 1000 sep={},
- set layers=standard, cell picture=true, grid style={on layer=axis grid},
-alias=p2,
-ymode=log,
-grid=both,
-legend style={},
-title={Semilog Y},
-width=8.0cm,
-height=6.666666666666667cm,
-]
-\addplot [color={violet},
-] table [x=x,y=y] {datapoints/figure_7.dat};\addlegendentry{$|\sin(x)|$}
-\nextgroupplot
-[/pgf/number format/.cd, use comma, 1000 sep={},
- set layers=standard, cell picture=true, grid style={on layer=axis grid},
-alias=p3,
-legend style={},
-xmin=0,
-xmax=10,
-ymin=-1.5,
-ymax=1.5,
-width=8.0cm,
-height=6.666666666666667cm,
-]
-\addplot [solid,
-color={black},
-error bars/.cd,
-y dir=both,
-y explicit,
-error bar style={color={gray}, line width=0.5pt, mark size=3pt},
-] table [x=x,y=y,y error=yerror] {datapoints/figure_8.dat};\addlegendentry{data}
-\addplot [forget plot,
-opacity=0,
-color={c012204670706},
-name path=path1,
-] table [x=x,y=y] {datapoints/figure_9.dat};
-\addplot [forget plot,
-opacity=0,
-color={c100004980055},
-name path=path2,
-] table [x=x,y=y] {datapoints/figure_10.dat};
-\addplot [forget plot,
-color={gray},
-opacity=0.3,
-] fill between [of=path1 and path2];
-\nextgroupplot
-[/pgf/number format/.cd, use comma, 1000 sep={},
- set layers=standard, cell picture=true, grid style={on layer=axis grid},
-alias=p4,
-width=8.0cm,
-height=6.666666666666667cm,
-]
-\addplot [forget plot,
-ybar interval,
-fill=orange,
-draw=none,
-] table [x=x,y=y] {datapoints/figure_11.dat};
-\nextgroupplot
-[/pgf/number format/.cd, use comma, 1000 sep={},
- set layers=standard, cell picture=true, grid style={on layer=axis grid},
-alias=p5,
-enlargelimits=false,
-grid=major,
-width=8.0cm,
-height=6.666666666666667cm,
-,
-colormap={urgb}{
-    rgb=(0.2670, 0.0049, 0.3294)
-    rgb=(0.2297, 0.3224, 0.5457)
-    rgb=(0.1276, 0.5669, 0.5506)
-    rgb=(0.3692, 0.7889, 0.3829)
-    rgb=(0.9932, 0.9062, 0.1439)
-},
-colorbar,
-colorbar style={
-/pgf/number format/use comma,
-width=0.3cm,
-anchor=west,
-at={(p5.east)},
-xshift=0.05cm,
-height=0.8*\pgfkeysvalueof{/pgfplots/parent axis height},
-title={$Z$},
-title style={at={(4,0.5)}, anchor=base, yshift=-7pt, rotate=-90},
-ytick={-0.5,0,0.5},
-},
-point meta min={-0.8901178391006421},
-point meta max={0.8910716463807059}]
-\addplot [forget plot,
-on layer=axis background,
-] graphics [xmin=-3, xmax=3, ymin=-3, ymax=3] {test7_imshow1.pdf};
-\end{groupplot}
-\begin{axis}
-[/pgf/number format/.cd, use comma, 1000 sep={},
-axis y line*=right,
-axis x line=none,
-at={(p1.south west)},
-anchor=south west,
-y label style={at={(1.2,0.5)}, rotate=180},
-ylabel={$y$-axis 2},
-width=8.0cm,
-height=6.666666666666667cm,
-xmin=\xmina,
-xmax=\xmaxa,
-]
-\addplot [forget plot,
-line width=2pt,
-color={c012204670706},
-] table [x=x,y=y] {datapoints/figure_4.dat};
-\addplot [forget plot,
-color={c100004980055},
-] table [x=x,y=y] {datapoints/figure_5.dat};
-\addplot [forget plot,
-color={c017306270173},
-] table [x=x,y=y] {datapoints/figure_6.dat};
-\end{axis}
-\node[color=teal, rotate=-70] at (coordinate1) {text $\beta$};
+	\definecolor{c017306270173}{rgb}{0.173, 0.627, 0.173}
+	\definecolor{c100004980055}{rgb}{1.000, 0.498, 0.055}
+	\definecolor{c012204670706}{rgb}{0.122, 0.467, 0.706}
+	\def\xmina{-0.8}
+	\def\xmaxa{10.8}
+	\begin{groupplot}[group style={group size=2 by 3, horizontal sep=0.8999999999999999cm, vertical sep=1.5cm}]
+		\nextgroupplot[
+			/pgf/number format/.cd, use comma, 1000 sep={},
+			set layers=standard, cell picture=true, grid style={on layer=axis grid},
+			grid=major,
+			legend style={at={(0.97,0.97)},
+				anchor=north east},
+			width=8.0cm,
+			height=6.666666666666667cm,
+			alias=p0
+			]
+		\addplot [color={blue},
+			line width=1.5pt] table [x=x,y=y] {datapoints/figure_1.dat};\addlegendentry{sin(x)}
+		\node[color=blue, fill=cyan, rotate=30] at (axis cs:1.5,0.5) {text $\alpha$};
+		\addplot [color={red},
+			dashed] table [x=x,y=y] {datapoints/figure_2.dat};\addlegendentry{cos(x)}
+		\coordinate (coordinate1) at (axis cs:1.5,-0.5);
+		\nextgroupplot[
+			/pgf/number format/.cd, use comma, 1000 sep={},
+			set layers=standard, cell picture=true, grid style={on layer=axis grid},
+			grid=major,
+			legend style={at={(0.5,0.97)},
+				anchor=north },
+			legend columns=2,
+			width=8.0cm,
+			height=6.666666666666667cm,
+			xmin=\xmina,
+			xmax=\xmaxa,
+			alias=p1
+			]
+		\addplot [color={green},
+			only marks,
+			mark=*] table [x=x,y=y] {datapoints/figure_3.dat};\addlegendentry{noisy}
+		\addlegendimage{line width=2pt, color={c012204670706}, }\addlegendentry{pl1}
+		\addlegendimage{color={c100004980055}, }\addlegendentry{pl2}
+		\addlegendimage{color={c017306270173}, }\addlegendentry{pl3}
+		\nextgroupplot[
+			/pgf/number format/.cd, use comma, 1000 sep={},
+			set layers=standard, cell picture=true, grid style={on layer=axis grid},
+			ymode=log,
+			grid=both,
+			legend style={},
+			title={Semilog Y},
+			width=8.0cm,
+			height=6.666666666666667cm,
+			alias=p2
+			]
+		\addplot [color={violet}] table [x=x,y=y] {datapoints/figure_7.dat};\addlegendentry{$|\sin(x)|$}
+		\nextgroupplot[
+			/pgf/number format/.cd, use comma, 1000 sep={},
+			set layers=standard, cell picture=true, grid style={on layer=axis grid},
+			legend style={},
+			xmin=0,
+			xmax=10,
+			ymin=-1.5,
+			ymax=1.5,
+			width=8.0cm,
+			height=6.666666666666667cm,
+			alias=p3
+			]
+		\addplot [solid,
+			color={black},
+			error bars/.cd,
+			y dir=both,
+			y explicit,
+			error bar style={color={gray}, line width=0.5pt, mark size=3pt}] table [x=x,y=y,y error=yerror] {datapoints/figure_8.dat};\addlegendentry{data}
+		\addplot [forget plot,
+			opacity=0,
+			name path=path1] table [x=x,y=y] {datapoints/figure_9.dat};
+		\addplot [forget plot,
+			opacity=0,
+			name path=path2] table [x=x,y=y] {datapoints/figure_10.dat};
+		\addplot [forget plot,
+			color={gray},
+			opacity=0.3] fill between [of=path1 and path2];
+		\nextgroupplot[
+			/pgf/number format/.cd, use comma, 1000 sep={},
+			set layers=standard, cell picture=true, grid style={on layer=axis grid},
+			width=8.0cm,
+			height=6.666666666666667cm,
+			alias=p4
+			]
+		\addplot [forget plot,
+			bar width=0.19484422500473292,
+			ybar,
+			fill=orange,
+			draw=none] table [x=x,y=y] {datapoints/figure_11.dat};
+		\nextgroupplot[
+			/pgf/number format/.cd, use comma, 1000 sep={},
+			set layers=standard, cell picture=true, grid style={on layer=axis grid},
+			enlargelimits=false,
+			grid=major,
+			width=8.0cm,
+			height=6.666666666666667cm,
+			colormap={urgb}{
+				    rgb=(0.2670, 0.0049, 0.3294)
+				    rgb=(0.2297, 0.3224, 0.5457)
+				    rgb=(0.1276, 0.5669, 0.5506)
+				    rgb=(0.3692, 0.7889, 0.3829)
+				    rgb=(0.9932, 0.9062, 0.1439)
+				},
+			colorbar,
+			colorbar style={
+				/pgf/number format/use comma,
+				width=0.3cm,
+				anchor=west,
+				at={(p5.east)},
+				xshift=0.05cm,
+				height=0.8*\pgfkeysvalueof{/pgfplots/parent axis height},
+				title={$Z$},
+				title style={at={(4,0.5)}, anchor=base, yshift=-7pt, rotate=-90},
+				ytick={-0.5,0,0.5},
+				},
+			point meta min={-0.8901178391006421},
+			point meta max={0.8910716463807059},
+			alias=p5
+			]
+		\addplot [forget plot,
+			on layer=axis background] graphics [xmin=-3, xmax=3, ymin=-3, ymax=3] {test7_imshow1.pdf};
+	\end{groupplot}
+	\begin{axis}[
+			/pgf/number format/.cd, use comma, 1000 sep={},
+			axis y line*=right,
+			axis x line=none,
+			at={(p1.south west)},
+			anchor=south west,
+			y label style={at={(1.2,0.5)}, rotate=180},
+			ylabel={$y$-axis 2},
+			width=8.0cm,
+			height=6.666666666666667cm,
+			xmin=\xmina,
+			xmax=\xmaxa,
+			]
+		\addplot [forget plot,
+			line width=2pt,
+			color={c012204670706}] table [x=x,y=y] {datapoints/figure_4.dat};
+		\addplot [forget plot,
+			color={c100004980055}] table [x=x,y=y] {datapoints/figure_5.dat};
+		\addplot [forget plot,
+			color={c017306270173}] table [x=x,y=y] {datapoints/figure_6.dat};
+	\end{axis}
+	\node[color=teal, rotate=-70] at (coordinate1) {text $\beta$};
 \end{tikzpicture}
