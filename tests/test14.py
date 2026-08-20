@@ -12,6 +12,7 @@ ax0.legend([l], ["line 1"])
 
 ax1.plot([-2,0,2], [0.2,0.3,0.35], label="line 1")
 ax1.legend()
+ax1.set_ylabel(r"$y$-label", fontsize="small", color='blue', loc="top")
 
 species = [-1,0,1]
 weight_counts = {
@@ -29,9 +30,9 @@ ax2.plot([-2,0,2], [80, 100, 90], label="line 2")
 ax2.legend()
 
 categories = ['A', 'B', 'C', 'D']
-means = [23, 35, 18, 28]
+means = [23, 35.05, 18, 28]
 errors = [2.5, 4.0, 1.8, 3.2]
 
 bars = ax3.barh(categories, means, xerr=errors, capsize=5, color='#3498db', edgecolor='#2C3E50', linewidth=1.2, alpha=0.85, height=0.4, ecolor='#2C3E50')
-
+ax3.bar_label(bars, labels=means, color='black', fontsize=8, padding=15, fmt="{:.0f}")
 plt.savefig("figure.tex")

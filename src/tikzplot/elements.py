@@ -332,6 +332,7 @@ class Graph(BaseGraph):
             x,y=coordinates
             self._x = np.asarray(x)
             self._y = np.asarray(y)
+            self._meta = None
             mask = np.isfinite(self._x) & np.isfinite(self._y)
             n0 = len(self._x)
             self._x = self._x[mask]
@@ -393,6 +394,8 @@ class Graph(BaseGraph):
                     cols.append("label")                
             if self._sizes is not None:
                     cols.append("size")
+        elif self._meta is not None:
+            cols.append("meta")
         return " ".join(cols)
 
     def _rows(self):    
@@ -417,6 +420,8 @@ class Graph(BaseGraph):
                         line.append(self._p_dict[i])
                 if self._sizes is not None:
                     line.append(f"{self._sizes[i]:.9f} pt")
+            elif self._meta is not None:
+                line.append(str(self._meta[i]))
             rows.append(" ".join(str(v) for v in line))
         return "\n".join(rows)
     
@@ -502,6 +507,8 @@ class Graph(BaseGraph):
                     table_opts += ",meta=color"
                 elif self._p_dict:
                     table_opts += ",meta=label"
+            elif self._meta is not None:
+                table_opts += ",meta=meta"
             datapoints = f"{header}\n{rows}\n"
             if TikzConfig.SAVE_DATAPOINTS:
                 datapoints = self._save_data(datapoints, filename)
@@ -525,7 +532,50 @@ class Graph(BaseGraph):
             return f"\\addplot [forget plot,\n{style}] {self._special};"
         else:
             return ""
-    
+
+    def _add_bar_labels(self, bar_labels, stacked=False, **bar_label_opts):
+        if not ("ybar" in self._settings or "xbar" in self._settings):
+            raise Warning("Bar labels can only be added to bar plots.")
+        if not stacked:
+            self._settings["nodes near coords"] = None
+        st = {}
+        if "color_parsed" in bar_label_opts:
+            st["color"] = bar_label_opts.pop("color_parsed")
+        if "fontsize_parsed" in bar_label_opts:
+            st["font"] = bar_label_opts.pop("fontsize_parsed")
+        if "rotation_parsed" in bar_label_opts:
+            st["rotate"] = bar_label_opts.pop("rotation_parsed")
+        if "rotation" in bar_label_opts:
+            if bar_label_opts["rotation"] not in ["vertical", "horizontal"] and not isinstance(bar_label_opts["rotation"], (int, float)):
+                raise Warning(f"Invalid rotation: {bar_label_opts['rotation']}. Must be one of 'vertical' or 'horizontal'.")
+            if isinstance(bar_label_opts["rotation"], (int, float)):
+                st["rotate"] = str(bar_label_opts["rotation"])
+            elif bar_label_opts["rotation"] == "vertical":
+                bar_label_opts["rotation_parsed"] = "-90"
+        if "padding" in bar_label_opts and bar_label_opts["padding"] is not None:
+            if stacked:
+                raise Warning("Padding does not make sense for stacked bar labels.")
+            st["inner sep"] = bar_label_opts.pop("padding")
+        if bar_labels == []:
+            st = {"opacity": 0}
+        elif bar_labels is not None:
+            if self._meta is not None:
+                self._settings["point meta"] = "explicit symbolic"
+            if not stacked:
+                self._settings["nodes near coords align"] = "center"
+                if "ybar" in self._settings or "ybar interval" in self._settings:
+                    st["anchor"] = "south"
+                elif "xbar" in self._settings or "xbar interval" in self._settings:
+                    st["anchor"] = "west"
+        if st:
+            self._settings["nodes near coords style"] = st
+
+    def _add_meta_column(self, values):
+        if len(values) != len(self._x):
+            raise Warning(f"Number of meta values ({len(values)}) does not match number of points ({len(self._x)}).")
+        if not list(self._y) == list(values):
+            self._meta = np.array(values)
+
     def _data_range(self):
         xmin, xmax = min(self._x), max(self._x)
         ymin, ymax = min(self._y), max(self._y)
@@ -579,7 +629,7 @@ class Graph(BaseGraph):
             return self._y
         
     def _filter(self, which, value):
-        if self._classic:
+        if self._classic and not ("ybar" in self._settings or "xbar" in self._settings or "ybar interval" in self._settings or "xbar interval" in self._settings):
             if isinstance(value, str):
                 value = self._axes._fig._lims[which][value]
             if which == "xmin":
@@ -616,6 +666,9 @@ class Graph(BaseGraph):
 
             if self._yerr is not None:
                 self._yerr = self._yerr[mask]
+
+            if self._meta is not None:
+                self._meta = self._meta[mask]
 
             if "scatter" in self._settings:
                 if self._colors is not None:

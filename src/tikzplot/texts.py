@@ -14,7 +14,6 @@ class Text:
         self._label = kwargs.get("label", None)
         self._visible = True
 
-    _FONT_SIZES = {"xx-small": r"\tiny", "x-small": r"\scriptsize", "small": r"\footnotesize", "medium": r"\normalsize", "large": r"\large", "x-large": r"\Large", "xx-large": r"\LARGE"}
 
     def match_color(self, input):
             self._has_color = True
@@ -34,11 +33,7 @@ class Text:
         if "alpha" in self._kwargs:
             self._opacity = self._kwargs["alpha"]
         if "fontsize" in self._kwargs or "size" in self._kwargs:
-            size = self._kwargs.get('fontsize') or self._kwargs.get('size')
-            if size in self._FONT_SIZES:
-                self._fsize = self._FONT_SIZES[size]
-            else:
-                raise ValueError(f"Font size {size} not recognized. Valid sizes are: {', '.join(self._FONT_SIZES.keys())}")
+            self._fsize = self._kwargs.get("fontsize")
         if "backgroundcolor" in self._kwargs:
             bg_color = self.match_color(self._kwargs["backgroundcolor"])
             output.append(f"fill={bg_color}")

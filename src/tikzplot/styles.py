@@ -7,7 +7,7 @@ class StyleProfile(TypedDict):
     line_width: NotRequired[float | None] # None for LaTeX default line width, if not specified, default is 1.0
     grid: NotRequired[dict[str, str]]
     background: NotRequired[dict[str, str]]
-    additional_settings: NotRequired[dict[str, str]]
+    additional_settings: NotRequired[dict[str, str|dict[str, str]]]
     colorbar_settings: NotRequired[dict[str, str]]
 
 class Styles:
@@ -15,11 +15,11 @@ class Styles:
         "empty": {"color_cycle": ['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf'], "line_width": None},
         "default": {"color_cycle": ['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf']},
         "classic": {"color_cycle": ['#1f77b4', "#2ca02c", "#d62728", "#9467bd", "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf"]},
-        "538": {"color_cycle": ['#008fd5', '#fc4f30', '#e5ae38', '#6d904f', '#8b8b8b', '#810f7c'], "grid": {"visible": "True", "which": "major", "color": "gray"}, "background": {"fill": "gray!10"}, "line_width": 2.0, "additional_settings": {"axis line style": "{draw=none}"}},
-        "bmh": {"color_cycle": ['#348abd', '#a60628', '#7a68a6', '#467821', '#d55e00', '#cc79a7', '#56b4e9', '#009e73', '#f0e442', '#0072b2'], "grid": {"visible": "True", "which": "major", "color": "gray"}, "background": {"fill": "gray!10"}, "line_width": 1.5, "additional_settings": {"axis line style": "{draw=gray!50}"}},
-        "ggplot": {"color_cycle": ['#e24a33', '#348abd', '#988ed5', '#777777', '#fbc15e', '#8eba42', '#ffb5b8'], "grid": {"visible": "True", "which": "major", "color": "white"}, "background": {"fill": "gray!20"}, "additional_settings": {"axis line style": "{draw=none}", "tick style": "{draw=gray}", "tick label style": "gray"}},
-        "seaborn": {"color_cycle": ['#4c72b0', '#55a868', '#c44e52', '#8172b2', '#ccb974', '#64b5cd'], "grid": {"visible": "True", "which": "major", "color": "white"}, "background": {"fill": "gray!20"}, "line_width": 1.5, "additional_settings": {"axis line style": "{draw=none}", "tick style": "{draw=white}"}},
-        "dark_background": {"color_cycle": ['#8dd3c7', '#feffb3', '#bfbbd9', '#fa8174', '#81b1d2', '#fdb462', '#b3de69', '#bc82bd', '#ccebc4', '#ffed6f'], "background": {"fill": "black"}, "additional_settings": {"every axis/.style": "gray!15", "tick style": "{draw=gray!15}", "tick label style": "gray!15", "axis line style": "{draw=gray!15}", "legend style": "{draw=white, fill=black}"}, "colorbar_settings": {"text": "gray!15"}}
+        "538": {"color_cycle": ['#008fd5', '#fc4f30', '#e5ae38', '#6d904f', '#8b8b8b', '#810f7c'], "grid": {"visible": "True", "which": "major", "color": "gray"}, "background": {"fill": "gray!10"}, "line_width": 2.0, "additional_settings": {"axis line style": {"draw": "none"}}},
+        "bmh": {"color_cycle": ['#348abd', '#a60628', '#7a68a6', '#467821', '#d55e00', '#cc79a7', '#56b4e9', '#009e73', '#f0e442', '#0072b2'], "grid": {"visible": "True", "which": "major", "color": "gray"}, "background": {"fill": "gray!10"}, "line_width": 1.5, "additional_settings": {"axis line style": {"draw": "gray!50"}}},
+        "ggplot": {"color_cycle": ['#e24a33', '#348abd', '#988ed5', '#777777', '#fbc15e', '#8eba42', '#ffb5b8'], "grid": {"visible": "True", "which": "major", "color": "white"}, "background": {"fill": "gray!20"}, "additional_settings": {"axis line style": {"draw": "none"}, "tick style": {"draw": "gray"}, "tick label style": {"text": "gray"}, "label style": {"text": "gray"}}, "colorbar_settings": {"text": "gray"}},
+        "seaborn": {"color_cycle": ['#4c72b0', '#55a868', '#c44e52', '#8172b2', '#ccb974', '#64b5cd'], "grid": {"visible": "True", "which": "major", "color": "white"}, "background": {"fill": "gray!20"}, "line_width": 1.5, "additional_settings": {"axis line style": {"draw": "none"}, "tick style": {"draw": "white"}}},
+        "dark_background": {"color_cycle": ['#8dd3c7', '#feffb3', '#bfbbd9', '#fa8174', '#81b1d2', '#fdb462', '#b3de69', '#bc82bd', '#ccebc4', '#ffed6f'], "background": {"fill": "black"}, "additional_settings": {"every axis/.style": "gray!15", "tick style": {"draw": "gray!15"}, "tick label style": {"text": "gray!15"}, "axis line style": {"draw": "gray!15"}, "legend style": {"draw": "white", "fill": "black"}}, "colorbar_settings": {"text": "gray!15"}}
     }
 
     _style_setting: str = "empty"
@@ -60,7 +60,10 @@ class Styles:
             return
         if "additional_settings" in profile:
             if "tick label style" in profile["additional_settings"]:
-                profile["colorbar_settings"] = {"text": profile["additional_settings"]["tick label style"]}
+                cbs = {"text": profile["additional_settings"]["tick label style"]}
+                if isinstance(cbs["text"], dict):
+                    cbs["text"] = ", ".join([f"{k}={v}" for k, v in cbs["text"].items()])
+                profile["colorbar_settings"] = {"text": cbs["text"]}
         self._user_styles[style] = profile
         if not self._user_styles_path.exists():
             with open(self._user_styles_path, "w") as f:
@@ -87,7 +90,7 @@ class Styles:
     def _get_line_width(self) -> float | None:
         return self._active_style.get("line_width", 1.0)
 
-    def _get_additional_settings(self) -> dict[str, str] | None:
+    def _get_additional_settings(self) -> dict[str, str|dict[str, str]] | None:
         return self._active_style.get("additional_settings", None)
 
     def _get_colorbar_settings(self) -> dict[str, str] | None:

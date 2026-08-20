@@ -9,7 +9,7 @@ TikzConfig.modifyParam(
 )
 
 #plt.style.set_profile("vivid", {"color_cycle": ["#003cff", "#ff0000", "#009933", "#ffd900", "#00f7ff", "#ff9900", "#7f7f7f"], "grid": {"visible": "true"}})
-plt.style.use("538")
+plt.style.use("ggplot")
 
 # --- Data ---
 x = np.linspace(0, 10, 200)
@@ -29,6 +29,8 @@ ax.plot(x, y, lw=1.5, label="sin(x)")
 ax.text(1.5, 0.5, r"text $\alpha$", ha="center", on_top=False, va="center", backgroundcolor="cyan", rotation=30)
 ax.plot(x, y2, ls="--", label="cos(x)")
 ax.text(1.5, -0.5, r"text $\beta$", ha="center", va="center", rotation=-70)
+ax.set_ylabel("$y$")
+ax.set_xlabel("$x$-label", loc="right", c="g")
 
 ax.grid()
 ax.legend(loc="upper right")
@@ -39,11 +41,13 @@ ax = axs[0, 1]
 sc = ax.scatter(x, y + noise, marker="o", label="noisy")
 ax.grid()
 
+ax.tick_params(axis="x", colors="blue", direction="out")
+
 ax2 = ax.twinx()
 p1 = ax2.plot([0,10],[0,0], lw=2)
 p2 = ax2.plot([0,10],[-1,1])
 p3 = ax2.plot([0,10],[1,-1])
-ax2.set_ylabel(r"$y$-axis 2")
+ax2.set_ylabel(r"$y$-axis 2", loc="top", color="red")
 ax.legend([p1,p2, p3], ["pl1", "pl2", "pl3"], loc=9, ncols = 2)
 # =========================
 # (3) Log scale
@@ -52,7 +56,7 @@ ax = axs[1, 0]
 ax.semilogy(x, np.abs(y) + 1e-2, label="sin")
 ax.grid(which="both")
 ax.legend(["$|\\sin(x)|$"])
-ax.set_title("Semilog Y")
+ax.set_title("Semilog Y", color="blue", fontsize=11, loc="center")
 
 # =========================
 # (4) Errorbar + fill_between

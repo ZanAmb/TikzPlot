@@ -10,6 +10,7 @@ from .colorbar import Colorbar
 from .figure import Figure as Figure
 from .state import main_name as main_name, next_show_num as next_show_num
 from .axes import Axes
+from .elements import Graph
 
 ArrayLike = Union[Sequence[float], np.ndarray]
 ColorLike = Union[str, Sequence[float], Sequence[Sequence[float] | ArrayLike], np.ndarray, None]
@@ -96,23 +97,68 @@ def subplots(
 
 # --- Axis label / limits ---
 
-def xlabel(label: str) -> None:
-    """
-    Set x-axis label.
-    """
-    ...
+def xlabel(label: str, fontsize: Optional[float|FontSize] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ..., loc: Optional[Literal["left", "center", "right"]] = ...) -> None: 
+        """
+        Set x-axis label.
 
-def ylabel(label: str) -> None:
-    """
-    Set y-axis label.
-    """
-    ...
+        Parameters
+        ----------
+        label: str
+            Label text
 
-def title(text: str) -> None:
-    """
-    Set plot title.
-    """
-    ...
+        fontsize: FontSize or float, optional
+            Font size of the label
+
+        color or c: all matplotlib color formats (without X11/xkcd), optional
+            Text color: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+
+        loc: {"left", "center", "right"}, optional
+            Label location, default "center"
+        """
+        ...
+
+def ylabel(abel: str, fontsize: Optional[float] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ..., loc: Literal["top", "center", "bottom"] = ..., rotate: Literal["vertical", "horizontal"] = ...) -> None: 
+        """
+        Set y-axis label.
+
+        Parameters
+        ----------
+        label: str
+            Label text
+
+        fontsize: float, optional
+            Font size of label
+
+        color or c: all matplotlib color formats (without X11/xkcd), optional
+            Color of label: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+
+        loc: {"top", "center", "bottom"}, optional
+            Location of label, default center
+
+        rotate: {"vertical", "horizontal"}, optional
+            Rotation of label, default vertical
+        """
+        ...
+
+def title(title: str, fontsize: Optional[float|FontSize] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ..., loc: Optional[Literal["left", "center", "right"]] = ...) -> None: 
+        """
+        Set plot title.
+
+        Parameters
+        ----------
+        title: str
+            Title text
+
+        fontsize: FontSize or float, optional
+            Font size of the title
+
+        color or c: all matplotlib color formats (without X11/xkcd), optional
+            Text color: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+
+        loc: {"left", "center", "right"}, optional
+            Title location, default "center"
+        """
+        ...
 
 def xlim(*args: Any, left: Optional[float] = ..., right: Optional[float] = ...) -> None:
     """
@@ -140,17 +186,44 @@ def yscale(*args: Any, base: Optional[float] = ...) -> None:
     """
     ...
 
-def xticks(ticks: ArrayLike, labels: Optional[Sequence[str]] = ...) -> None:
-    """
-    Set x-axis ticks and their labels.
-    """
-    ...
+def xticks(ticks: ArrayLike, labels: Optional[Sequence[str]] = ..., fontsize: Optional[float] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ...) -> None: 
+        """
+        Set x-axis ticks and their labels.
 
-def yticks(ticks: ArrayLike, labels: Optional[Sequence[str]] = ...) -> None:
-    """
-    Set y-axis ticks and their labels.
-    """
-    ...
+        Parameters
+        ----------
+        ticks: ArrayLike
+            Positions of the ticks on the x-axis.
+
+        labels: sequence of str, optional
+            Labels for the ticks. If not provided, the tick positions will be used as labels.
+
+        fontsize: float, optional
+            Font size of the tick labels.
+
+        color or c: all matplotlib color formats (without X11/xkcd), optional
+            Color of the tick labels: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+        """
+        ...
+def yticks(ticks: ArrayLike, labels: Optional[Sequence[str]] = ..., fontsize: Optional[Literal["xx-small", "x-small", "small", "medium", "large", "x-large", "xx-large"] | int] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ...) -> None: 
+        """
+        Set y-axis ticks and their labels.
+
+        Parameters
+        ----------
+        ticks: ArrayLike
+            Tick positions
+
+        labels: sequence of str, optional
+            Tick labels, if not provided, the tick positions are used as labels
+
+        fontsize: FontSize or int, optional
+            Font size of tick labels
+
+        color or c: all matplotlib color formats (without X11/xkcd), optional
+            Color of tick labels: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+        """
+        ...
 
 def grid(self, visible: bool = True, which: Literal["major","minor","both"] = "major", alpha: Optional[float] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ...,
              linestyle: Optional[LineStyle] = ..., ls: Optional[LineStyle] = ..., linewidth: Optional[float]= ..., lw: Optional[float] = ...) -> None: 
@@ -727,6 +800,36 @@ def barh(self, y: ArrayLike | float, width: ArrayLike | float, height: ArrayLike
         Distance between hatch lines in pt
     """
     ...
+
+def bar_label(self, container: Graph, labels: Sequence[str|float|int] | None = None, *, color: Optional[ColorLike] = None, c: Optional[ColorLike] = None, fontsize: Optional[FontSize | int] = None, padding: float | None = None, fmt: str = "%g", rotation: float | Literal["vertical", "horizontal"] = 0) -> None:
+        """
+        Attach labels to bars in a bar container.
+
+        Parameters
+        ----------
+        container: Graph
+            The element of bars (return of bar/barh/element of hist) to which the labels will be attached.
+
+        labels: sequence of str, float, or int, optional
+            The labels to attach to the bars. If None, the height of each bar will be used as the label, if [], no labels will be attached.
+
+        color or c: all matplotlib color formats (without X11/xkcd), optional
+            Color of the text labels: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+
+        fontsize: FontSize or int, optional
+            Font size of the text labels
+
+        padding: float, optional
+            Padding between the bar and the label in points. If None, a default padding is used.
+
+        fmt: str, optional
+            Format string for the labels. Default is "%g".
+
+        rotation: float or {"vertical", "horizontal"}, optional
+            Rotation of the text labels. Default is 0 (horizontal).
+        """
+        ...
+
 
 def magnify(self, x_p: float, y_p: float, x_m: float, y_m: float, zoom: float, size: float, **kwargs) -> int:
     """

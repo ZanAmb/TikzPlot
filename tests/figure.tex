@@ -25,6 +25,7 @@
 			/pgf/number format/.cd, use comma, 1000 sep={},
 			set layers=standard, cell picture=true, grid style={on layer=axis grid},
 			grid=major,
+			ytick pos=left,
 			legend style={at={(0.5,0.97)},
 				anchor=north },
 			legend columns=2,
@@ -45,7 +46,6 @@
 			set layers=standard, cell picture=true, grid style={on layer=axis grid},
 			ymode=log,
 			grid=both,
-			legend style={},
 			title={Semilog Y},
 			width=8.0cm,
 			height=6.666666666666667cm,
@@ -55,7 +55,6 @@
 		\nextgroupplot[
 			/pgf/number format/.cd, use comma, 1000 sep={},
 			set layers=standard, cell picture=true, grid style={on layer=axis grid},
-			legend style={},
 			xmin=0,
 			xmax=10,
 			ymin=-1.5,
@@ -87,7 +86,7 @@
 			alias=p4
 			]
 		\addplot [forget plot,
-			bar width=0.19484422500473292,
+			bar width=0.19913580361912064,
 			ybar,
 			fill=orange,
 			draw=none] table [x=x,y=y] {datapoints/figure_11.dat};
@@ -130,7 +129,8 @@
 			axis x line=none,
 			at={(p1.south west)},
 			anchor=south west,
-			y label style={at={(1.2,0.5)}, rotate=180},
+			y label style={at={(1.2,0.5)},
+				rotate=180},
 			ylabel={$y$-axis 2},
 			width=8.0cm,
 			height=6.666666666666667cm,

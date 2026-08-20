@@ -27,9 +27,12 @@ def survey(results, category_names):
     for i, (colname, color) in enumerate(zip(category_names, category_colors)):
         widths = data[:, i]
         starts = data_cum[:, i] - widths
-        ax.barh(labels, widths, left=starts, height=0.5,
+        rects = ax.barh(labels, widths, left=starts, height=0.5,
                         label=colname, color=color)
-
+        r, g, b = color
+        text_color = 'white' if r * g * b < 0.5 else 'darkgrey'
+        if i != 3:
+            ax.bar_label(rects, color=text_color, fmt="{:.0f}", rotation=45)
 
     ax.legend(ncols=len(category_names), loc=(0.5, 1.01), anchor="south", fontsize=7)
 

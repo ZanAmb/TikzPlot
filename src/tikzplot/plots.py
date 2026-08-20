@@ -210,6 +210,13 @@ def barh(*args, **kwargs):
         raise ValueError("barh is not supported for 3D axes.")
     return _current_axes.barh(*args, **kwargs)
 
+def bar_labels(*args, **kwargs):
+    _ensure_axes()
+    assert _current_axes
+    if isinstance(_current_axes, Axes3):
+        raise ValueError("bar_labels is not supported for 3D axes.")
+    return _current_axes.bar_label(*args, **kwargs)
+
 def step(*args, **kwargs):
     _ensure_axes()
     assert _current_axes
