@@ -41,6 +41,7 @@ Some basic plot commands are already implemented with commonly used arguments:
 - `hlines()/vlines()`,
 - `hist()`,
 - `bar()/barh()`,
+- `bar_label()`,
 - `step()`,
 - `imshow()`,
 - `text()`,
@@ -64,7 +65,8 @@ If axes and plot have different name for command with same effect, both are impl
 - `ax.set_xticklabels()/ax.set_yticklabels()`,
 - `legend()` (basic position control),
 - `ax.twinx()`,
-- `ax.set()`.
+- `ax.set()`,
+- `ax.tick_params()`,
 
 There is a limited support for built-in styles (e.g. `plt.style.use("default")`), you may also define your own style using `plt.style.set_profile()`. Currently supported features are: color cycle (hex colors sequence), line width (in pt), grid (with matplotlib kwargs), background (latex style key=value), additional settings (raw latex code for optional arguments to axis: key=value).
 
@@ -91,6 +93,6 @@ For plot configurations (default sizes, paddings, etc.), use `from tikzplot impo
 Currently supported parameters are listed with their default values in `src/tikzplot/config.py`.
 
 ## More features coming soon...
-- additional arguments supprot for implemented commands,
+- additional arguments support for implemented commands,
 - improved 3D plots (currently only basic support: plot, errorbar, fill_between, scatter, plot_wireframe, plot_surface),
 - ... 
