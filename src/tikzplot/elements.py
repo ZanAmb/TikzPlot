@@ -318,7 +318,14 @@ class Graph(BaseGraph):
         self._axes = axes
         #self._classic = False
         self._range_with_error = False
-        self._style = style
+        self._style = {}
+        self._endnotes = ""
+        for s in style:
+            if s.startswith("_"):
+                if s == "_endnotes":
+                    self._endnotes = style[s]
+            else:
+                self._style[s] = style[s]
         if settings != {}:
             self._settings = settings
         if "scatter" in self._settings:
@@ -519,17 +526,17 @@ class Graph(BaseGraph):
                     else:
                         l = f"\\addlegendentry{{{self._label}}}"
                     if self._axes._legend_on:
-                        return f"\\addplot [{style}] table [{table_opts}] {{{datapoints}}};{l}"
+                        return f"\\addplot [{style}] table [{table_opts}] {{{datapoints}}}{self._endnotes};{l}"
                     self._axes._add_overlay_legend_entry(f"\\addlegendimage{{{style.replace('\n', ' ')}}}{l}")
-                    return f"\\addplot [forget plot,\n{style}] table [{table_opts}] {{{datapoints}}};"
-                return f"\\addplot [forget plot,\n{style}] table [{table_opts}] {{{datapoints}}};"
+                    return f"\\addplot [forget plot,\n{style}] table [{table_opts}] {{{datapoints}}}{self._endnotes};"
+                return f"\\addplot [forget plot,\n{style}] table [{table_opts}] {{{datapoints}}}{self._endnotes};"
             return ""
         elif TikzConfig.SAVE_DATAPOINTS or not (TikzConfig.SAVE_DATAPOINTS and not TikzConfig.UPDATE_STYLE_ONLY):
             if self._label and self._axes._legend_on:
                 if label_opts:
-                    return f"\\addplot [{style}] {self._special};\\addlegendentry[{label_opts}]{{{self._label}}}"
-                return f"\\addplot [{style}] {self._special};\\addlegendentry{{{self._label}}}"
-            return f"\\addplot [forget plot,\n{style}] {self._special};"
+                    return f"\\addplot [{style}] {self._special}{self._endnotes};\\addlegendentry[{label_opts}]{{{self._label}}}"
+                return f"\\addplot [{style}] {self._special}{self._endnotes};\\addlegendentry{{{self._label}}}"
+            return f"\\addplot [forget plot,\n{style}] {self._special}{self._endnotes};"
         else:
             return ""
 
@@ -541,6 +548,8 @@ class Graph(BaseGraph):
         st = {}
         if "color_parsed" in bar_label_opts:
             st["color"] = bar_label_opts.pop("color_parsed")
+        if "opacity" in bar_label_opts:
+            st["opacity"] = bar_label_opts.pop("opacity")
         if "fontsize_parsed" in bar_label_opts:
             st["font"] = bar_label_opts.pop("fontsize_parsed")
         if "rotation_parsed" in bar_label_opts:
@@ -584,7 +593,10 @@ class Graph(BaseGraph):
     def _get_erange(self, which):
         if self._classic:
             if which == "xmin":
-                data = self._x
+                if "xbar" in self._settings or "xbar interval" in self._settings:
+                    data = self._y
+                else:
+                    data = self._x
                 if self._range_with_error and self._xerr is not None:
                     if self._x_asym:
                         data = self._x - self._xerr[:,0]
@@ -594,7 +606,10 @@ class Graph(BaseGraph):
                     return min(data) - float(self._settings.get("bar width", 0)) / 2
                 return min(data)
             if which == "xmax":
-                data = self._x
+                if "xbar" in self._settings or "xbar interval" in self._settings:
+                    data = self._y
+                else:
+                    data = self._x
                 if self._range_with_error and self._xerr is not None:
                     if self._x_asym:
                         data = self._x + self._xerr[:,1]
@@ -604,7 +619,10 @@ class Graph(BaseGraph):
                     return max(data) + float(self._settings.get("bar width", 0)) / 2
                 return max(data)
             if which == "ymin":
-                data = self._y
+                if "xbar" in self._settings or "xbar interval" in self._settings:
+                    data = self._x
+                else:
+                    data = self._y
                 if self._range_with_error and self._yerr is not None:
                     if self._y_asym:
                         data = self._y - self._yerr[:,0]
@@ -614,7 +632,10 @@ class Graph(BaseGraph):
                     return min(data) - float(self._settings.get("bar width", 0)) / 2
                 return min(data)
             if which == "ymax":
-                data = self._y
+                if "xbar" in self._settings or "xbar interval" in self._settings:
+                    data = self._x
+                else:
+                    data = self._y
                 if self._range_with_error and self._yerr is not None:
                     if self._y_asym:
                         data = self._y + self._yerr[:,1]
@@ -629,52 +650,53 @@ class Graph(BaseGraph):
             return self._y
         
     def _filter(self, which, value):
-        if self._classic and not ("ybar" in self._settings or "xbar" in self._settings or "ybar interval" in self._settings or "xbar interval" in self._settings):
-            if isinstance(value, str):
-                value = self._axes._fig._lims[which][value]
-            if which == "xmin":
-                mask = self._x >= value
-                idx_keep = np.where(self._x < value)[0]
-                if len(idx_keep) > 0:
-                    idx_keep = idx_keep[-1]
-            elif which == "xmax":
-                mask = self._x <= value
-                idx_keep = np.where(self._x > value)[0]
-                if len(idx_keep) > 0:
-                    idx_keep = idx_keep[0]
-            elif which == "ymin":
-                mask = self._y >= value
-                idx_keep = np.where(self._y < value)[0]
-                if len(idx_keep) > 0:
-                    idx_keep = idx_keep[-1]
-            elif which == "ymax":
-                mask = self._y <= value
-                idx_keep = np.where(self._y > value)[0]
-                if len(idx_keep) > 0:
-                    idx_keep = idx_keep[0]
+        if self._classic:
+            if not (which in ["ymin", "ymax"] and ("ybar" in self._settings or "ybar interval" in self._settings or "xbar" in self._settings or "xbar interval" in self._settings)):
+                if isinstance(value, str):
+                    value = self._axes._fig._lims[which][value]
+                if which == "xmin":
+                    mask = self._x >= value
+                    idx_keep = np.where(self._x < value)[0]
+                    if len(idx_keep) > 0:
+                        idx_keep = idx_keep[-1]
+                elif which == "xmax":
+                    mask = self._x <= value
+                    idx_keep = np.where(self._x > value)[0]
+                    if len(idx_keep) > 0:
+                        idx_keep = idx_keep[0]
+                elif which == "ymin":
+                    mask = self._y >= value
+                    idx_keep = np.where(self._y < value)[0]
+                    if len(idx_keep) > 0:
+                        idx_keep = idx_keep[-1]
+                elif which == "ymax":
+                    mask = self._y <= value
+                    idx_keep = np.where(self._y > value)[0]
+                    if len(idx_keep) > 0:
+                        idx_keep = idx_keep[0]
 
-            else:
-                raise ValueError("Invalid filter type")
+                else:
+                    raise ValueError("Invalid filter type")
 
-            mask[idx_keep] = True
+                mask[idx_keep] = True
 
-            self._x = self._x[mask]
-            self._y = self._y[mask]
+                self._x = self._x[mask]
+                self._y = self._y[mask]
 
-            if self._xerr is not None:
-                self._xerr = self._xerr[mask]
+                if self._xerr is not None:
+                    self._xerr = self._xerr[mask]
 
-            if self._yerr is not None:
-                self._yerr = self._yerr[mask]
+                if self._yerr is not None:
+                    self._yerr = self._yerr[mask]
 
-            if self._meta is not None:
-                self._meta = self._meta[mask]
+                if self._meta is not None:
+                    self._meta = self._meta[mask]
 
-            if "scatter" in self._settings:
-                if self._colors is not None:
-                    self._colors = self._colors[mask]
-                if self._sizes is not None:
-                    self._sizes = self._sizes[mask]
+                if "scatter" in self._settings:
+                    if self._colors is not None:
+                        self._colors = self._colors[mask]
+                    if self._sizes is not None:
+                        self._sizes = self._sizes[mask]
 
     def _check_equal(self, x,y):
         if self._classic:
@@ -686,7 +708,7 @@ class Graph(BaseGraph):
         return None, None
     
     def _reduce_points(self, limit):
-        if self._classic:
+        if self._classic and not("xbar" in self._settings or "xbar interval" in self._settings or "ybar" in self._settings or "ybar interval" in self._settings):
             xm, xmode, xbase = self._axes._get_limit("xmin")
             xM, _, _ = self._axes._get_limit("xmax")
             ym, ymode, ybase = self._axes._get_limit("ymin")

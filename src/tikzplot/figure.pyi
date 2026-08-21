@@ -10,7 +10,7 @@ from .axes import Axes
 from .axes3d import Axes3
 from .config import TikzConfig
 
-ShareOptions = Optional[str] | Literal["row", "col", "all", "none"]
+ShareOptions = Optional[bool] | Literal["row", "col", "all", "none"]
 
 class Figure:
     def __init__(self, style: Styles) -> None: ...

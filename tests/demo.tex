@@ -34,6 +34,7 @@
 					opacity=0.5,
 					},
 				minor tick num=4,
+				ytick pos=left,
 				width=6.0cm,
 				height=5.0cm,
 				alias=p0
@@ -63,7 +64,7 @@
 				alias=p1
 				]
 			\addplot [forget plot,
-				bar width=0.24527462037908254,
+				bar width=0.24560115177925557,
 				ybar,
 				fill=gray,
 				draw=none] table [x=x,y=y] {datapoints/demo_5.dat};
@@ -258,7 +259,8 @@
 				axis x line=none,
 				at={(p0.south west)},
 				anchor=south west,
-				y label style={at={(1.2,0.5)}, rotate=180},
+				y label style={at={(1.2,0.5)},
+					rotate=180},
 				ymin=0.05,
 				ymax=10,
 				ymode=log,

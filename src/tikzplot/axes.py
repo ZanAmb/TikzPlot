@@ -4,6 +4,7 @@ import copy
 
 import numpy as _np
 import matplotlib.pyplot as _plt
+from scipy import datasets
 
 from .elements import Graph
 from .texts import Text
@@ -21,7 +22,7 @@ class BaseAxes:
         self._legend_on = False
         self._overlay_legend = False
         self._overlay_legend_entries = []
-        self._overlay_special = {}
+        self._overlay_special: dict[int, dict[str, Any]] = {}
         self._yticks = True
         self._fig = None
         if TikzConfig.USE_DECIMAL_COMMA:
@@ -145,10 +146,17 @@ class BaseAxes:
                     self._axis_options[key].update(value)
                 self._axis_options[key] = value
 
+    def _parse_entry(self, k, v):
+        if v is None:
+            return f"{k}"
+        if isinstance(v, dict):
+            return f"{k}={{" + ",\n".join(f"{kk}={vv}" for kk, vv in v.items() if vv != {}) + "}"
+        return f"{k}={v}"
+
     def _plot(self, x, y, settings={}, xerr=None, yerr=None, overlay=None, note=None, **style):
         spec = None
         if self._get_overlay() in self._overlay_special:
-            spec = self._overlay_special[self._get_overlay()]
+            spec = ",\n".join([self._parse_entry(k, v) for k, v in self._overlay_special[self._get_overlay()].items()])
         if note != spec:
             self._get_free_overlay()
             
@@ -256,7 +264,7 @@ class BaseAxes:
             return self._plot(y,x,settings={"xcomb": None}, **kwargs)
 
     def fill_between(self, x, y1, y2=None, **kwargs):
-        kws = {"fmt", "alpha", "color", "c", "label", "hatch", "hatch_color", "hatch_linewidth", "hatch_distance"}
+        kws = {"fmt", "alpha", "color", "c", "facecolor", "fc", "label", "hatch", "hatch_color", "hatch_linewidth", "hatch_distance"}
         kwargs = self._check_kwargs("fill_between", kws, **kwargs)
         def _check_instance(xs, ys, pname):
             for el in self._elements[self._get_overlay()]:
@@ -277,7 +285,7 @@ class BaseAxes:
             name1 = inst
 
         if y2 is not None:
-            if isinstance(y1, (int, float)):
+            if isinstance(y2, (int, float)):
                 y2 = _np.asarray([y2] * len(x))
             inst = _check_instance(x,y2,name2)
             if inst is None:
@@ -292,6 +300,59 @@ class BaseAxes:
                 self._plot(xs,ys,path_name=name2, alpha=0)
             else:
                 name2 = inst
+        if "facecolor" in kwargs or "fc" in kwargs:
+            kwargs["color"] = kwargs.pop("facecolor", kwargs.pop("fc", None))
+            kwargs.pop("fc", None)
+        if not("color" in kwargs or "c" in kwargs):
+            assert isinstance(self, Axes) or isinstance(self, Secondary)
+            kwargs["color"] = f"C{self._get_defcol(1)}"            
+        e = Graph(self, f"fill between [of={name1} and {name2}]",settings={}, xerr=None, yerr=None, **kwargs)
+        self._elements[self._get_overlay()].append(e)
+        return e
+
+    def fill_betweenx(self, y, x1, x2=None, **kwargs):
+        kws = {"fmt", "alpha", "color", "c", "facecolor", "fc", "label", "hatch", "hatch_color", "hatch_linewidth", "hatch_distance"}
+        kwargs = self._check_kwargs("fill_between", kws, **kwargs)
+        def _check_instance(xs, ys, pname):
+            for el in self._elements[self._get_overlay()]:
+                if el._check_equal(xs,ys):
+                    return el._try_set_pname(pname)
+                else:
+                    return None
+        assert self._fig is not None
+        self._fig._add_required_package("\\usepgfplotslibrary{fillbetween}")
+        name1 = self._fig._get_free_path_name()
+        name2 = self._fig._get_free_path_name()
+        if isinstance(x1, (int, float)):
+            x1 = _np.asarray([x1] * len(y))
+        inst = _check_instance(x1,y,name1)
+        if inst is None:
+            self._plot(x1,y,path_name=name1, alpha=0)
+        else:
+            name1 = inst
+
+        if x2 is not None:
+            if isinstance(x2, (int, float)):
+                x2 = _np.asarray([x2] * len(y))
+            inst = _check_instance(x2,y,name2)
+            if inst is None:
+                self._plot(x2,y,path_name=name2, alpha=0)
+            else:
+                name2 = inst
+        else:
+            xs = [0, 0]
+            ys = [min(y), max(y)]
+            inst = _check_instance(xs,ys,name2)
+            if inst is None:
+                self._plot(xs,ys,path_name=name2, alpha=0)
+            else:
+                name2 = inst
+        if "facecolor" in kwargs or "fc" in kwargs:
+            kwargs["color"] = kwargs.pop("facecolor", kwargs.pop("fc", None))
+            kwargs.pop("fc", None)
+        if not("color" in kwargs or "c" in kwargs):
+            assert isinstance(self, Axes) or isinstance(self, Secondary)
+            kwargs["color"] = f"C{self._get_defcol(1)}"            
         e = Graph(self, f"fill between [of={name1} and {name2}]",settings={}, xerr=None, yerr=None, **kwargs)
         self._elements[self._get_overlay()].append(e)
         return e
@@ -409,13 +470,6 @@ class BaseAxes:
                     offset = widths.mean() / (len(datasets) + 1)
         else:
             intervals = True
-        if "range" in kwargs:
-            if orientation == "horizontal":
-                self.set_ylim(kwargs["range"])
-            elif isinstance(self, Axes):
-                self.set_xlim(kwargs["range"])
-            elif  isinstance(self, Secondary):
-                self._primary.set_xlim(kwargs["range"])
         base_settings = settings.copy()
         outputs = []
         totals, _ = _np.histogram(all_data, edges, density=False, weights=kwargs.get("weights", None), range=kwargs.get("range", None))
@@ -489,23 +543,111 @@ class BaseAxes:
                 outputs.append(e)
         return outputs
 
-    def bar(self, x, height, *args, **kwargs):
-        kws = {"alpha", "width", "bottom", "align", "color", "c", "facecolor", "fc", "edgecolor", "ec", "linewidth", "lw", "tick_label", "label", "xerr", "yerr", "ecolor", "capsize", "hatch", "hatch_color", "hatch_linewidth", "hatch_distance", "tick_label"}
+    def bar(self, x, height, width=0.8, bottom=None, **kwargs):
+        kws = {"alpha", "align", "color", "c", "facecolor", "fc", "edgecolor", "ec", "linewidth", "lw", "tick_label", "label", "xerr", "yerr", "ecolor", "capsize", "hatch", "hatch_color", "hatch_linewidth", "hatch_distance", "tick_label"}
         kwargs = self._check_kwargs("bar", kws, **kwargs)
+        kwargs["width"] = width
+        if bottom is not None:
+            kwargs["bottom"] = bottom
         if "width" in kwargs:
             kwargs["thickness"] = kwargs.pop("width")
         kwargs["edge"] = kwargs.pop("bottom", 0)
 
         return self._common_bar(x, height, orientation="vertical", **kwargs)
 
-    def barh(self, y, width, *args, **kwargs):
-        kws = {"alpha", "height", "left", "align", "color", "c", "facecolor", "fc", "edgecolor", "ec", "linewidth", "lw", "tick_label", "label", "xerr", "yerr", "ecolor", "capsize", "hatch", "hatch_color", "hatch_linewidth", "hatch_distance"}
+    def barh(self, y, width, height=0.8, left=None, **kwargs):
+        kws = {"alpha", "align", "color", "c", "facecolor", "fc", "edgecolor", "ec", "linewidth", "lw", "tick_label", "label", "xerr", "yerr", "ecolor", "capsize", "hatch", "hatch_color", "hatch_linewidth", "hatch_distance"}
         kwargs = self._check_kwargs("barh", kws, **kwargs)
+        kwargs["height"] = height
+        if left is not None:
+            kwargs["left"] = left
         if "height" in kwargs:
             kwargs["thickness"] = kwargs.pop("height")
         kwargs["edge"] = kwargs.pop("left", 0)
 
         return self._common_bar(y, width, orientation="horizontal", **kwargs)
+
+    def grouped_bar(self, heights, **kwargs):
+        kws = {"positions", "tick_labels", "labels", "group_spacing", "bar_spacing", "orientation", "colors", "alpha", "edgecolor", "ec", "facecolor", "fc", "linewidth", "lw", "linestyle", "ls", "hatch", "hatch_color", "hatch_linewidth", "hatch_distance"}
+        kwargs = self._check_kwargs("grouped_bar", kws, **kwargs)
+        if isinstance(heights, dict):
+            if "labels" not in kwargs:
+                kwargs["labels"] = list(heights.keys())
+            heights = list(heights.values())
+        if isinstance(heights, (list, tuple)) and len(heights) > 0 and isinstance(heights[0], (list, tuple, _np.ndarray)):
+            try:
+                datasets = [_np.asarray(ds, dtype=_np.float64) for ds in heights]
+                if any(ds.ndim != 1 for ds in datasets):
+                    raise ValueError("Nested datasets must all be 1-dimensional.")
+            except (ValueError, TypeError):
+                h_arr = _np.asarray(heights)
+                if h_arr.ndim == 2:
+                    datasets = [h_arr[:, i] for i in range(h_arr.shape[1])]
+                else:
+                    raise ValueError("Invalid dataset structure.")
+        else:
+            h_arr = _np.asarray(heights)
+            if h_arr.ndim == 1:
+                datasets = [h_arr]
+            elif h_arr.ndim == 2:
+                datasets = [h_arr[:, i] for i in range(h_arr.shape[1])]
+            else:
+                raise ValueError(f"Input must be 1D or 2D, got {h_arr.ndim}D.")
+
+        xs = kwargs.pop("positions", range(len(datasets[0])))
+        if len(xs) != len(datasets[0]):
+            raise Warning("Length of positions does not match length of datasets.")
+        if _np.diff(xs).min() != _np.diff(xs).max():
+            raise Warning("Positions must be equidistant.")
+        dist = _np.diff(xs).min()
+        settings = {}
+        if "rwidth" not in kwargs:
+            kwargs["rwidth"] = 1
+        orientation = kwargs.pop("orientation", "vertical")
+        group_spacing = kwargs.pop("group_spacing", 1.5)
+        bar_spacing = kwargs.pop("bar_spacing", 0.0)
+        bar_widths_num = len(datasets) * (1 + bar_spacing) + group_spacing
+        bar_width = dist / bar_widths_num
+        settings["thickness"] = bar_width
+
+        if "tick_labels" in kwargs:
+            tick_labels = kwargs.pop("tick_labels")
+            if len(tick_labels) != len(xs):
+                raise Warning("Length of tick_labels does not match length of positions.")
+            if orientation == "vertical":
+                if isinstance(self, Axes):
+                    self.set_xticks(xs, tick_labels)
+                elif isinstance(self, Secondary):
+                    self._primary.set_xticks(xs, tick_labels)
+            else:
+                self.set_yticks(xs, tick_labels)
+
+        datas = {}
+        for kw in ["colors", "alpha", "facecolor", "fc", "edgecolor", "ec", "labels", "linestyle", "ls", "hatch", "hatch_color", "hatch_linewidth", "hatch_distance"]:
+            if kw in kwargs:
+                if isinstance(kwargs[kw], (list)):
+                    if len(kwargs[kw]) != len(datasets):
+                        raise Warning(f"Length of {kw} does not match number of datasets.")
+                    prop = kwargs.pop(kw)
+                else:
+                    prop = [kwargs.pop(kw)] * len(datasets)
+                for i in range(len(datasets)):
+                    if i not in datas:
+                        datas[i] = {}
+                    datas[i][kw.removesuffix("s")] = prop[i]
+        base_settings = settings.copy()
+        bars = []
+        for i in range(len(datasets)):
+            offset = (i - len(datasets)/2 + 0.5) * bar_width * (1 + bar_spacing)
+            data = datasets[i]
+            settings = base_settings.copy()
+            kws = datas.get(i, {})
+            passing_args = ["alpha", "facecolor", "fc", "color", "c", "edgecolor", "ec", "label", "hatch", "hatch_color", "hatch_linewidth", "hatch_distance"]
+            for a in passing_args:
+                if a in kws:
+                    settings[a] = kws[a]
+            bars.append(self._common_bar(xs, data, orientation=orientation, **settings, group_offset=offset))   
+        return bars         
 
     def _common_bar(self, k, v, orientation="vertical", **kwargs):
         #if orientation == "vertical":
@@ -593,7 +735,7 @@ class BaseAxes:
 
         if _np.count_nonzero(edge) > 0:
             lower = self._get_overlay()
-            if self._overlay_special.get(lower, None) == bar_type + " stacked":
+            if bar_type + " stacked" in self._overlay_special.get(lower, {}):
                 bedx = _np.zeros_like(edge, dtype=_np.float64)
                 bedy = _np.zeros_like(edge, dtype=_np.float64)
                 for el in self._elements[lower]:
@@ -612,16 +754,18 @@ class BaseAxes:
             if overlay is None:
                 if len(self._elements[self._get_overlay()]) > 0 and self._elements[self._get_overlay()][-1]._check_equal(k, edge):
                     if len(self._elements[lower]) == 1:
-                        self._overlay_special[lower] = bar_type + " stacked"
+                        if lower not in self._overlay_special:
+                            self._overlay_special[lower] = {}
+                        self._overlay_special[lower].update({bar_type + " stacked": None})
                         overlay = lower
                     else:
                         current = self._get_free_overlay()
                         self._elements[current].append(self._elements[lower].pop()) # move the stacking bed to new overlay
-                        self._overlay_special[current] = bar_type + " stacked"
+                        self._overlay_special[current] = {bar_type + " stacked": None}
                         overlay = current
                 else: # no bed, plot invisible bed
                     current = self._get_free_overlay()
-                    self._overlay_special[current] = bar_type + " stacked"
+                    self._overlay_special[current] = {bar_type + " stacked": None}
                     self._plot(k, edge, alpha=0)
                     overlay = current
 
@@ -638,7 +782,7 @@ class BaseAxes:
         for kw in ["label", "hatch", "hatch_color", "hatch_linewidth", "hatch_distance"]:
             if kw in kwargs:
                 element_args[kw] = kwargs.pop(kw)
-        note = self._overlay_special.get(overlay, None)
+        note = ",\n".join([self._parse_entry(k, v) for k, v in self._overlay_special.get(overlay, {}).items()]) if overlay in self._overlay_special else None
         if "label" in element_args:
             if orientation == "vertical":
                 settings["ybar legend"] = None
@@ -648,7 +792,7 @@ class BaseAxes:
         return self._plot(k, v, yerr=kwargs.get("yerr", None), xerr=kwargs.get("xerr", None), overlay=overlay, settings=settings, note=note, **element_args)
 
     def bar_label(self, container, labels=None, **kwargs):
-        kws = {"color", "c", "fontsize", "rotation", "fmt", "padding"}
+        kws = {"alpha", "color", "c", "fontsize", "rotation", "fmt", "padding"}
         kwargs = self._check_kwargs("bar_label", kws, **kwargs)
         if not isinstance(container, Graph):
             raise Warning("Container must be a Graph object.")
@@ -659,6 +803,8 @@ class BaseAxes:
         if "color" in kwargs or "c" in kwargs:
             c = kwargs.pop("color", kwargs.pop("c", None))
             kwargs["color_parsed"] = self._match_color(c)
+        if "alpha" in kwargs:
+            kwargs["opacity"] = kwargs.pop("alpha")
         if "fontsize" in kwargs:
             kwargs["fontsize_parsed"] = self._tex_fontsize(kwargs["fontsize"])
         o = self._get_element_overlay(container)
@@ -683,7 +829,68 @@ class BaseAxes:
         if labels is not None and labels != []:
             container._add_meta_column(labels)
         self._bar_labels[self._get_element_overlay(container)][container] = kwargs | {"bar_labels": labels}
-        
+
+    def stackplot(self, x, *args, **kwargs):
+        kws = {"baseline", "labels", "colors", "alpha", "facecolor", "fc", "edgecolor", "ec", "linewidth", "lw", "linestyle", "ls", "hatch", "hatch_color", "hatch_linewidth", "hatch_distance"}
+        kwargs = self._check_kwargs("stackplot", kws, **kwargs)
+        n = len(x)
+        x = _np.asarray(x, dtype=_np.float64)
+        if len(args) == 1:
+            y = list(args[0])
+        else:
+            y = list(args)
+        if isinstance(list(y)[0], int | float):
+            y = [list(y)]
+        y = _np.asarray(y, dtype=_np.float64)
+        base_set = kwargs.pop("baseline", "zero")
+        if base_set not in ["zero", "sym", "wiggle", "weighted_wiggle"]:
+            raise Warning(f"Invalid baseline: {base_set}. Must be one of 'zero', 'sym', 'wiggle', or 'weighted_wiggle'.")
+        if base_set == "zero":
+            baseline = _np.zeros(n, dtype=_np.float64)
+        elif base_set == "sym":
+            baseline = -_np.sum(y, axis=0)/2
+        elif base_set == "wiggle": # from matplotlib source
+            m = y.shape[0]
+            baseline = (y * (m - 0.5 - _np.arange(m)[:, None])).sum(0)
+            baseline /= -m
+        else: # weighted_wiggle; from matplotlib source
+            total = _np.sum(y, 0)
+            inv_total = _np.zeros_like(total)
+            mask = total > 0
+            inv_total[mask] = 1.0 / total[mask]
+            increase = _np.hstack((y[:, 0:1], _np.diff(y)))
+            below_size = total - _np.cumsum(y, axis=0, dtype=_np.promote_types(y.dtype, _np.float32))
+            below_size += 0.5 * y
+            move_up = below_size * inv_total
+            move_up[:, 0] = 0.5
+            center = (move_up - 0.5) * increase
+            center = _np.cumsum(center.sum(0))
+            baseline = center - 0.5 * total
+        overlay = self._get_free_overlay()
+        self._overlay_special[overlay] = {"stack plots": "y", "area style": None}
+        if base_set != "zero":
+            self._plot(x, baseline, overlay=overlay, alpha=0)
+        datas = {}
+        for kw in ["labels", "colors", "alpha", "facecolor", "fc", "edgecolor", "ec", "linewidth", "lw", "linestyle", "ls", "hatch", "hatch_color", "hatch_linewidth", "hatch_distance"]:
+            if kw in kwargs:
+                prop = kwargs.pop(kw)
+                try:
+                    prop = list(prop)
+                except: pass
+                if isinstance(prop, (list, tuple)):
+                    if len(prop) != len(y):
+                        raise Warning(f"Length of {kw} does not match number of datasets.")
+                else:
+                    prop = [prop] * len(y)
+                datas[kw.removesuffix("s")] = prop
+        if "label" in datas:
+            self._overlay_special[overlay]["area legend"] = None
+        output = []
+        for i in range(len(y)):
+            kws = {kw: datas[kw][i] for kw in datas}
+            kws["_endnotes"] = r"\closedcycle"
+            output.append(self._plot(x, y[i], overlay=overlay, settings={"fill": None}, **kws))
+        return output
 
     def step(self, x, y, *args, **kwargs):
         kws = {"fmt", "alpha", "color", "c", "linestyle", "ls", "linewidth", "lw", "marker", "markersize", "ms", "label", "where"}
@@ -878,6 +1085,8 @@ class BaseAxes:
         self._axis_options["ytick pos"] = Y_INV[(yt_l, yt_r)]
         if self._axis_options["xtick pos"] == "both":
             self._axis_options.pop("xtick pos")
+        if self._axis_options["ytick pos"] == "both":
+            self._axis_options.pop("ytick pos")
         if "colors" in kwargs:
             c = self._match_color(kwargs.pop("colors"))
             self._update_axis_options(prefix + " tick style", {"draw": c})
@@ -1140,7 +1349,7 @@ class Axes(BaseAxes):
         self._style = self._fig._style
         self._imshow = None
 
-        self._defcol_counter = 0
+        self._defcol_counter = {0: 0}
         self._colorbar = ""
         self._cbar_h = False
         self._polar = polar
@@ -1537,9 +1746,11 @@ class Axes(BaseAxes):
         return self._nrows
     def _get_ncols(self):
         return self._ncols
-    def _get_defcol(self):
-        self._defcol_counter += 1
-        return self._defcol_counter - 1
+    def _get_defcol(self, index = 0):
+        if index not in self._defcol_counter:
+            self._defcol_counter[index] = 0
+        self._defcol_counter[index] += 1
+        return self._defcol_counter[index] - 1
     def _show_colorbar(self, cbar, horizontal=False):
         self._colorbar = ",\n" + cbar
         self._cbar_h = horizontal
@@ -1550,7 +1761,7 @@ class Axes(BaseAxes):
         for k,v in self._elements.items():
             if k in self._bar_labels and len(self._bar_labels[k]) > 0:
                 if k in self._overlay_special and ("xbar stacked" in self._overlay_special[k] or "ybar stacked" in self._overlay_special[k]):
-                    self._overlay_special[k] += ",\nnodes near coords"
+                    self._overlay_special[k].update({"nodes near coords": None})
                     for e in self._elements[k].copy():
                         if e not in self._bar_labels[k]:
                             self.bar_label(e, labels=[])
@@ -1561,13 +1772,13 @@ class Axes(BaseAxes):
             """if isinstance(v, list) and len(v) > 1:
                 reference = getattr(v[0], "_settings", {}) or {}
                 common_style = {s: val for s, val in reference.items() if all((getattr(obj, "_settings", {}) or {}).get(s) == val for obj in v[1:])}
-                forbiden = {"draw", "fill", "xbar", "ybar"}
-                for f in forbiden:
+                forbidden = {"draw", "fill", "xbar", "ybar"}
+                for f in forbidden:
                     common_style.pop(f, None)
                 for key, val in common_style.items():
                     for e in v:
                         e._settings.pop(key, None)
-                    self._overlay_special[k] += f",\n{self._parse_entry(key, val)}" """
+                    self._overlay_special[k].update({key: val}) """
         lines = []
         lines2 = []
         if self._polar:
@@ -1577,7 +1788,7 @@ class Axes(BaseAxes):
         if self._polar and TikzConfig.USE_GROUPPLOTS and not single:
             lines.append(f"\\nextgroupplot[alias={self._axis_options['alias']}, width={self._width}, height={self._height}, hide axis]")
             for i in self._elements.keys():
-                spec = self._overlay_special[i] if i in self._overlay_special else ""
+                spec = ",\n".join([self._parse_entry(k, v) for k, v in self._overlay_special.get(i, {}).items()]) + ",\n" if i in self._overlay_special else ""
                 lines2.append("\\begin{polaraxis}[")
                 if i == self._get_overlay():
                     lines2.append(f"{main_ax}{spec}\n]")
@@ -1593,18 +1804,18 @@ class Axes(BaseAxes):
             elif not TikzConfig.USE_GROUPPLOTS or (TikzConfig.USE_GROUPPLOTS and single):
                 lines.append("\\begin{axis}[")
             if self._get_overlay() == 0:
-                spec = self._overlay_special[0] + ",\n" if 0 in self._overlay_special else ""
+                spec = ",\n".join([self._parse_entry(k, v) for k, v in self._overlay_special.get(0, {}).items()]) + ",\n" if 0 in self._overlay_special else ""
                 if self._secondary_y is not None or self._colorbar is not None:
                     lines.append(f"{main_ax}{spec}alias={alias}\n]")
                 else:
                     lines.append(f"{main_ax}{spec}\n]")
                 lines.append(contents[0])
             else:
-                spec = self._overlay_special[0] + ",\n" if 0 in self._overlay_special else ""
+                spec = ",\n".join([self._parse_entry(k, v) for k, v in self._overlay_special.get(0, {}).items()]) + ",\n" if 0 in self._overlay_special else ""
                 lines.append(f"{aux_ax}{spec}alias={alias}\n]")
                 lines.append(contents[0])
                 for i in self._elements.keys():
-                    spec = self._overlay_special[i] + ",\n" if i in self._overlay_special else ""
+                    spec = ",\n".join([self._parse_entry(k, v) for k, v in self._overlay_special.get(i, {}).items()]) + ",\n" if i in self._overlay_special else ""
                     if i == 0: continue
                     lines2.append("\\begin{axis}[")
                     if i == self._get_overlay():
@@ -1627,7 +1838,7 @@ class Axes(BaseAxes):
                 contents2 = self._secondary_y._content_tex(filename)
                 for i in self._secondary_y._elements.keys():
                     lines2.append("\\begin{axis}[")
-                    spec = self._secondary_y._overlay_special[i] if i in self._secondary_y._overlay_special else ""
+                    spec = ",\n".join([self._parse_entry(k, v) for k, v in self._secondary_y._overlay_special.get(i, {}).items()]) + ",\n" if i in self._secondary_y._overlay_special else ""
                     if i == sorted(self._secondary_y._elements.keys())[-1]:
                         lines2.append(f"{main_ax2}{spec}\n]")
                     else:
@@ -1715,8 +1926,8 @@ class Secondary(BaseAxes):
     def _padding(self):
         return TikzConfig.SEC_Y_PADDING + TikzConfig.YTICK_PADDING * self._yticks + TikzConfig.SEC_Y_LABEL_PADDING * ("ylabel" in self._axis_options)
     
-    def _get_defcol(self):
-        return self._primary._get_defcol()
+    def _get_defcol(self, index = 0):
+        return self._primary._get_defcol(index)
     
     def _get_index(self):
         return self._primary._get_index()

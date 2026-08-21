@@ -7,6 +7,18 @@ Please report any bugs or unexpected behaviour in Issues. Examples may be found 
   <img src="https://raw.githubusercontent.com/ZanAmb/TikzPlot/main/tests/demo.png" width="60%">
 </p>
 
+## Why use pgfplots instead of matplotlib?
+- Tikz/pgfplots is a LaTeX package, so it is easy to integrate into your LaTeX document, and the fonts will match your document, rescaling will not affect font sizes.
+- Tikz/pgfplots graph is easy to edit, especially if only minor style changes are needed, while matplotlib requires re-running the code to generate a new graph.
+- Full math mode is supported, so you can use LaTeX math in your labels, legends, etc.
+
+## Why use this package instead of other available?
+- It is easy to use, with code being very similar to matplotlib and only minor changes are needed to switch from matplotlib to this package.
+- It relies on frontend commands, which is less likley to change in matplotlib, so new updates do not break it.
+- It generates clean and readable Tikz code, which is easy to edit and understand. Code is also efficient and does not contain unnecessary commands, which is important escpecially for large graphs.
+- If you use LLMs to generate pgfplots code, you will often get code that is not compilable, since for more complex requirements, LLMs make up commands that do not exist. This package covers many use cases and generates compilable code.
+
+
 # Installation
 PyPI: `pip install tikzplot42`.
 Alternativley, download this package and install using: `pip install [path]`, where [path] is the path to the directory, containing `pyproject.toml`.
@@ -42,6 +54,7 @@ Some basic plot commands are already implemented with commonly used arguments:
 - `hist()`,
 - `bar()/barh()`,
 - `bar_label()`,
+- `stackplot()`,
 - `step()`,
 - `imshow()`,
 - `text()`,

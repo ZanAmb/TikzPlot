@@ -30,7 +30,7 @@ ax2.plot([-2,0,2], [80, 100, 90], label="line 2")
 ax2.legend()
 
 categories = ['A', 'B', 'C', 'D']
-means = [23, 35.05, 18, 28]
+means = [23, 33, 18, 28]
 errors = [2.5, 4.0, 1.8, 3.2]
 
 bars = ax3.barh(categories, means, xerr=errors, capsize=5, color='#3498db', edgecolor='#2C3E50', linewidth=1.2, alpha=0.85, height=0.4, ecolor='#2C3E50')

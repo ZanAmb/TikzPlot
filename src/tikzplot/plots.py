@@ -210,6 +210,20 @@ def barh(*args, **kwargs):
         raise ValueError("barh is not supported for 3D axes.")
     return _current_axes.barh(*args, **kwargs)
 
+def grouped_bar(*args, **kwargs):
+    _ensure_axes()
+    assert _current_axes
+    if isinstance(_current_axes, Axes3):
+        raise ValueError("grouped_bar is not supported for 3D axes.")
+    return _current_axes.grouped_bar(*args, **kwargs)
+
+def stackplot(*args, **kwargs):
+    _ensure_axes()
+    assert _current_axes
+    if isinstance(_current_axes, Axes3):
+        raise ValueError("stackplot is not supported for 3D axes.")
+    return _current_axes.stackplot(*args, **kwargs)
+
 def bar_labels(*args, **kwargs):
     _ensure_axes()
     assert _current_axes
