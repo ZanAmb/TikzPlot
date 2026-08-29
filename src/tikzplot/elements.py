@@ -82,6 +82,8 @@ class BaseGraph:
                 self._opacity = op
             if isinstance(ccode, str):
                 return ccode
+            if ccode is None:
+                return "none"
             r,g,b=ccode
             assert self._axes is not None
             self._axes._add_col(r,g,b)
@@ -804,13 +806,59 @@ class Graph3(BaseGraph):
         else:
             self._special = coordinates
         self._style = style
+        if settings != {}:
+            self._settings = settings
+        if "scatter" in self._settings:
+            self._st_dict = {}
+            self._p_dict = {}
+            self._colors = None
+        if isinstance(coordinates, tuple):
+            self._classic = True
+            x,y,z=coordinates
+            self._x = np.asarray(x)
+            self._y = np.asarray(y)
+            self._z = np.asarray(z)
+            self._meta = None
+            mask = np.isfinite(self._x) & np.isfinite(self._y) & np.isfinite(self._z)
+            self._x = self._x[mask]
+            self._y = self._y[mask]
+            self._z = self._z[mask]
+            n = len(self._x)
+            self._xerr, self._x_asym = self._normalize_error(xerr, n)
+            self._yerr, self._y_asym = self._normalize_error(yerr, n)
+            self._zerr, self._z_asym = self._normalize_error(zerr, n)
+            if self._xerr is not None:
+                self._xerr = np.asarray(self._xerr)[mask]
+            if self._yerr is not None:
+                self._yerr = np.asarray(self._yerr)[mask]
+            if self._zerr is not None:
+                self._zerr = np.asarray(self._zerr)[mask]
+            if "scatter" in self._settings:
+                c = self._style.get("c", self._style.get("color", None))
+                if c is not None:
+                    try:
+                        if len(c) == n:
+                            self._colors = np.asarray(c)[mask]
+                    except: pass
+                s = self._style.get("ms", self._style.get("markersize", None))
+                if s is not None:
+                    try:
+                        if len(s) == n:
+                            self._sizes = np.asarray(s)[mask]
+                    except: pass
+                if self._colors is None and self._sizes is None:
+                    self._settings.pop("scatter")
+        else:
+            self._special = coordinates
         self._label = None
-        self._settings = settings
         if self._settings == None: self._settings = {}
 
         self._opacity = 1
         self._path_name = path_name
-        self._has_color = False
+        if self._settings.get("fill"):
+            self._has_color = True
+        else:
+            self._has_color = False
         self._style_str = None
 
     def _header(self):
@@ -830,6 +878,16 @@ class Graph3(BaseGraph):
                 cols += ["zerrminus", "zerrplus"]
             else:
                 cols.append("zerror")
+        if "scatter" in self._settings:
+            if "cmap" in self._style:
+                cols.append("color")
+            else:
+                if self._p_dict:
+                    cols.append("label")                
+            if self._sizes is not None:
+                    cols.append("size")
+        elif self._meta is not None:
+            cols.append("meta")
         return " ".join(cols)
 
     def _rows(self):    
@@ -851,10 +909,20 @@ class Graph3(BaseGraph):
                     line += list(self._zerr[i])
                 else:
                     line.append(self._zerr[i])
+            if "scatter" in self._settings:
+                if "cmap" in self._style and self._colors is not None:
+                    line.append(self._colors[i])
+                else:
+                    if self._p_dict:
+                        line.append(self._p_dict[i])
+                if self._sizes is not None:
+                    line.append(f"{self._sizes[i]:.9f} pt")
+            if self._meta is not None:
+                line.append(self._meta[i])
             rows.append(" ".join(str(v) for v in line))
         return "\n".join(rows)
     
-    def _to_tex(self, filename):
+    def _to_tex(self, filename, label_opts=None):
         style = self._style_string()
 
         if self._classic:
@@ -867,18 +935,40 @@ class Graph3(BaseGraph):
                 table_opts += ",y error=yerror"
             if self._zerr is not None:
                 table_opts += ",z error=zerror"
+            if "scatter" in self._settings:
+                if "cmap" in self._style:
+                    table_opts += ",meta=color"
+                elif self._p_dict:
+                    table_opts += ",meta=label"
+            elif self._meta is not None:
+                table_opts += ",meta=meta"
             datapoints = f"{header}\n{rows}\n"
             if TikzConfig.SAVE_DATAPOINTS:
                 datapoints = self._save_data(datapoints, filename).replace(r"\\", r"/")
             if not TikzConfig.SAVE_DATAPOINTS or (TikzConfig.SAVE_DATAPOINTS and not TikzConfig.UPDATE_DATA_ONLY):
-                if self._label and self._axes._legend_on:
-                    return f"\\addplot3 [{style}] table [{table_opts}] {{{datapoints}}};\\addlegendentry{{{self._label}}}"
+                if self._label and (self._axes._legend_on or self._axes._overlay_legend):
+                    if label_opts:
+                        l = f"\\addlegendentry[{label_opts}]{{{self._label}}}"
+                    else:
+                        l = f"\\addlegendentry{{{self._label}}}"
+                    if self._axes._legend_on:
+                        return f"\\addplot3 [{style}] table [{table_opts}] {{{datapoints}}};{l}"
                 return f"\\addplot3 [forget plot,\n{style}] table [{table_opts}] {{{datapoints}}};"
             return ""
         elif TikzConfig.SAVE_DATAPOINTS or not (TikzConfig.SAVE_DATAPOINTS and not TikzConfig.UPDATE_STYLE_ONLY):
+            if self._label and self._axes._legend_on:
+                if label_opts:
+                    return f"\\addplot3 [{style}] {self._special};\\addlegendentry[{label_opts}]{{{self._label}}}"
+                return f"\\addplot3 [{style}] {self._special};\\addlegendentry{{{self._label}}}"
             return f"""\\addplot3 [forget plot,\n{style}] {self._special};"""
         else:
             return ""
+
+    def _add_meta_column(self, values):
+        if len(values) != len(self._x):
+            raise Warning(f"Number of meta values ({len(values)}) does not match number of points ({len(self._x)}).")
+        if not list(self._z) == list(values):
+            self._meta = np.array(values)
     
     def _data_range(self):
         xmin, xmax = min(self._x), max(self._x)

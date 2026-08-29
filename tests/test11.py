@@ -41,7 +41,7 @@ ax = axs[0, 1]
 sc = ax.scatter(x, y + noise, marker="o", label="noisy")
 ax.grid()
 
-ax.tick_params(axis="x", colors="blue", direction="out")
+ax.tick_params(axis="x", colors="blue", direction="out", bottom=False, top=False)
 
 ax2 = ax.twinx()
 p1 = ax2.plot([0,10],[0,0], lw=2)

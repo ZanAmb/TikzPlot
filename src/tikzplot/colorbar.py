@@ -2,7 +2,6 @@ import numpy as _np
 
 from tikzplot.styles import Styles
 from .elements import Graph
-from .axes3d import Axes3
 from .config import TikzConfig
 
 class _Colorbar:
@@ -192,6 +191,7 @@ class _Colorbar:
     
     def __str__(self):
         assert self._axis is not None
+        from .axes3d import Axes3
         tridim = isinstance(self._axis, Axes3)
         lines = []
         lines.append(f"colormap={self._generate_tex_colormap(self._cmap)},")

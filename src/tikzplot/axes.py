@@ -1,10 +1,8 @@
-from multiprocessing import parent_process
 from typing import Any, Iterable
 import copy
 
 import numpy as _np
 import matplotlib.pyplot as _plt
-from scipy import datasets
 
 from .elements import Graph
 from .texts import Text
@@ -412,7 +410,7 @@ class BaseAxes:
             except (ValueError, TypeError):
                 x_arr = _np.asarray(x)
                 if x_arr.ndim == 2:
-                    datasets = [x_arr[:, i] for i in range(x_arr.shape[1])]
+                    datasets = [col for col in x_arr.T]
                 else:
                     raise ValueError("Invalid dataset structure.")
         else:
@@ -420,7 +418,7 @@ class BaseAxes:
             if x_arr.ndim == 1:
                 datasets = [x_arr]
             elif x_arr.ndim == 2:
-                datasets = [x_arr[:, i] for i in range(x_arr.shape[1])]
+                datasets = [col for col in x_arr.T]
             else:
                 raise ValueError(f"Input must be 1D or 2D, got {x_arr.ndim}D.")
 
@@ -582,7 +580,7 @@ class BaseAxes:
             except (ValueError, TypeError):
                 h_arr = _np.asarray(heights)
                 if h_arr.ndim == 2:
-                    datasets = [h_arr[:, i] for i in range(h_arr.shape[1])]
+                    datasets = [col for col in h_arr.T]
                 else:
                     raise ValueError("Invalid dataset structure.")
         else:
@@ -590,12 +588,12 @@ class BaseAxes:
             if h_arr.ndim == 1:
                 datasets = [h_arr]
             elif h_arr.ndim == 2:
-                datasets = [h_arr[:, i] for i in range(h_arr.shape[1])]
+                datasets = [col for col in h_arr.T]
             else:
                 raise ValueError(f"Input must be 1D or 2D, got {h_arr.ndim}D.")
 
-        xs = kwargs.pop("positions", range(len(datasets[0])))
-        if len(xs) != len(datasets[0]):
+        xs = kwargs.pop("positions", range(len(datasets)))
+        if len(xs) != len(datasets):
             raise Warning("Length of positions does not match length of datasets.")
         if _np.diff(xs).min() != _np.diff(xs).max():
             raise Warning("Positions must be equidistant.")
@@ -1083,10 +1081,6 @@ class BaseAxes:
         Y_INV = {v: k for k, v in Y_POS_MAP.items()}
         self._axis_options["xtick pos"] = X_INV[(xt_t, xt_b)]
         self._axis_options["ytick pos"] = Y_INV[(yt_l, yt_r)]
-        if self._axis_options["xtick pos"] == "both":
-            self._axis_options.pop("xtick pos")
-        if self._axis_options["ytick pos"] == "both":
-            self._axis_options.pop("ytick pos")
         if "colors" in kwargs:
             c = self._match_color(kwargs.pop("colors"))
             self._update_axis_options(prefix + " tick style", {"draw": c})
@@ -1106,6 +1100,14 @@ class BaseAxes:
                 raise Warning(f"Invalid direction: {direction}. Must be one of 'in', 'out', or 'inout'.")
             TICK_DIR_MAP = {"in": "inside", "out": "outside", "inout": "center"}
             self._update_axis_options(prefix + "tick align", TICK_DIR_MAP[direction])
+        if self._axis_options["xtick pos"] == "both":
+            self._axis_options.pop("xtick pos")
+        elif self._axis_options["xtick pos"] == "none":
+            self._update_axis_options("xtick style", {"draw": self._axis_options.pop("xtick pos")})
+        if self._axis_options["ytick pos"] == "both":
+            self._axis_options.pop("ytick pos")
+        elif self._axis_options["ytick pos"] == "none":
+            self._update_axis_options("ytick style", {"draw": self._axis_options.pop("ytick pos")})
 
     _LEGEND_LOC_MAP = ["best", "upper right", "upper left", "lower_left", "lower right", "right", "center left", "center right", "lower center", "upper center", "center"]
     _ANCHOR_MAP = {"top": "north", "bottom": "south", "upper": "north", "lower": "south", "left": "west", "right": "east", "center": "center"}
