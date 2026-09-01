@@ -79,7 +79,7 @@ def subplot(nrows, ncols, index, sharex=None, sharey=None, projection=None, pola
     if _current_figure is None:
         figure()
     assert _current_figure
-    _current_axes = _current_figure.add_subplot(nrows, ncols, index, sharex, sharey, projection, polar)
+    _current_axes = _current_figure.add_subplot(nrows, ncols, index, sharex=sharex, sharey=sharey, projection=projection, polar=polar)
     return _current_axes
 
 def subplots(nrows=1, ncols=1, sharex=None, sharey=None, subplot_kw=None, **kwargs):
@@ -101,13 +101,14 @@ def subplots(nrows=1, ncols=1, sharex=None, sharey=None, subplot_kw=None, **kwar
             row.append(axes[k])
             k += 1
         grid.append(row)
-
     _current_axes = axes[0]
     grid = np.asarray(grid)
     if grid.shape[0] == 1:
         grid = grid[0]
-    elif grid.shape[1] == 1:
-        grid = grid[:,0]
+    else:
+        assert len(grid.shape) == 2
+        if grid.shape[1] == 1:
+            grid = grid[:,0]
 
     if "figsize" in kwargs:
         _current_figure.set_size_inches(kwargs["figsize"])

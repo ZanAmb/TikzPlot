@@ -62,6 +62,16 @@ Some basic plot commands are already implemented with commonly used arguments:
 - `axvline()/axhline()`,
 - `axvspan()/axhspan()` (background span).
 
+#### 3D plotting
+- `plot()`,
+- `scatter()`,
+- `errorbar()`,
+- `fill_between()`,
+- `plot_wireframe()`,
+- `plot_surface()`,
+- `bar3d()`,
+- `text()`.
+
 #### Figures
 - `plt.figure()` (currently only to give you figure object or to set `figsize`),
 - `plt.subplot()`, `plt.subplots()` (with `sharex/sharey` fully implemented, projection `polar` and `3d` with basic support),
@@ -107,5 +117,5 @@ Currently supported parameters are listed with their default values in `src/tikz
 
 ## More features coming soon...
 - additional arguments support for implemented commands,
-- improved 3D plots (currently only basic support: plot, errorbar, fill_between, scatter, plot_wireframe, plot_surface),
+- improved 3D and polar plots,
 - ... 

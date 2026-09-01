@@ -35,11 +35,24 @@ class Figure:
 
         self.texts = []
 
-        self._lims = {"xmin": {}, "xmax": {}, "ymin": {}, "ymax": {}}
+        self._lims = {"xmin": {}, "xmax": {}, "ymin": {}, "ymax": {}, "zmin": {}, "zmax": {}}
 
         self._required_packages: dict[str, int] = {} # int for priority: 0-tikz, 1-pgfplots, 2-other packages, 3-pgfplotsset, 4-tikzlibraries, 5-pgfplotslibraries
 
-    def add_subplot(self, nrows=1, ncols=1, index=1, sharex=None, sharey=None, projection=None, polar=False):
+    def add_subplot(self, *args, sharex=None, sharey=None, projection=None, polar=False):
+        nrows = ncols = index = 1
+        if len(args) == 0: pass
+        elif len(args) == 1:
+            q = args[0]
+            if isinstance(q, int) and q >= 111:
+                nrows, ncols, index = int(str(args[0])[0]), int(str(args[0])[1]), int(str(args[0])[2])
+        elif len(args) == 3:
+            nrows, ncols, index = args
+            if not (isinstance(nrows, int) and isinstance(ncols, int) and isinstance(index, int)):
+                raise ValueError("nrows, ncols, index must be integers")
+        else:
+            raise ValueError("Invalid number of arguments for add_subplot")
+
         if projection=="3d":
             ax = Axes3(nrows, ncols, index, self)
         else:
@@ -63,11 +76,11 @@ class Figure:
         for i in range(1, nrows * ncols + 1):
             if subplot_kw:
                 if "projection" in subplot_kw:
-                    ax = self.add_subplot(nrows, ncols, i, sharex, sharey, projection=subplot_kw["projection"])
+                    ax = self.add_subplot(nrows, ncols, i, sharex=sharex, sharey=sharey, projection=subplot_kw["projection"])
                 else:
-                    ax = self.add_subplot(nrows, ncols, i, sharex, sharey)
+                    ax = self.add_subplot(nrows, ncols, i, sharex=sharex, sharey=sharey)
             else:
-                ax = self.add_subplot(nrows, ncols, i, sharex, sharey)
+                ax = self.add_subplot(nrows, ncols, i, sharex=sharex, sharey=sharey)
             grid.append(ax)
         return grid
     

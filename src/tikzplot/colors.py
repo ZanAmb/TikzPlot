@@ -1,7 +1,29 @@
-from typing import Any
+from typing import Any, Tuple
 
 from .config import TikzConfig
 from .styles import Styles
+
+_TEX_COLOR_MAP: dict[str, Tuple[int, int, int]] = {
+    "black": (0, 0, 0),
+    "blue": (0, 0, 255),
+    "cyan": (0, 255, 255),
+    "green": (0, 255, 0),
+    "magenta": (255, 0, 255),
+    "red": (255, 0, 0),
+    "white": (255, 255, 255),
+    "yellow": (255, 255, 0),
+    "brown": (153, 102, 51),
+    "darkgray": (64, 64, 64),
+    "gray": (128, 128, 128),
+    "lightgray": (191, 191, 191),
+    "lime": (0, 255, 0),
+    "olive": (128, 128, 0),
+    "orange": (255, 127, 0),
+    "pink": (255, 127, 127),
+    "purple": (127, 0, 127),
+    "teal": (0, 127, 127),
+    "violet": (127, 0, 255),
+}
 
 _COLOR_MAP: dict[str, str] = {
     'b': 'blue',
@@ -189,7 +211,6 @@ def _tex_color(input, style=Styles()) -> tuple[Any, bool | float]:
             decimal = int(hex[i:i+2], 16) / 255
             rgb.append(decimal)  
         return color_string(rgb[0],rgb[1],rgb[2])
-       
     if isinstance(input, tuple):
         opacity = False
         if len(input) == 1:
@@ -221,8 +242,45 @@ def _tex_color(input, style=Styles()) -> tuple[Any, bool | float]:
     if s.lower() == "none":
         return color_string(0,0,0), 0
     if s in _COLOR_MAP.keys():
-        return _COLOR_MAP[s], False
+        if TikzConfig.USE_XCOLOR:
+            return _COLOR_MAP[s], False
+        else:
+            return _tex_to_rgb(_COLOR_MAP[s]), False
     if s in _COLOR_MAP.values():
-        return s, False
-    print(f"Unrecognized color {input}")
-    return None, False
+        if TikzConfig.USE_XCOLOR:
+            return s, False
+        else:
+            return _tex_to_rgb(s), False
+    raise ValueError(f"Unrecognized color {input}")
+
+def _tex_to_rgb(color):
+    if isinstance(color, str):
+        if color.startswith("rgb:"):
+            color = color[4:]
+            r,g,b = color.split(";")
+            r = int(r.split(",")[1])
+            g = int(g.split(",")[1])
+            b = int(b.split(",")[1])
+            color = (r,g,b)
+        else:
+            components = color.split("!")
+            if len(components) == 1:
+                color = _TEX_COLOR_MAP.get(components[0], (0,0,0))
+            else:
+                base = components[0]
+                if len(components) == 3:
+                    second = components[2]
+                else:
+                    second = "white"
+                ratio = int(components[1]) / 100
+                r1,g1,b1 = _TEX_COLOR_MAP.get(base, (0,0,0))
+                r2,g2,b2 = _TEX_COLOR_MAP.get(second, (255,255,255))
+                r = int(r1 * (1 - ratio) + r2 * ratio)
+                g = int(g1 * (1 - ratio) + g2 * ratio)
+                b = int(b1 * (1 - ratio) + b2 * ratio)
+                color = (r,g,b)
+    return color
+
+def _tex_color_rgb(input, style=Styles()) -> tuple[Any, bool | float]:
+    color, opacity = _tex_color(input, style)
+    return _tex_to_rgb(color), opacity

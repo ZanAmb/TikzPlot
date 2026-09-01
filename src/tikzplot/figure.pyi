@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 from typing import Optional
-from typing_extensions import Literal, Sequence, overload
+from typing_extensions import Literal, Sequence, overload, Union
 
 from tikzplot.styles import Styles
 
@@ -15,17 +15,40 @@ ShareOptions = Optional[bool] | Literal["row", "col", "all", "none"]
 class Figure:
     def __init__(self, style: Styles) -> None: ...
     @overload
-    def add_subplot(self, nrows:Optional[int]=1, ncols:Optional[int]=1, index:Optional[int]=1, sharex:Optional[ShareOptions]=None, sharey:Optional[ShareOptions]=None, projection:Literal["3d"]="3d", polar:Optional[bool]=False) -> Axes3: ...
+    def add_subplot(
+        self,
+        *args,
+        sharex: Optional[ShareOptions] = ...,
+        sharey: Optional[ShareOptions] = ...,
+        projection: Literal["3d"],
+        polar: Optional[bool] = ...,
+    ) -> Axes3: ...
     @overload
-    def add_subplot(self, nrows:Optional[int]=1, ncols:Optional[int]=1, index:Optional[int]=1, sharex:Optional[ShareOptions]=None, sharey:Optional[ShareOptions]=None, projection:Optional[str]=None, polar:Optional[bool]=False) -> Axes | Axes3:
+    def add_subplot(
+        self,
+        *args,
+        sharex: Optional[ShareOptions] = None,
+        sharey: Optional[ShareOptions] = None,
+        projection: Optional[Literal["polar"]] = None,
+        polar: Optional[bool] = False,
+    ) -> Axes:  
+        ...
         """
         Add subplot axis.
+
         Parameters
         ----------
+        args: int or (int, int, int)
+            Number of rows, columns and index (in a single int or 3 separate).
+
+        sharex, sharey: bool or "row" or "col" or "all" or "none", optional
+            Share x or y axes with other subplots.
+
         projection: None, "polar", "3d", optional
+            None results in normal 2D.
         
         polar: bool, optional
-            Use polar projection for axis (no additional features implemented yet).
+            Use polar projection for axis.
         """
         ...
     def _add_subplots(self, nrows:int, ncols:int, sharex:Optional[ShareOptions], sharey:Optional[ShareOptions], subplot_kw:Optional[dict]) -> Sequence[Axes]:
@@ -33,6 +56,12 @@ class Figure:
         Add multiple subplots to figure.
         Parameters
         ----------
+        nrows, ncols: int
+            Number of rows and columns of subplots.
+
+        sharex, sharey: bool or "row" or "col" or "all" or "none", optional
+            Share x or y axis between subplots.
+
         subplot_kw: dict, optional
             Additional keyword arguments for subplot creation.
         """

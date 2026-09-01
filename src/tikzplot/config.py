@@ -115,8 +115,8 @@ class _TikzConfig:
         self.CBAR3_H_OFFSET = 0.2    # for 3D horizontal
 
         self.DEFAULT_3D_ROLL = 0
-        self.DEFAULT_3D_AZIM = 0
-        self.DEFAULT_3D_ELEV = 0
+        self.DEFAULT_3D_AZIM = -60
+        self.DEFAULT_3D_ELEV = 30
 
         self._config_file = Path.home() / ".tikz_userconf.json"
         self._load_user_config()

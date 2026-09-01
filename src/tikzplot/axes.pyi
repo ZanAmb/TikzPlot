@@ -12,7 +12,7 @@ HatchStyle = Literal["/", "\\", "|", "-", "+", "x", ".", "*"]
 
 
 class BaseAxes:   
-    def plot(self, x: ArrayLike = ..., y: ArrayLike = ..., fmt: Optional[str] = ...,*, alpha: Optional[float] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ...,
+    def plot(self, x: ArrayLike = ..., y: ArrayLike = ..., fmt: Optional[str] = ...,*, alpha: float = 1.0, color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ...,
              linestyle: Optional[LineStyle] = ..., ls: Optional[LineStyle] = ..., linewidth: Optional[float]= ..., lw: Optional[float] = ...,
              marker: Optional[MarkerStyle] = ..., markersize: Optional[float] = ..., ms: Optional[float] = ...,  label:Optional[str]=...) -> Graph:
         """
@@ -49,7 +49,7 @@ class BaseAxes:
         """
         ...
 
-    def scatter(self, x: ArrayLike = ..., y: ArrayLike = ..., fmt: Optional[str] = ..., *,alpha: Optional[float] = ..., color: Optional[Union[Sequence[ColorLike], ColorLike]] = ..., c: Optional[ColorLike] = ...,
+    def scatter(self, x: ArrayLike = ..., y: ArrayLike = ..., fmt: Optional[str] = ..., *,alpha: float = 1.0, color: Optional[Union[Sequence[ColorLike], ColorLike]] = ..., c: Optional[ColorLike] = ...,
              marker: Optional[MarkerStyle] = ..., markersize: Optional[Union[ArrayLike, float]] = ..., s: Optional[Union[ArrayLike, float]] = ...,  label:Optional[str]=..., cmap: Optional[Union[str, Colorbar]], vmin: Optional[float] = ..., vmax: Optional[float] = ...) -> Graph:
         """
         Draw a scatter plot to the selected axis.
@@ -68,7 +68,6 @@ class BaseAxes:
         color or c: array like or single: all matplotlib color formats (without X11/xkcd) or float for colormap, optional
             color of line and markers: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible. Note that if the sequence if of the same length as x, it will be interpreted as color sequence for each point, otherwise it will be interpreted as a single color for all points.
 
-
         label: str, optional
             Legned entry
         
@@ -85,7 +84,7 @@ class BaseAxes:
             Colorbar limits for scatter points, if color is given sequence of floats and cmap is given as string, otherwise ignored. If cmap is given as str and no vmin or vmax is provided, they will be set to the min and max of color sequence.
         """
         ...
-    def semilogy(self, x: ArrayLike = ..., y: ArrayLike = ..., base: Optional[float] = 10,  fmt: Optional[str] = ...,*, alpha: Optional[float] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ...,
+    def semilogy(self, x: ArrayLike = ..., y: ArrayLike = ..., base: Optional[float] = 10,  fmt: Optional[str] = ...,*, alpha: float = 1.0, color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ...,
              linestyle: Optional[LineStyle] = ..., ls: Optional[LineStyle] = ..., linewidth: Optional[float]= ..., lw: Optional[float] = ...,
              marker: Optional[MarkerStyle] = ..., markersize: Optional[float] = ..., ms: Optional[float] = ...,  label:Optional[str]=...) -> Graph:
         """
@@ -124,7 +123,7 @@ class BaseAxes:
             Mark size in pt
         """
         ...
-    def errorbar(self, x: ArrayLike = ..., y: ArrayLike = ..., yerr: Optional[ArrayLike | float] = ..., xerr: Optional[ArrayLike | float] = ..., fmt: Optional[str] = ..., *, alpha: Optional[float] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ...,
+    def errorbar(self, x: ArrayLike = ..., y: ArrayLike = ..., yerr: Optional[ArrayLike | float] = ..., xerr: Optional[ArrayLike | float] = ..., fmt: Optional[str] = ..., *, alpha: float = 1.0, color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ...,
              linestyle: Optional[LineStyle] = ..., ls: Optional[LineStyle] = ..., linewidth: Optional[float]= ..., lw: Optional[float] = ...,
              marker: Optional[MarkerStyle] = ..., markersize: Optional[float] = ..., ms: Optional[float] = ...,  label: Optional[str]= ..., ecolor: Optional[ColorLike] = ..., elinewidth: Optional[float] = ..., capsize: Optional[float] = ..., elinestyle: Optional[LineStyle] = ...) -> Graph:
         """
@@ -202,7 +201,7 @@ class BaseAxes:
         x: ArrayLike,
         y1: ArrayLike,
         y2: Optional[ArrayLike] = ...,
-        alpha: Optional[float] = ...,
+        alpha: float = 1.0,
         color: Optional[ColorLike] = ...,
         c: Optional[ColorLike] = ...,
         label: Optional[str] = ...,
@@ -242,7 +241,7 @@ class BaseAxes:
         """
         ...
 
-    def text(self, x: float, y: float, s: str, color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ..., fontsize: Optional[FontSize] = ..., on_top: bool = ..., size: Optional[FontSize] = ..., backgroundcolor: Optional[ColorLike] = ..., horizontalalignment: Optional[str] = ..., ha: Optional[str] = ..., verticalalignment: Optional[str] = ..., va: Optional[str] = ..., rotation: Optional[Union[float, str]] = ..., label: Optional[str] = ...) -> None:
+    def text(self, x: float, y: float, s: str, alpha: float = 1, color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ..., fontsize: Optional[FontSize] = ..., size: Optional[FontSize] = ..., backgroundcolor: Optional[ColorLike] = ..., horizontalalignment: Literal["left", "center", "right"] = "center", ha: Literal["left", "center", "right"] = "center", verticalalignment: Literal["bottom", "center", "top"] = "center", va: Literal["bottom", "center", "top"] = "center", rotation: float = 0, label: Optional[str] = ...) -> None:
         """
         Add text to the selected axis.
 
@@ -306,7 +305,7 @@ class BaseAxes:
     def hist(
         self,
         x: Union[ArrayLike, Sequence[ArrayLike]],
-        bins: int | Sequence[float] = 10,
+        bins: int | ArrayLike = 10,
         *,
         weight: ArrayLike | None = None,
         density: bool = False,
@@ -315,11 +314,12 @@ class BaseAxes:
         orientation: Literal["horizontal","vertical"] = "vertical",
         rwidth: float | None = None,
         range: Tuple[float,float] | None = None,
-        color: ColorLike = ...,
-        facecolor: ColorLike = ...,
-        fc: ColorLike = ...,
-        edgecolor: ColorLike = ...,
-        ec: ColorLike = ...,
+        alpha: float = 1.0,
+        color: ColorLike | Sequence[ColorLike] = ...,
+        facecolor: ColorLike | Sequence[ColorLike] = ...,
+        fc: ColorLike | Sequence[ColorLike] = ...,
+        edgecolor: ColorLike | Sequence[ColorLike] = ...,
+        ec: ColorLike | Sequence[ColorLike] = ...,
         align: Literal["left", "mid", "right"] = ...,
         stacked: bool = False,
         fill: bool = True,
@@ -357,6 +357,9 @@ class BaseAxes:
 
         range: tuple of float, optional
             The lower and upper range of the bins. If not provided, the range is automatically determined from the data.
+
+        alpha: float, optional
+            Opacity between 0 and 1.
 
         color, facecolor, fc, edgecolor, ec: ColorLike, optional
             The color of the bars. Can be a single color or a sequence of colors for multiple datasets. If not provided, the default color cycle is used.
@@ -928,7 +931,7 @@ class BaseAxes:
             Whether to draw ticks on the respective side of the axis, default True for all sides
         """
         ...
-    def legend(self, *args: Any, loc: Optional[Union[int,str,Tuple[float,float]]] = ..., facecolor: Optional[ColorLike] = ..., edgecolor: Optional[ColorLike] = ..., labelcolor: Optional[ColorLike] = ..., frameon: Optional[bool] = ..., anchor: Optional[Literal["north", "south", "east", "west", "center", "north west", "north east", "south west", "south east"]] = ..., fontsize: Optional[Literal["xx-small", "x-small", "small", "medium", "large", "x-large", "xx-large"] | int] = ...) -> None:
+    def legend(self, *args: Any, loc: Optional[Union[int,str,Tuple[float,float]]] = ..., facecolor: Optional[ColorLike] = ..., edgecolor: Optional[ColorLike] = ..., labelcolor: Optional[ColorLike] = ..., frameon: Optional[bool] = ..., anchor: Optional[Literal["north", "south", "east", "west", "center", "north west", "north east", "south west", "south east"]] = ..., fontsize: Optional[Literal["xx-small", "x-small", "small", "medium", "large", "x-large", "xx-large"] | int] = ..., ncols: Optional[int] = 1) -> None:
         """
         Show legend for the selected axis. Despite arguments requires at least one plotted element on the axis (not necesarily with label) to show up (LaTeX does not allow legend on empty axis).
 
@@ -971,7 +974,7 @@ class BaseAxes:
     
 class Axes(BaseAxes):
     def __init__(self, nrows: int, ncols: int, index: int, fig: Any, pol: bool) -> None: ...
-    def loglog(self, x: ArrayLike = ..., y: ArrayLike = ..., base: Optional[float] = 10,  fmt: Optional[str] = ...,*, alpha: Optional[float] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ...,
+    def loglog(self, x: ArrayLike = ..., y: ArrayLike = ..., base: Optional[float] = 10,  fmt: Optional[str] = ...,*, alpha: float = 1.0, color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ...,
              linestyle: Optional[LineStyle] = ..., ls: Optional[LineStyle] = ..., linewidth: Optional[float]= ..., lw: Optional[float] = ...,
              marker: Optional[MarkerStyle] = ..., markersize: Optional[float] = ..., ms: Optional[float] = ...) -> Graph:
         """
@@ -1010,7 +1013,7 @@ class Axes(BaseAxes):
             Mark size in pt
         """
         ...
-    def semilogx(self, x: ArrayLike = ..., y: ArrayLike = ..., base: Optional[float] = 10,  fmt: Optional[str] = ...,*, alpha: Optional[float] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ...,
+    def semilogx(self, x: ArrayLike = ..., y: ArrayLike = ..., base: Optional[float] = 10,  fmt: Optional[str] = ...,*, alpha: float = 1.0, color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ...,
              linestyle: Optional[LineStyle] = ..., ls: Optional[LineStyle] = ..., linewidth: Optional[float]= ..., lw: Optional[float] = ...,
              marker: Optional[MarkerStyle] = ..., markersize: Optional[float] = ..., ms: Optional[float] = ...) -> Graph:
         """
@@ -1092,8 +1095,7 @@ class Axes(BaseAxes):
             Title location, default "center"
         """
         ...
-    def grid(self, visible: bool = True, which: Literal["major","minor","both"] = "major", alpha: Optional[float] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ...,
-             linestyle: Optional[LineStyle] = ..., ls: Optional[LineStyle] = ..., linewidth: Optional[float]= ..., lw: Optional[float] = ...) -> None: 
+    def grid(self, visible: bool = True, which: Literal["major","minor","both"] = "major", alpha: float = 1.0, color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ..., linestyle: Optional[LineStyle] = ..., ls: Optional[LineStyle] = ..., linewidth: Optional[float]= ..., lw: Optional[float] = ...) -> None: 
         """
         Set grid.
 
@@ -1112,8 +1114,8 @@ class Axes(BaseAxes):
         linewidth or lw: float, optional
             Grid line width in pt
         """
-    def set_minorticks_num(self, num: int) -> None:
         ...
+    def set_minorticks_num(self, num: int) -> None:
         """
         Set number of minor ticks between major ticks.
         
@@ -1122,6 +1124,7 @@ class Axes(BaseAxes):
         num: int
             Number of minor ticks between major ticks.
         """
+        ...
     def set_xlim(self, *args: Any, left: Optional[float] = ..., right: Optional[float] = ...) -> None: 
         """
         Set x-axis limit(-s). Set as tuple or as kwargs (left, right).

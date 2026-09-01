@@ -17,7 +17,7 @@ y1 = np.sin(x) + 1.5
 y2 = 0.35 * np.cos(x) + 0.8
 ax1.plot(x, y1, color="orange", linewidth=1.2, ls="-.", label="$f_1$")
 ax1.plot(x, y2, color="teal", linewidth=1.2, label="$f_2$")
-ax1.fill_between(x, y1, y2, color="blue", alpha=0.35, label="area")
+ax1.fill_between(x, y1, y2, color="blue", alpha=0.35, label="area", hatch="x")
 ax1.set(xlabel="$x$", ylabel="$y_1$", xlim=(0, 10))
 ax1.grid(True)
 ax1.legend(loc="upper right", ncols=3)
@@ -31,14 +31,18 @@ ax1r.set_ylim(0.05, 10)
 ax1r.set_yscale("log")
 ax1r.set_ylabel("$y_2$")
 
-# 2) histogram + line plot
 ax2 = fig.add_subplot(2, 2, 2)
-data = np.random.normal(loc=0.0, scale=1.0, size=2000)
-counts, bins = np.histogram(data, bins=30)
-bin_centers = 0.5 * (bins[:-1] + bins[1:])
-ax2.hist(data, bins=bins, color="gray", alpha=0.55)
-ax2.plot(bin_centers, counts, color="black")
-ax2.set(xlabel="value", ylabel="count", xlim=(-4, 4), ylim=(0, 200))
+x = np.arange(-4, 5, 2)
+ay = [500, 1000, 1250, 2000, 1750]
+by = [1000, 300, 500, 800, 100]
+cy = [1500, 500, 300, 200, 200]
+y = np.vstack([ay, by, cy])
+
+ax2.stackplot(x, y, colors=[(0.1,0.3,0.7), (0.2,0.5,1), (0.3,0.7,1)])
+x_multi = [np.random.randn(n) for n in [10000, 5000, 2000]]
+ax2.hist(x_multi, 10, histtype='bar', color=["goldenrod", "yellow", "red"])
+ax2.set_ylim(bottom=0)
+ax2.set_xlim(left=-4, right=4)
 
 # 3) imshow + colorbar
 ax3 = fig.add_subplot(2, 2, 3)

@@ -250,6 +250,8 @@ class BaseGraph:
             opts = self._settings | opts
             if self._path_name:
                 opts["name path"] = self._path_name
+            _SKIP_KWARGS = ["dx", "dy", "dz"]
+            opts = {k:v for k,v in opts.items() if k not in _SKIP_KWARGS}
         if "scatter" in self._settings and (self._colors is not None or self._sizes is not None):
             if self._sizes is not None:
                     if self._p_dict:
@@ -855,7 +857,7 @@ class Graph3(BaseGraph):
 
         self._opacity = 1
         self._path_name = path_name
-        if self._settings.get("fill"):
+        if self._settings.get("fill") or "bar3d" in self._settings:
             self._has_color = True
         else:
             self._has_color = False
@@ -878,7 +880,9 @@ class Graph3(BaseGraph):
                 cols += ["zerrminus", "zerrplus"]
             else:
                 cols.append("zerror")
-        if "scatter" in self._settings:
+        if "bar3d" in self._settings:
+            cols += ["dx", "dy", "dz"]
+        elif "scatter" in self._settings:
             if "cmap" in self._style:
                 cols.append("color")
             else:
@@ -892,6 +896,13 @@ class Graph3(BaseGraph):
 
     def _rows(self):    
         rows = []
+        bars3d = False
+        dx = dy = dz = []
+        if "bar3d" in self._settings:
+            dx, dy, dz = self._settings.pop("dx"), self._settings.pop("dy"), self._settings.pop("dz")
+            assert dx is not None and dy is not None and dz is not None
+            assert len(dx) == len(dy) == len(dz) == len(self._x)
+            bars3d = True
         for i in range(len(self._x)):
             line = [self._x[i], self._y[i], self._z[i]]
             if self._xerr is not None:
@@ -909,6 +920,8 @@ class Graph3(BaseGraph):
                     line += list(self._zerr[i])
                 else:
                     line.append(self._zerr[i])
+            if bars3d:
+                line += [dx[i], dy[i], dz[i]]
             if "scatter" in self._settings:
                 if "cmap" in self._style and self._colors is not None:
                     line.append(self._colors[i])
@@ -923,8 +936,21 @@ class Graph3(BaseGraph):
         return "\n".join(rows)
     
     def _to_tex(self, filename, label_opts=None):
+        if "bar3d" in self._settings:
+            visible_faces = self._axes._visible_faces
+            cols = self._settings.pop("facecolors", [self._settings.pop("facecolor", "black")] * len(visible_faces))
+            ec = self._axes._match_color(self._settings.pop("edgecolor", "black"))
+            c = []
+            for col in cols:
+                if isinstance(col, str):
+                    c.append(col)
+                else:
+                    rgb, _ = col
+                    rgb = [v / 255 for v in rgb]
+                    self._axes._add_col(*rgb)
+                    c.append(f"c{rgb[0]:.3f}{rgb[1]:.3f}{rgb[2]:.3f}".replace(".", ""))
+            self._settings["bar3d"] = f"{{c1={ec}, {', '.join(f'c{i+2}={c[i]}' for i in range(len(visible_faces)))}}}"
         style = self._style_string()
-
         if self._classic:
             header = self._header()
             rows = self._rows()
@@ -971,25 +997,42 @@ class Graph3(BaseGraph):
             self._meta = np.array(values)
     
     def _data_range(self):
-        xmin, xmax = min(self._x), max(self._x)
-        ymin, ymax = min(self._y), max(self._y)
-        zmin, zmax = min(self._z), max(self._z)
+        xmin = min(self._x)
+        if "bar3d" in self._settings:
+            xmax = max(self._x + self._settings["dx"])
+        else:
+            xmax = max(self._x)
+        ymin = min(self._y)
+        if "bar3d" in self._settings:
+            ymax = max(self._y + self._settings["dy"])
+        else:
+            ymax = max(self._y)
+        zmin = min(self._z)
+        if "bar3d" in self._settings:
+            zmax = max(self._z + self._settings["dz"])
+        else:
+            zmax = max(self._z)
         return xmin, xmax, ymin, ymax, zmin, zmax
     
     def _get_erange(self, which):
         if which == "xmin":
             return min(self._x)
         if which == "xmax":
+            if "bar3d" in self._settings:
+                return max(self._x + self._settings["dx"])
             return max(self._x)
         if which == "ymin":
             return min(self._y)
         if which == "ymax":
+            if "bar3d" in self._settings:
+                return max(self._y + self._settings["dy"])
             return max(self._y)
         if which == "zmin":
             return min(self._z)
         if which == "zmax":
-            return max(self._z)
-    
+            if "bar3d" in self._settings:
+                return max(self._z + self._settings["dz"])
+            return max(self._z)    
         
     def _filter(self, which, value):
         if which == "xmin":

@@ -10,7 +10,7 @@ from .config import TikzConfig
 from .colorbar import Colorbar
 from .state import _next_imshow_num, main_name
 from .latex_special import tex_text
-from .colors import _tex_color
+from .colors import _tex_color, _tex_color_rgb
 
 class Axes3:
     def __init__(self, nrows, ncols, index, fig):
@@ -62,11 +62,15 @@ class Axes3:
         self._col = self._index - self._row * self._ncols
 
         self._fig = fig
+        assert self._fig is not None
         self._style = self._fig._style
         
         self._defcol_counter = {0: 0}
         self._colorbar = ""
         self._cbar_h = False
+
+        self._bar_code = False
+        self._visible_faces = []
 
         def _posit_string(): # returns neighbour, neighbour corner, anchor
             i = self._index
@@ -207,7 +211,6 @@ class Axes3:
                     self._axis_options[key].update(value)
                 self._axis_options[key] = value
 
-
     def _parse_entry(self, k, v):
         if v is None:
             return f"{k}"
@@ -314,7 +317,7 @@ class Axes3:
                     return el._try_set_pname(pname)
             return None
         assert self._fig is not None
-        self._fig._add_required_package("\\usepackage{fillbetween}")
+        self._fig._add_required_package("\\usetikzlibrary{fillbetween}")
         name1 = self._fig._get_free_path_name()
         name2 = self._fig._get_free_path_name()
         if isinstance(y1, (int, float)):
@@ -349,40 +352,73 @@ class Axes3:
         self._elements[self._get_overlay()].append(e)
         return e
 
-    """def hist(self, x, bins=10, density=False,**kwargs):
-        #kws = {"alpha", "color", "c", "label"}
-        #kwargs = self._check_kwargs("hist", kws, **kwargs)
-        try:
-            iter(x)
-            iter(x[0])
-            datasets = x
-        except:
-            datasets = [x]
-        all_data = _np.concatenate(datasets)
-        edges = _np.histogram_bin_edges(all_data, bins=bins)
-        for data in datasets:
-            counts, _ = _np.histogram(data, edges, density=density)
-            centers = (edges[:-1] + edges[1:]) / 2
-        widths = edges[1:] - edges[:-1]
-        settings = []
-        if "orientation" in kwargs and kwargs["orientation"] == "horizontal":
-            settings.append("xbar")
-        else:
-            settings.append("ybar")
-        settings.append("fill")
-        if "rwidth" in kwargs:
-            settings.append(f"bar width={widths.mean()*kwargs["rwidth"]}")
-        else:
-            settings[0] += " interval"
-        if "range" in kwargs:
-            if settings[0] == "xbar":
-                self.set_ylim(kwargs["range"])
+    def bar3d(self, x, y, z, dx, dy, dz, **kwargs):
+        kws = {"color", "c", "shade", "lightsource", "edgecolor", "ec", "label"}
+        kwargs = self._check_kwargs("bar3d", kws, **kwargs)
+        if isinstance(x, (int, float)):
+            x = [x]
+        if isinstance(y, (int, float)):
+            y = [y]
+        if isinstance(z, (int, float)):
+            z = [z]
+        if not len(x) == len(y) == len(z):
+            true_len = max(len(x), len(y), len(z))
+            if len(x) == 1:
+                x = [x[0]] * true_len
+            if len(y) == 1:
+                y = [y[0]] * true_len
+            if len(z) == 1:
+                z = [z[0]] * true_len
+            if not len(x) == len(y) == len(z):
+                raise ValueError("x, y, z must have the same length")
+        dx, dy, dz = [[a] * len(x) if isinstance(a, (int, float)) else a for a in (dx, dy, dz)]
+        if not len(dx) == len(dy) == len(dz) == len(x):
+            raise ValueError("For array-like dx/dy/dz values, length must match x/y/z length")
+        c = kwargs.get("color", kwargs.get("c", f"C{self._get_defcol(2)}")) # for now only single values
+        st = {}
+        if c is not None:
+            c, _ = _tex_color_rgb(c)
+            if kwargs.get("shade", True):
+                rgb = _np.asarray([c[0], c[1], c[2]], dtype=float)
+                if _np.max(rgb) > 1.0:
+                    rgb /= 255.0
+                ls = kwargs.get("lightsource", (315, 45))
+                az, alt = ls
+                alt_rad = _np.radians(alt)
+                az_rad = _np.radians(180-az)
+                L = _np.array([
+                        _np.cos(alt_rad) * _np.sin(az_rad),
+                        _np.cos(alt_rad) * _np.cos(az_rad),
+                        _np.sin(alt_rad)])
+                L /= _np.linalg.norm(L) if _np.linalg.norm(L) != 0 else 1.0
+                normals = _np.array(
+                    [[0.0, 0.0, 1.0],
+                        [0.0, -1.0, 0.0],
+                        [1.0, 0.0, 0.0],
+                        [0.0, 0.0, -1.0],
+                        [0.0, 1.0, 0.0],
+                        [-1.0, 0.0, 0.0]])
+                raw_intensities = _np.dot(normals, L)
+                ambient = 0.2
+                intensities = ambient + (1.0 - ambient) * _np.maximum(0.0, raw_intensities)
+                facecolors = []
+                for i in range(6):
+                    shaded_rgb = rgb * intensities[i]
+                    r, g, b = _np.clip(shaded_rgb * 255.0, 0, 255).astype(int)
+                    new_rgb = (r, g, b)
+                    facecolors.append(_tex_color(new_rgb))
+                st["facecolors"] = facecolors
             else:
-                self.set_xlim(kwargs["range"])
-        if "cumulative" in kwargs and kwargs["cumulative"]:
-            counts = _np.cumsum(counts)
+                st["facecolor"] = (c, 1)
+        ec = kwargs.get("edgecolor", kwargs.get("ec", None))
+        if ec is not None:
+            st["edgecolor"] = ec
+        else:
+            st["edgecolor"] = "none"
 
-        return self._plot(centers, counts, settings=settings, **kwargs)"""
+        self._bar_code = True
+        self._ext_xmax = self._ext_xmin = self._ext_ymax = self._ext_ymin = self._ext_zmax = self._ext_zmin = True
+        return self._plot(x,y,z,settings={"bar3d": None, "z buffer": "sort", "dx": dx, "dy": dy, "dz": dz} | st)
     
     def text(self, x, y, z, s, **kwargs):
         kws = {"alpha", "color", "c", "fontsize", "size", "backgroundcolor", "horizontalalignment", "ha", "verticalalignment", "va", "rotation", "label"}
@@ -908,6 +944,8 @@ class Axes3:
             elev = TikzConfig.DEFAULT_3D_ELEV
         if azim == None:
             azim = TikzConfig.DEFAULT_3D_AZIM
+        if roll is not None:
+            print("Roll is not yet supported for 3D view. Ignoring roll argument.")
         #if roll == None:
         #    roll = TikzConfig.DEFAULT_3D_ROLL
         self._axis_options["view"] = f"{{{90+azim}}}{{{elev}}}"
@@ -1013,6 +1051,90 @@ class Axes3:
         self._axis_options["minor tick num"] = num
 
     def _axis_option_string(self):
+        if self._bar_code:
+            view = self._axis_options.get(
+                "view",
+                f"{{{90 + TikzConfig.DEFAULT_3D_AZIM}}}{{{TikzConfig.DEFAULT_3D_ELEV}}}",
+            )
+            azim, alt = view.strip("{}").split("}{")
+            azim = float(azim) % 360
+            alt = float(alt)
+            self._visible_faces = []
+            if alt > 0:
+                self._visible_faces.append(0)
+            elif alt < 0:
+                self._visible_faces.append(3)
+            if -90 < alt < 90:
+                if azim < 90 or azim > 270:
+                    self._visible_faces.append(1)
+                elif 90 < azim < 270:
+                    self._visible_faces.append(4)
+                if 0 < azim < 180:
+                    self._visible_faces.append(2)
+                elif 180 < azim < 360:
+                    self._visible_faces.append(5)
+            bars_def = (
+                f"{{{', '.join([f'c{j+1}=#{j+1}' for j in range(len(self._visible_faces) + 1)])}}}"
+                "{\n only marks,\n scatter,\n mark=none,\n"
+                " visualization depends on={x \\as \\barx},\n"
+                " visualization depends on={y \\as \\bary},\n"
+                " visualization depends on={z \\as \\barz},\n"
+                " visualization depends on={value \\thisrow{dx} \\as \\bardx},\n"
+                " visualization depends on={value \\thisrow{dy} \\as \\bardy},\n"
+                " visualization depends on={value \\thisrow{dz} \\as \\bardz},\n"
+                " scatter/@pre marker code/.code={}, scatter/@post marker code/.code={\n"
+                "\\pgfmathsetmacro{\\xMin}{\\barx}\n"
+                "\\pgfmathsetmacro{\\xMax}{\\barx + \\bardx}\n"
+                "\\pgfmathsetmacro{\\yMin}{\\bary}\n"
+                "\\pgfmathsetmacro{\\yMax}{\\bary + \\bardy}\n"
+                "\\pgfmathsetmacro{\\zMin}{\\barz}\n"
+                "\\pgfmathsetmacro{\\zMax}{\\barz + \\bardz}\n"
+                "\\scope\n"
+                "\\pgftransformreset\n")
+            ccount = 1
+            faces = {
+                0: [
+                    "\\xMin,\\yMin,\\zMax",
+                    "\\xMax,\\yMin,\\zMax",
+                    "\\xMax,\\yMax,\\zMax",
+                    "\\xMin,\\yMax,\\zMax",
+                ],
+                1: [
+                    "\\xMin,\\yMin,\\zMin",
+                    "\\xMax,\\yMin,\\zMin",
+                    "\\xMax,\\yMin,\\zMax",
+                    "\\xMin,\\yMin,\\zMax",
+                ],
+                2: [
+                    "\\xMax,\\yMin,\\zMin",
+                    "\\xMax,\\yMax,\\zMin",
+                    "\\xMax,\\yMax,\\zMax",
+                    "\\xMax,\\yMin,\\zMax",
+                ],
+                3: [
+                    "\\xMin,\\yMin,\\zMin",
+                    "\\xMax,\\yMin,\\zMin",
+                    "\\xMax,\\yMax,\\zMin",
+                    "\\xMin,\\yMax,\\zMin",
+                ],
+                4: [
+                    "\\xMin,\\yMax,\\zMin",
+                    "\\xMax,\\yMax,\\zMin",
+                    "\\xMax,\\yMax,\\zMax",
+                    "\\xMin,\\yMax,\\zMax",
+                ],
+                5: [
+                    "\\xMin,\\yMin,\\zMin",
+                    "\\xMin,\\yMax,\\zMin",
+                    "\\xMin,\\yMax,\\zMax",
+                    "\\xMin,\\yMin,\\zMax",
+                ]}
+            for i in range(6):
+                if i in self._visible_faces:
+                    ccount += 1
+                    bars_def += f"\\filldraw[fill=#{ccount}, draw=#1] {''.join(f'(axis cs:{q}) --' for      q in faces[i])} cycle;\n"
+            bars_def += "\\endscope\n},\n}"
+            self._axis_options["bar3d/.style args"] = bars_def
         if self._elements[self._get_overlay()] == [] and self._get_overlay() > 0:
             del self._elements[self._get_overlay()]
         if self._get_overlay() > 0:
@@ -1020,7 +1142,7 @@ class Axes3:
             if self._legend_on:
                 self._overlay_legend = True
                 self._legend_on = False
-        alias = self._axis_options.pop("alias", self._axis_options.pop("name", None))
+        alias = self._axis_options.get("alias", self._axis_options.get("name", None))
         self._update_size()
         if self._width:
             self._axis_options["width"] = self._width
@@ -1037,6 +1159,52 @@ class Axes3:
             axis_opt_str += ",\n".join(self._axis_args)
         #if TikzConfig.SCHOOL_AXIS:
         #    axis_opt_str += f",\n axis lines=middle,\n xlabel style={{at={{(ticklabel* cs:{1+TikzConfig.SCHOOL_AXIS_LABEL_MARGIN})}},anchor=north}},\n ylabel style={{at={{(ticklabel* cs:{1+TikzConfig.SCHOOL_AXIS_LABEL_MARGIN})}},anchor=east}},"
+        assert self._fig is not None
+        if self._ext_xmin or self._ext_xmax:
+            lower = self._get_range("xmin")
+            upper = self._get_range("xmax")
+            xm, xM = self._fig._range_setting(lower[0], upper[0], lower[2])
+            if self._ext_xmin:
+                self._axis_options["xmin"] = self._fig._next_limname("xmin", self._axis_options.get("xmin", xm))
+            if self._ext_xmax:
+                self._axis_options["xmax"] = self._fig._next_limname("xmax", self._axis_options.get("xmax", xM))
+        elif self._int_xmin is not None or self._int_xmax is not None:
+            lower = self._get_range("xmin")
+            upper = self._get_range("xmax")
+            if self._int_xmin is not None and (lower[0] is None or lower[0] >= self._int_xmin):
+                self._axis_options["xmin"] = self._int_xmin
+            if self._int_xmax is not None and (upper[0] is None or upper[0] <= self._int_xmax):
+                self._axis_options["xmax"] = self._int_xmax
+        if self._ext_ymin or self._ext_ymax:
+            lower = self._get_range("ymin")
+            upper = self._get_range("ymax")
+            ym, yM = self._fig._range_setting(lower[0], upper[0], lower[2])
+            if self._ext_ymin:
+                self._axis_options["ymin"] = self._fig._next_limname("ymin", self._axis_options.get("ymin", ym))
+            if self._ext_ymax:
+                self._axis_options["ymax"] = self._fig._next_limname("ymax", self._axis_options.get("ymax", yM))
+        elif self._int_ymin is not None or self._int_ymax is not None:
+            lower = self._get_range("ymin")
+            upper = self._get_range("ymax")
+            if self._int_ymin is not None and (lower[0] is None or lower[0] >= self._int_ymin):
+                self._axis_options["ymin"] = self._int_ymin
+            if self._int_ymax is not None and (upper[0] is None or upper[0] <= self._int_ymax):
+                self._axis_options["ymax"] = self._int_ymax
+        if self._ext_zmin or self._ext_zmax:
+            lower = self._get_range("zmin")
+            upper = self._get_range("zmax")
+            zm, zM = self._fig._range_setting(lower[0], upper[0], lower[2])
+            if self._ext_zmin:
+                self._axis_options["zmin"] = self._fig._next_limname("zmin", self._axis_options.get("zmin", zm))
+            if self._ext_zmax:
+                self._axis_options["zmax"] = self._fig._next_limname("zmax", self._axis_options.get("zmax", zM))
+        elif self._int_zmin is not None or self._int_zmax is not None:
+            lower = self._get_range("zmin")
+            upper = self._get_range("zmax")
+            if self._int_zmin is not None and (lower[0] is None or lower[0] >= self._int_zmin):
+                self._axis_options["zmin"] = self._int_zmin
+            if self._int_zmax is not None and (upper[0] is None or upper[0] <= self._int_zmax):
+                self._axis_options["zmax"] = self._int_zmax
         if self._axis_options:
             if axis_opt_str: axis_opt_str += ",\n"
             for k, v in self._axis_options.items():
@@ -1051,11 +1219,10 @@ class Axes3:
         return axis_opt_str
     
     def _margins(self):
-        left = TikzConfig.LEFT_PADDING * self._yticks + TikzConfig.Y_LABEL_PADDING * ("ylabel" in self._axis_options)
+        left = TikzConfig.LEFT_PADDING * self._zticks + TikzConfig.Y_LABEL_PADDING * ("zlabel" in self._axis_options)
         right = TikzConfig.RIGHT_PADDING + TikzConfig.CBAR_X_MARGIN * (self._colorbar != "" and not self._cbar_h)
         top = TikzConfig.TOP_PADDING + TikzConfig.TITLE_PADDING * ("title" in self._axis_options)
         bottom = TikzConfig.BOTTOM_PADDING * self._xticks + TikzConfig.X_LABEL_PADDING * ("xlabel" in self._axis_options) + TikzConfig.CBAR_Y_MARGIN * (self._colorbar != "" and self._cbar_h)
-
         return left, right, top, bottom
     
     def _get_row(self):
