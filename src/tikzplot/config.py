@@ -60,6 +60,10 @@ class _TikzConfig:
     DEFAULT_3D_AZIM: float
     DEFAULT_3D_ELEV: float
 
+    GROUPPLOT_AXIS_SET_SIZE: bool
+
+    PIE_SIZE_FRACTION: float
+
     _config_file: Path
 
     def __init__(self) -> None:
@@ -117,6 +121,10 @@ class _TikzConfig:
         self.DEFAULT_3D_ROLL = 0
         self.DEFAULT_3D_AZIM = -60
         self.DEFAULT_3D_ELEV = 30
+
+        self.GROUPPLOT_AXIS_SET_SIZE = False    # if True, axis in groupplots will have width and height as set, otherwise, they will be smaller to fit labels and ticks into the set size.
+
+        self.PIE_SIZE_FRACTION = 0.8
 
         self._config_file = Path.home() / ".tikz_userconf.json"
         self._load_user_config()

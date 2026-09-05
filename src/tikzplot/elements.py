@@ -10,9 +10,9 @@ from .state import next_export_num, main_name
 from .colors import _tex_color
 
 class BaseGraph:
-    _COLOR_MAP = {'b':'blue', 'g':'teal', 'r':'red', 'c':'cyan', 'm':'magenta', 'y':'yellow', 'k':'black', 'w':'white', "orange":"orange", "green": "green", "cyan":"cyan", "peru": "brown", "lime": "lime", "gray": "gray", "magenta": "magetna", "purple": "violet"}
+    _COLOR_MAP = {'b':'blue', 'g':'teal', 'r':'red', 'c':'cyan', 'm':'magenta', 'y':'yellow', 'k':'black', 'w':'white'}
     _LINE_MAP = {"--": "dashed", ":": "dotted", "-.": "dashdotted", "-":"solid"}
-    _MARKER_MAP = {'o':'*', ".": "*", 's':'square*', '^':'triangle', 'v':'triangle*', 'd':'diamond', '+':'+', 'x':'x', '*':'star'}
+    _MARKER_MAP = {'o':'*', ".": "*", 's':'square*', '^':'triangle', 'v':'triangle*', 'd':'diamond', 'D':'diamond*', '+':'+', 'x':'x', '*':'star', "_": "-", "|": "|", "p": "pentagon*"}
     _HATCH_MAP = {"-": {"Lines": {"angle": 0}}, "|": {"Lines": {"angle": 90}}, "+": {"Hatch": {}}, "x": {"Hatch": {"angle": 45}}, "/": {"Lines": {"angle": 45}}, "\\": {"Lines": {"angle": 135}}, ".": {"Dots": {"angle": 45}}, "*": {"Stars": {"angle": 45}}}
 
     _settings: dict[str, Any]
@@ -71,23 +71,26 @@ class BaseGraph:
             print(f"Unrecognized marker {input}")
             return None
         
-        def match_color(input):
+        def match_color(input) -> tuple[str, float|int]:
             self._has_color = True
             if self._axes is None:
                 st = Styles()
             else:
                 st = self._axes._style
             ccode, op = _tex_color(input, style=st)
-            if not isinstance(op, bool):
-                self._opacity = op
+            if isinstance(op, bool):
+                op = 1
             if isinstance(ccode, str):
-                return ccode
+                return ccode, op
             if ccode is None:
-                return "none"
+                return "none", op
             r,g,b=ccode
             assert self._axes is not None
             self._axes._add_col(r,g,b)
-            return f"c{r:.3f}{g:.3f}{b:.3f}".replace(".", "")
+            return f"c{r:.3f}{g:.3f}{b:.3f}".replace(".", ""), op
+
+        if "boxplot prepared" in self._settings or "boxplot" in self._settings:
+            self._has_color = True
         
         if "scatter" in self._settings:
             if "cmap" in self._style:
@@ -105,7 +108,7 @@ class BaseGraph:
                 opts["mark"] = self._MARKER_MAP[mark[0]]
                 fmt = fmt.replace(mark[0], "")
             ls = None
-            if fmt:
+            if fmt and fmt[0] not in self._MARKER_MAP.keys():
                 ls = match_ls(fmt)
             if ls:
                 opts[ls] = None
@@ -114,15 +117,15 @@ class BaseGraph:
             if "scatter" in self._settings:
                 if self._colors is not None:
                     if not isinstance(self._colors[0], (int, float)):
-                        self._colors = [match_color(p) for p in self._colors]
+                        self._colors = [match_color(p)[0] for p in self._colors]
                 elif self._sizes is not None:
                     c = self._style.get("c", self._style.get("color"))
-                    sel_col = match_color(c)
+                    sel_col, self._opacity = match_color(c)
                     if sel_col:
                         self._colors = [sel_col] * len(self._x)
             else:
                 c = self._style.get("c", self._style.get("color"))
-                sel_col = match_color(c)
+                sel_col, self._opacity = match_color(c)
                 if sel_col:
                     if "axhspan" in self._settings or "axvspan" in self._settings:
                         opts["fill"] = f"{{{sel_col}}}"
@@ -131,7 +134,7 @@ class BaseGraph:
 
         if "ls" in self._style or "linestyle" in self._style:
             ls = self._style.get("ls", self._style.get("linestyle"))
-            if ls == "":
+            if ls == "" or ls == "none":
                 opts["only marks"] = None
             else:
                 sel_ls = match_ls(ls)
@@ -165,16 +168,16 @@ class BaseGraph:
         if "label" in self._style:
             self._label = self._style["label"]
 
-        if "alpha" in self._style:
-            self._opacity = self._style["alpha"]
 
         if "onlayer" in self._style:
             opts["on layer"] = self._style['onlayer']
 
-        if self._opacity < 1:
-            opts["opacity"] = self._opacity
-        if not self._has_color and self._classic and self._opacity > 0:
-            opts["color"] = f"{{{match_color(f'C{self._axes._get_defcol()}')}}}"
+        if "facecolor" in self._style:
+            sel_col, fop = match_color(self._style['facecolor'])
+            if sel_col:
+                opts["fill"] = f"{{{sel_col}}}"
+                opts["fill opacity"] = fop
+                self._has_color = True
 
         if "hatch" in self._style:
             self._axes._fig._add_required_package("\\usetikzlibrary{patterns.meta}")
@@ -194,7 +197,7 @@ class BaseGraph:
                 return hatches
             hatch = match_hatch(self._style["hatch"])
             hatch_args = {}
-            hatch_color = match_color(self._style.get("hatch_color", "black"))
+            hatch_color = match_color(self._style.get("hatch_color", "black")[0])
             if "hatch_linewidth" in self._style:
                 hatch_args["line width"] = f"{self._style['hatch_linewidth']}pt"
             if "hatch_distance" in self._style:
@@ -220,9 +223,10 @@ class BaseGraph:
                 opts["postaction"].append(f"pattern={{{h_type}[{', '.join(f'{k}={v}' for k,v in h_args.items())}]}}, pattern color={hatch_color}")
 
         if "ecolor" in self._style:
-            sel_col = match_color(self._style['ecolor'])
+            sel_col, dop = match_color(self._style['ecolor'])
             if sel_col:
                 self._errorbar_style["color"] = f"{{{sel_col}}}"
+                opts["draw opacity"] = dop
         if "elinewidth" in self._style:
             self._errorbar_style["line width"] = f"{self._style['elinewidth']}pt"
         if "capsize" in self._style:
@@ -231,6 +235,27 @@ class BaseGraph:
             sel_ls = match_ls(self._style['elinestyle'])
             if sel_ls:
                 self._errorbar_style[sel_ls] = None
+
+        if "alpha" in self._style:
+            self._opacity = self._style["alpha"]
+            if "fill opacity" in opts:
+                opts["fill opacity"] = self._opacity
+            if "draw opacity" in opts:
+                opts["draw opacity"] = self._opacity            
+
+        if opts.get("fill opacity", 1) < 1:
+            opts.pop("fill opacity")
+        if opts.get("draw opacity", 1) < 1:
+            opts.pop("draw opacity")
+        if self._opacity < 1:
+            if "fill opacity" in opts:
+                opts["draw opacity"] = self._opacity
+            elif "draw opacity" in opts:
+                opts["fill opacity"] = self._opacity
+            else:
+                opts["opacity"] = self._opacity
+        if not self._has_color and self._classic and self._opacity > 0:
+            opts["color"] = f"{{{match_color(f'C{self._axes._get_defcol()}')[0]}}}"
 
         if self._classic:
             if isinstance(self, Graph) and (self._xerr is not None or self._yerr is not None) or (isinstance(self, Graph3) and self._zerr is not None):
@@ -284,7 +309,7 @@ class BaseGraph:
                     self._style_str += f"{o}={{{q}}},\n"
             elif isinstance(opts[o], dict):
                 if opts[o] != {}:
-                    self._style_str += f"{o}={{{', '.join(f'{k}={v}' if v is not None else f'{k}' for k,v in opts[o].items())}}},\n"
+                    self._style_str += f"{o}={{{',\n'.join(f'{k}={v}' if v is not None else f'{k}' for k,v in opts[o].items())}}},\n"
             else:
                 self._style_str += f"{o}={opts[o]},\n"
         self._style_str.removesuffix(",\n")
@@ -316,6 +341,118 @@ class BaseGraph:
     def _set_label(self, lab):
         self._style["label"] = lab
 
+class Single(BaseGraph):
+    def __init__(self, axes, datapoints, settings={}, path_name=None, **style):
+        super().__init__()
+        self._axes = axes
+        self._x = datapoints
+        self._classic = True
+        self._special = ""
+        self._style = {}
+        self._endnotes = ""
+        for s in style:
+            if s.startswith("_"):
+                if s == "_endnotes":
+                    self._endnotes = style[s]
+            else:
+                self._style[s] = style[s]
+        if settings != {}:
+            self._settings = settings
+
+    def _header(self):
+        if "boxplot prepared" in self._settings or "boxplot" in self._settings:
+            return "y"
+
+    def _rows(self):
+        rows = []
+        for i in range(len(self._x)):
+            line = [self._x[i]]
+            rows.append(" ".join(str(v) for v in line))
+        return "\n".join(rows)
+
+    def _to_tex(self, filename, label_opts=None):
+        style = self._style_string().removesuffix(",\n")
+        if self._classic:
+            if len(self._x) == 0:
+                if self._label and (self._axes._legend_on or self._axes._overlay_legend):
+                    if label_opts:
+                        l = f"\\addlegendentry[{label_opts}]{{{self._label}}}"
+                    else:
+                        l = f"\\addlegendentry{{{self._label}}}"
+                    if self._axes._legend_on:
+                        return f"\\addplot [{style}] coordinates {{}}{self._endnotes};{l}"
+                    self._axes._add_overlay_legend_entry(f"\\addlegendimage{{{style.replace('\n', ' ')}}}{l}")
+                    return f"\\addplot [forget plot,\n{style}] coordinates {{}}{self._endnotes};"
+                return f"\\addplot [forget plot,\n{style}] coordinates {{}}{self._endnotes};"
+            header = self._header()
+            rows = self._rows()
+            table_opts = ""
+            if "boxplot prepared" in self._settings or "boxplot" in self._settings:
+                table_opts = "y index=0"
+            datapoints = f"{header}\n{rows}\n"
+            if TikzConfig.SAVE_DATAPOINTS:
+                datapoints = self._save_data(datapoints, filename)
+            if not TikzConfig.SAVE_DATAPOINTS or (TikzConfig.SAVE_DATAPOINTS and not TikzConfig.UPDATE_STYLE_ONLY):
+                if self._label and (self._axes._legend_on or self._axes._overlay_legend):
+                    if label_opts:
+                        l = f"\\addlegendentry[{label_opts}]{{{self._label}}}"
+                    else:
+                        l = f"\\addlegendentry{{{self._label}}}"
+                    if self._axes._legend_on:
+                        return f"\\addplot [{style}] table [{table_opts}] {{{datapoints}}}{self._endnotes};{l}"
+                    self._axes._add_overlay_legend_entry(f"\\addlegendimage{{{style.replace('\n', ' ')}}}{l}")
+                    return f"\\addplot [forget plot,\n{style}] table [{table_opts}] {{{datapoints}}}{self._endnotes};"
+                return f"\\addplot [forget plot,\n{style}] table [{table_opts}] {{{datapoints}}}{self._endnotes};"
+            return ""
+        elif TikzConfig.SAVE_DATAPOINTS or not (TikzConfig.SAVE_DATAPOINTS and not TikzConfig.UPDATE_STYLE_ONLY):
+            if self._label and self._axes._legend_on:
+                if label_opts:
+                    return f"\\addplot [{style}] {self._special}{self._endnotes};\\addlegendentry[{label_opts}]{{{self._label}}}"
+                return f"\\addplot [{style}] {self._special}{self._endnotes};\\addlegendentry{{{self._label}}}"
+            return f"\\addplot [forget plot,\n{style}] {self._special}{self._endnotes};"
+        else:
+            return ""
+
+    def _data_range(self):
+        if "boxplot prepared" in self._settings or "boxplot" in self._settings:
+            orient = self._settings.get("draw direction", "y")
+            w = self._settings.get("box extend", 0.8)
+            q = self._settings.get("draw position", 0)
+            data = self._x
+            if "boxplot" in self._settings or "boxplot prepared" in self._settings:
+                adds = self._settings.get("boxplot", self._settings.get("boxplot prepared", {}))
+                for k in ["lower whisker", "upper whisker", "lower quartile", "upper quartile", "average", "median"]:
+                    if k in adds and adds[k] is not None:
+                        data = np.append(data, adds[k])
+            if orient == "y":
+                return q - w/2, q + w/2, min(data), max(data)
+            else:
+                return min(data), max(data), q - w/2, q + w/2
+        return None, None, None, None
+
+    def _get_erange(self, which):
+        if "boxplot prepared" in self._settings or "boxplot" in self._settings:
+            ind_table = ["xmin", "xmax", "ymin", "ymax"]
+            i = ind_table.index(which)
+            return self._data_range()[i]
+        return None
+
+    def _filter(self, which, value):
+        pass
+
+    def _check_equal(self, x):
+        if self._classic:
+            return np.all(self._x == x)
+
+    def _get_points(self):
+        if self._classic:
+            return self._x
+        return None
+
+    def _reduce_points(self, limit):
+        pass
+
+    
 class Graph(BaseGraph):
     def __init__(self, axes, coordinates, settings={}, xerr=None, yerr=None, path_name=None, **style):
         super().__init__()
@@ -337,7 +474,7 @@ class Graph(BaseGraph):
             self._p_dict = {}
             self._colors = None
         if "axvline" in settings or "axhline" in settings or "axvspan" in settings or "axhspan" in settings:
-            self._x,self._y=coordinates
+            self._x, self._y=coordinates
         elif isinstance(coordinates, tuple):
             self._classic = True
             x,y=coordinates

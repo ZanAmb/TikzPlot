@@ -233,10 +233,12 @@ class _Colorbar:
             if self._divs > 0:
                 lines.append(f"{'x' if self._horizontal else 'y'}tick =\\empty,")
         lines.append(r"},")
-        lines.append(f"point meta min={{{self._lower}}},")
-        lines.append(f"point meta max={{{self._upper}}},\n")
+        if not _np.isnan(self._lower):
+            lines.append(f"point meta min={{{self._lower}}},")
+        if not _np.isnan(self._upper):
+            lines.append(f"point meta max={{{self._upper}}},")
 
-        return "\n".join(lines)
+        return "\n".join(lines) + "\n"
     
     def color(self, value):
         norm_val = (value - self._lower) / (self._upper - self._lower)

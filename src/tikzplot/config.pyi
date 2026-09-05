@@ -63,6 +63,9 @@ class _ConfigParams(TypedDict, total=False):
     DEFAULT_3D_AZIM: float
     DEFAULT_3D_ELEV: float
 
+    GROUPPLOT_AXIS_SET_SIZE: bool
+
+    PIE_SIZE_FRACTION: float
 
 class _TikzConfig:
     USE_DECIMAL_COMMA: bool
@@ -120,6 +123,10 @@ class _TikzConfig:
     DEFAULT_3D_ROLL: float
     DEFAULT_3D_AZIM: float
     DEFAULT_3D_ELEV: float
+
+    GROUPPLOT_AXIS_SET_SIZE: bool
+
+    PIE_SIZE_FRACTION: float
 
     _config_file: Path
 

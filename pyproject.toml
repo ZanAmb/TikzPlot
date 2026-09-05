@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tikzplot42"
-version = "0.5.4"
+version = "0.5.5"
 description = "TikzPlot to make TikZ/PGFPlots plots with matplotlib.pyplot-like syntax."
 authors = [
     { name = "Zan Ambrozic", email = "zan.ambrozic7@gmail.com" }
@@ -23,7 +23,7 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
     "Topic :: Scientific/Engineering :: Visualization",
 ]
-dependencies = ["numpy", "matplotlib"]
+dependencies = ["numpy", "matplotlib", "scipy"]
 
 [project.urls]
 Homepage = "https://github.com/ZanAmb/TikzPlot"

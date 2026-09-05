@@ -30,6 +30,7 @@ class Figure:
 
         self._globals = set()
         self._spies = []
+        self._external = []
 
         self._num_coordinates = 0
 
@@ -255,6 +256,9 @@ class Figure:
         sp_str += f"] on (spypoint{n}) in node at (spyviewr{n});"
         self._spies.append(bck + sp_str)
         return n
+
+    def _add_external(self, content):
+        self._external.append(content)
     
     def _reduce_points(self):
         counts = [0]
@@ -295,10 +299,13 @@ class Figure:
         if TikzConfig.USE_GROUPPLOTS and not single:
             self._compute_group_spacing()
             assert self._spacings is not None
+            q = f"\\begin{{groupplot}}[group style={{group size={ncols} by {nrows}"
             if len(self._spacings[0]) > 0 and len(self._spacings[1]) > 0:
-                lines.append(f"\\begin{{groupplot}}[group style={{group size={ncols} by {nrows}, horizontal sep={max(self._spacings[1])}cm, vertical sep={max(self._spacings[0])}cm}}]")
-            else:
-                lines.append(f"\\begin{{groupplot}}[group style={{group size={ncols} by {nrows}}}]")
+                q += f", horizontal sep={max(self._spacings[1])}cm, vertical sep={max(self._spacings[0])}cm"
+            q += f"}}"
+            if TikzConfig.GROUPPLOT_AXIS_SET_SIZE:
+                q += ", scale only axis"
+            lines.append(q + "]")
         for ax in self._axes:
             prim, sec = ax._to_tex(filename, single)
             lines += prim
@@ -311,6 +318,8 @@ class Figure:
             lines.append(spy)
         for text in self.texts:
             lines.append(text._to_tex_fin())
+        for ext in self._external:
+            lines.append(ext._to_tex())
         lines.append("\\end{tikzpicture}")
         for c in self._col_dict:
             r,g,b=self._col_dict[c]

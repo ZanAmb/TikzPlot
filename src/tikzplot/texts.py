@@ -16,15 +16,15 @@ class Text:
 
 
     def match_color(self, input):
-            self._has_color = True
-            ccode, op = _tex_color(input)
-            if not isinstance(op, bool):
-                self._opacity = op
-            if isinstance(ccode, str):
-                return ccode
-            r,g,b=ccode
-            self._axes._add_col(r,g,b)
-            return f"c{r:.3f}{g:.3f}{b:.3f}".replace(".", "")
+        self._has_color = True
+        ccode, op = _tex_color(input)
+        if not isinstance(op, bool):
+            self._opacity = op
+        if isinstance(ccode, str):
+            return ccode
+        r,g,b=ccode
+        self._axes._add_col(r,g,b)
+        return f"c{r:.3f}{g:.3f}{b:.3f}".replace(".", "")
 
     def _style_string(self):
         output = []

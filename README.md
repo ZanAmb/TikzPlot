@@ -14,7 +14,7 @@ Please report any bugs or unexpected behaviour in Issues. Examples may be found 
 
 ## Why use this package instead of other available?
 - It is easy to use, with code being very similar to matplotlib and only minor changes are needed to switch from matplotlib to this package.
-- It relies on frontend commands, which is less likley to change in matplotlib, so new updates do not break it.
+- It relies on frontend commands, which are less likley to change in matplotlib, so new updates do not break it.
 - It generates clean and readable Tikz code, which is easy to edit and understand. Code is also efficient and does not contain unnecessary commands, which is important escpecially for large graphs.
 - If you use LLMs to generate pgfplots code, you will often get code that is not compilable, since for more complex requirements, LLMs make up commands that do not exist. This package covers many use cases and generates compilable code.
 
@@ -58,6 +58,13 @@ Some basic plot commands are already implemented with commonly used arguments:
 - `step()`,
 - `imshow()`,
 - `text()`,
+- `bxp()` (without notches),
+- `boxplot()` (without notches),
+- `violin()`,
+- `violinplot()`,
+- `pie()`,
+- `pie_label()` (basic only for now),
+- `ecdf()` (empirical cumulative distribution function),
 - `magnify()` (used to magnify part of a plot, but Tikz cannot handle `fill_between` if this one is used, which is a long known issue),
 - `axvline()/axhline()`,
 - `axvspan()/axhspan()` (background span).

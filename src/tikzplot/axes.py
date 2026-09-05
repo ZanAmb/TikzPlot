@@ -1,16 +1,18 @@
+from math import isqrt
 from typing import Any, Iterable
 import copy
 
 import numpy as _np
 import matplotlib.pyplot as _plt
 
-from .elements import Graph
+from .elements import Graph, Single
 from .texts import Text
 from .config import TikzConfig
 from .colorbar import Colorbar
 from .state import _next_imshow_num, main_name
 from .latex_special import tex_text
 from .colors import _tex_color
+from .pie import Pie
 
 class BaseAxes:
     def __init__(self):
@@ -899,7 +901,42 @@ class BaseAxes:
         if len(args) == 1:
             kwargs["fmt"] = args[0]
         return self._plot(x,y,settings=settings, **kwargs)
-    
+
+    def ecdf(self, x, weights=None, *, complementary=False, orientation="vertical", compress=False, **kwargs):
+        kws = {"fmt", "alpha", "color", "c", "linestyle", "ls", "linewidth", "lw", "marker", "markersize", "ms", "label"}
+        kwargs = self._check_kwargs("ecdf", kws, **kwargs)
+        x = _np.asarray(x)
+        if _np.isnan(x).any():
+            raise ValueError("Input data contains NaN values.")
+        sort_ind = _np.argsort(x)
+        x = x[sort_ind]
+        if weights is None:
+            cum_weights = (1 + _np.arange(len(x))) / len(x)
+        else:
+            weights = _np.take(weights, sort_ind)
+            cum_weights = _np.cumsum(weights / _np.sum(weights))
+        if compress:
+            compress_idxs = [0, *(x[:-1] != x[1:]).nonzero()[0] + 1]
+            x = x[compress_idxs]
+            cum_weights = cum_weights[compress_idxs]
+        if orientation == "horizontal":
+            x, cum_weights = cum_weights, x
+        if complementary:
+            cum_weights = 1 - cum_weights
+        return self.plot(x, cum_weights, **kwargs)
+
+    def pie(self, x, *, explode=None, labels=None, colors=None, autopct=None, pctdistance=0.6, labeldistance=1.1, radius=1, startangle=0, counterclock=True, wedgeprops=None, rotate_labels=False, normalize=True):
+        kws = {"width"}
+        kwargs = self._check_kwargs("pie: wedgeprops", kws, **wedgeprops) if wedgeprops else {}
+        assert self._fig is not None
+        self._fig._add_required_package("\\usepackage{wheelchart}")
+        e = Pie(self, x, explode=explode, labels=labels, colors=colors, autopct=autopct, pctdistance=pctdistance, labeldistance=labeldistance, radius=radius, startangle=startangle, counterclock=counterclock, wedgeprops=kwargs, rotate_labels=rotate_labels, normalize=normalize, at=self._axis_options.get("alias", self._axis_options.get("name", None)))
+        self._fig._add_external(e)
+        return e
+
+    def pie_label(self, container, labels, *, distance=0.6, rotate=False):
+        container._add_labels(labels, distance=distance, rotate=rotate)
+
     def axvline(self, x, ymin=0, ymax=1, **kwargs):
         kws = {"fmt", "base", "alpha", "color", "c", "linestyle", "ls", "linewidth", "lw", "label"}
         kwargs = self._check_kwargs("axvline", kws, **kwargs)
@@ -1210,6 +1247,272 @@ class BaseAxes:
                 for i in range(len(labs)):
                     all_elements[i]._set_label(tex_text(labs[i]))
 
+    def bxp(self, bxpstats, positions=None, *, widths=None, orientation="vertical", showcaps=True, showbox=True, showfliers=True, showmeans=False, boxprops=None, whiskerprops=None, flierprops=None, medianprops=None, meanprops=None, capwidths=None, tex_settings = {}):
+        req_keys = {"med": "median", "q1": "lower quartile", "q3": "upper quartile", "whislo": "lower whisker", "whishi": "upper whisker", "mean": "average", "fliers": None}
+        if not (isinstance(bxpstats, list) and all(isinstance(d, dict) for d in bxpstats)):
+            raise Warning("bxpstats must be a list of dictionaries.")
+        if positions is None: positions = list(range(1, 1+len(bxpstats)))
+        output = []
+        if widths is not None and isinstance(widths, (int, float)): widths = [widths] * len(bxpstats)
+        if capwidths is not None and isinstance(capwidths, (int, float)): capwidths = [capwidths] * len(bxpstats)
+        for i in range(len(bxpstats)):
+            d = bxpstats[i]
+            if any(k not in req_keys for k in d):
+                raise Warning(f"bxpstats allow only the following keys: {req_keys.keys()}.")
+            opts = {}
+            mark_opts = {}
+            for k in d:
+                if req_keys[k] is not None:
+                    opts[req_keys[k]] = d[k]
+            if orientation == "vertical":
+                opts["draw direction"] = "y"
+            if positions[i] != 0:
+                opts["draw position"] = positions[i]
+            def clear_mark_opts(dct):
+                if "markerfacecolor" in dct: dct["facecolor"] = dct.pop("markerfacecolor")
+                if "markeredgecolor" in dct: dct["color"] = dct.pop("markeredgecolor")
+                return dct
+            meanprops = clear_mark_opts(meanprops) if meanprops is not None and isinstance(meanprops, dict) else meanprops
+            flierprops = clear_mark_opts(flierprops) if flierprops is not None and isinstance(flierprops, dict) else flierprops
+            props_dict = {"every box/.style": boxprops, "every whisker/.style": whiskerprops, "every median/.style": medianprops, "every average/.style": meanprops}
+            for k,v in props_dict.items():
+                if v is not None and isinstance(v, dict):
+                    q = Single(self, None, {}, None, **v)._style_string()
+                    opts[k] = f"{{{q}}}"
+            if flierprops is not None and isinstance(flierprops, dict):
+                mark_opts = Graph(self, None, {}, None, None, **flierprops)._style_string()
+            if widths is not None:
+                opts["box extend"] = widths[i]
+            if capwidths is not None:
+                opts["whisker extend"] = capwidths[i]
+            if not showcaps:
+                opts.pop("whisker extend", None)
+                opts["every whisker/.style"] = {"draw": "none"}
+            if not showbox:
+                opts["every box/.style"] = {"draw": "none"}
+            if not showmeans:
+                opts.pop("average", None)
+
+            settings: dict[str, Any] = {"boxplot prepared": opts}
+            if mark_opts != "":
+                settings["every mark/.style"] = f"{{{mark_opts}}}"
+            if showfliers and "fliers" in d and d["fliers"] is not None:
+                e = Single(self, d["fliers"], settings=settings | tex_settings)
+            else:
+                e = Single(self, [], settings=settings | tex_settings)
+            self._elements[self._get_overlay()].append(e)
+            output.append(e)
+        return output            
+
+    def boxplot(self, x, *, sym=None, orientation="vertical", whis=1.5, positions=None, widths=0.5, usermedians=None, showmeans=False, showcaps=True, showbox=True, showfliers=True, boxprops=None, tick_labels=None, flierprops=None, medianprops=None, meanprops=None, whiskerprops=None, manage_ticks=True, capwidths=None, autorange=True):
+        if isinstance(x, (list, tuple)) and len(x) > 0 and isinstance(x[0], (list, tuple, _np.ndarray)):
+            try:
+                datasets = [_np.asarray(ds, dtype=_np.float64) for ds in x]
+                if any(ds.ndim != 1 for ds in datasets):
+                    raise ValueError("Nested datasets must all be 1-dimensional.")
+            except (ValueError, TypeError):
+                x_arr = _np.asarray(x)
+                if x_arr.ndim == 2:
+                    datasets = [col for col in x_arr.T]
+                else:
+                    raise ValueError("Invalid dataset structure.")
+        else:
+            x_arr = _np.asarray(x)
+            if x_arr.ndim == 1:
+                datasets = [x_arr]
+            elif x_arr.ndim == 2:
+                datasets = [col for col in x_arr.T]
+            else:
+                raise ValueError(f"Input must be 1D or 2D, got {x_arr.ndim}D.")
+        stats = []
+        for d in datasets:
+            d = _np.asarray(d, dtype=_np.float64)
+            stat = {}
+            stat["mean"] = _np.mean(d)
+            q1, med, q3 = _np.percentile(d, [25, 50, 75])
+            iqr = q3 - q1
+            if iqr == 0 and autorange:
+                whis = (0, 100)
+            if _np.iterable(whis) and not isinstance(whis, str):
+                loval, hival = _np.percentile(d, whis)
+            elif _np.isreal(whis):
+                loval = q1 - whis * iqr
+                hival = q3 + whis * iqr
+            else:
+                raise ValueError('whis must be a float or list of percentiles')
+            wiskhi = d[d <= hival]
+            if len(wiskhi) == 0 or _np.max(wiskhi) < q3:
+                stat['whishi'] = q3
+            else:
+                stat['whishi'] = _np.max(wiskhi)
+
+            wisklo = d[d >= loval]
+            if len(wisklo) == 0 or _np.min(wisklo) > q1:
+                stat['whislo'] = q1
+            else:
+                stat['whislo'] = _np.min(wisklo)
+            stat['fliers'] = _np.concatenate([d[d < stat['whislo']], d[d > stat['whishi']]])
+            stat['q1'], stat['med'], stat['q3'] = q1, med, q3
+            stats.append(stat)
+
+        if positions is None:
+            positions = list(range(1, 1 + len(stats)))
+
+        if sym is not None:
+            if sym == "":
+                showfliers = False
+            else:
+                if flierprops is None:
+                    flierprops = {}
+                flierprops.update({"fmt": sym})
+        if usermedians is not None:
+            if len(_np.ravel(usermedians)) != len(stats):
+                raise Warning("Length of usermedians does not match number of datasets.")
+            for stat, med in zip(stats, usermedians):
+                if med is not None:
+                    stat["median"] = med
+        if manage_ticks and tick_labels is not None:
+            if len(tick_labels) != len(stats):
+                raise Warning("Length of tick_labels does not match number of datasets.")
+            if isinstance(self, Axes):
+                self.set_xticks(positions, labels=tick_labels)
+            elif isinstance(self, Secondary):
+                self._primary.set_xticks(positions, labels=tick_labels)
+        return self.bxp(stats, positions=positions, orientation=orientation, widths=widths, showcaps=showcaps, showbox=showbox, showfliers=showfliers, boxprops=boxprops, flierprops=flierprops, medianprops=medianprops, meanprops=meanprops, showmeans=showmeans, capwidths=capwidths, whiskerprops=whiskerprops)
+            
+
+    def violin(self, vpstats, positions=None, *, orientation="vertical", widths=0.5, showmeans=False, showextrema=True, showmedians=False, side="both", facecolor=None, linecolor=None):
+        req_keys = {"coords", "vals", "mean", "median", "min", "max", "quantiles"}
+        if not (isinstance(vpstats, list) and all(isinstance(d, dict) for d in vpstats)):
+            raise Warning("vpstats must be a list of dictionaries.")
+        if positions is None: positions = list(range(1, 1+len(vpstats)))
+        output = []
+        if isinstance(widths, (int, float)): widths = [widths] * len(vpstats)
+        if facecolor is None and linecolor is None:
+            assert isinstance(self, Axes) or isinstance(self, Secondary)
+            facecolor = f"C{self._get_defcol(2)}"
+        if facecolor is not None and not isinstance(facecolor, (list)): facecolor = [facecolor] * len(vpstats)
+        if linecolor is not None and not isinstance(linecolor, (list)): linecolor = [linecolor] * len(vpstats)
+        output = []
+        for i in range(len(vpstats)):
+            d = vpstats[i]
+            if "coords" not in d or "vals" not in d:
+                continue
+            l, u = None, None
+            fac = widths[i] / max(d["vals"]) if len(d["vals"]) > 0 else 1
+            if side in ["both", "low"]:
+                l = positions[i] - fac * d["vals"]
+            else: l = positions[i]
+            if side in ["both", "high"]:
+                u = positions[i] + fac * d["vals"]
+            else: u = positions[i]
+            lc = linecolor[i] if linecolor is not None else None
+            fc = facecolor[i] if facecolor is not None else None
+            if orientation == "vertical":
+                if lc is not None:
+                    if side in ["both", "low"]:
+                        self.plot(l, d["coords"], fmt="-", color=lc)
+                    if side in ["both", "high"]:
+                        self.plot(u, d["coords"], fmt="-", color=lc)
+                if fc is not None:
+                    output.append(self.fill_betweenx(d["coords"], l, u, color=fc, alpha=0.3))
+            else:
+                if lc is not None:
+                    self.plot(d["coords"], d["vals"], fmt="-", color=lc)
+                if fc is not None:
+                    if side in ["both", "low"]:
+                        self.plot(d["coords"], l, fmt="-", color=lc)
+                    if side in ["both", "high"]:
+                        self.plot(d["coords"], u, fmt="-", color=lc)
+                    output.append(self.fill_between(d["coords"], l, u, color=fc, alpha=0.3))
+            points = []
+            if showmeans and "mean" in d:
+                points.append(d["mean"])
+            if showextrema:
+                if "min" in d:
+                    points.append(d["min"])
+                if "max" in d:
+                    points.append(d["max"])
+            if showmedians and "median" in d:
+                points.append(d["median"])
+            qs = d.get("quantiles", [])
+            if qs is not None:
+                for q in qs:
+                    points.append(q)
+            if points:
+                settings = {}
+                if orientation == "vertical":
+                    if side == "low":
+                        settings["mark options"] = {"xshift": "-4pt"}
+                    if side == "high":
+                        settings["mark options"] = {"xshift": "4pt"}
+                    self._plot([positions[i]] * len(points), points, marker="_", color=fc if fc is not None else lc, lw=1, ms=4, settings=settings)
+                else:
+                    if side == "low":
+                        settings["mark options"] = {"yshift": "-4pt"}
+                    if side == "high":
+                        settings["mark options"] = {"yshift": "4pt"}
+                    self._plot(points, [positions[i]] * len(points), marker="|", color=fc if fc is not None else lc, lw=1, ms=4, settings=settings)
+        return output
+
+    def violinplot(self, dataset, positions=None, *, orientation="vertical", widths=0.5, showmeans=False, showextrema=True, showmedians=False, quantiles=None, points=100, bw_method="scott", side="both", facecolor=None, linecolor=None):
+        if isinstance(dataset, (list, tuple)) and len(dataset) > 0 and isinstance(dataset[0], (list, tuple, _np.ndarray)):
+            try:
+                datasets = [_np.asarray(ds, dtype=_np.float64) for ds in dataset]
+                if any(ds.ndim != 1 for ds in datasets):
+                    raise ValueError("Nested datasets must all be 1-dimensional.")
+            except (ValueError, TypeError):
+                x_arr = _np.asarray(dataset)
+                if x_arr.ndim == 2:
+                    datasets = [col for col in x_arr.T]
+                else:
+                    raise ValueError("Invalid dataset structure.")
+        else:
+            x_arr = _np.asarray(dataset)
+            if x_arr.ndim == 1:
+                datasets = [x_arr]
+            elif x_arr.ndim == 2:
+                datasets = [col for col in x_arr.T]
+            else:
+                raise ValueError(f"Input must be 1D or 2D, got {x_arr.ndim}D.")
+        if quantiles is not None and len(quantiles) != len(datasets):
+            raise ValueError("Length of quantiles must match number of datasets.")
+        elif quantiles is None: quantiles = [[]] * len(datasets)
+        if bw_method not in ["scott", "silverman"]: raise ValueError("bw_method must be 'scott' or 'silverman'.")
+        def _kde_method(x, coords):
+            if _np.all(x[0] == x):
+                return (x[0] == coords).astype(float)
+            from scipy.stats import gaussian_kde
+            kde = gaussian_kde(x, bw_method)
+            return kde.evaluate(coords)
+        method = _kde_method
+        stats = []
+        for i in range(len(datasets)):
+            d = datasets[i]
+            d = _np.asarray(d, dtype=_np.float64)
+            stat = {}
+            q = quantiles[i]
+            if q is not None:
+                qs = _np.percentile(d, 100 * _np.asarray(q))
+            else:
+                qs = []
+            coords = _np.linspace(_np.min(d), _np.max(d), points)
+            if len(coords) > 0:
+                stats.append({
+                    "vals": _np.concatenate([_np.zeros(1), method(d, coords), _np.zeros(1)]),
+                    "coords": _np.concatenate([[coords[0]], coords, [coords[-1]]]),
+                    "mean": _np.mean(d),
+                    "median": _np.median(d),
+                    "min": _np.min(d),
+                    "max": _np.max(d),
+                    "quantiles": qs
+                })
+            else:
+                stats.append({"vals": [], "coords": []})
+            stats.append(stat)
+
+        return self.violin(stats, positions=positions, orientation=orientation, widths=widths, showmeans=showmeans, showextrema=showextrema, showmedians=showmedians, side=side, facecolor=facecolor, linecolor=linecolor)
+
     def text(self, x, y, s, **kwargs):
         kws = {"alpha", "color", "c", "fontsize", "on_top", "size", "backgroundcolor", "horizontalalignment", "ha", "verticalalignment", "va", "rotation", "label"}
         kwargs = self._check_kwargs("text", kws, **kwargs)
@@ -1351,7 +1654,7 @@ class Axes(BaseAxes):
         self._style = self._fig._style
         self._imshow = None
 
-        self._defcol_counter = {0: 0}
+        self._defcol_counter = {0: 0} # 0 - std, 1 - fill between, 2 - violins
         self._colorbar = ""
         self._cbar_h = False
         self._polar = polar
@@ -1435,12 +1738,24 @@ class Axes(BaseAxes):
         self._axis_options["enlargelimits"] = "false"
         #self._fig._add_global("\\pgfplotsset{set layers}")
         data = args[0]
-        m, M = _np.min(data), _np.max(data)
+        m, M = _np.nanmin(data), _np.nanmax(data)
         if "cmap" in kwargs:
             cmap = kwargs["cmap"]
         else:
             cmap = "viridis"
         return (self, cmap, m, M)
+
+    def hist2d(self, x, y, bins=10, **kwargs):
+        kws = {"range", "density", "weights", "cmin", "cmax", "alpha", "cmap", "vmin", "vmax"}
+        kwargs = self._check_kwargs("hist2d", kws, **kwargs)
+        h, xedges, yedges = _np.histogram2d(x, y, bins=bins, range=kwargs.pop("range", None), density=kwargs.pop("density", False), weights=kwargs.pop("weights", None))
+        cmin, cmax = kwargs.pop("cmin", None), kwargs.pop("cmax", None)
+        if cmin is not None:
+            h[h < cmin] = None
+        if cmax is not None:
+            h[h > cmax] = None
+        im = self.imshow(h.T, extent=[xedges[0], xedges[-1], yedges[0], yedges[-1]], origin='lower', **kwargs)
+        return h, xedges, yedges, im
     
     def set_xlabel(self, label, **kwargs):
         kws = {"fontsize", "color", "c", "loc", "rotate"}
@@ -1648,13 +1963,29 @@ class Axes(BaseAxes):
             else:
                 self._axis_options["xshift"] = f"{self._fig._get_spacing(self._row, self._col)}cm"
         if self._imshow:
-            im_name = self._export_imshow(*self._imshow[0], **self._imshow[1]).replace(r"\\", r"/")
-            dims = _np.shape(self._imshow[0][0])
+            im = self._imshow[0][0]
+            dims = _np.shape(im)
             bounds = [0, dims[1], 0, dims[0]]
             if "extent" in self._imshow[1]:
                 bounds = self._imshow[1]["extent"]
             xm, xM, ym, yM = bounds
+            if "xmin" in self._axis_options and self._axis_options["xmin"] is not None and self._axis_options["xmin"] > xm:
+                xm = self._axis_options["xmin"]
+                im = im[:, int((xm-bounds[0])/(bounds[1]-bounds[0])*dims[1]):]
+            if "xmax" in self._axis_options and self._axis_options["xmax"] is not None and self._axis_options["xmax"] < xM:
+                xM = self._axis_options["xmax"]
+                im = im[:, :int((xM-bounds[0])/(bounds[1]-bounds[0])*dims[1])]
+            if "ymin" in self._axis_options and self._axis_options["ymin"] is not None and self._axis_options["ymin"] > ym:
+                ym = self._axis_options["ymin"]
+                im = im[int((ym-bounds[2])/(bounds[3]-bounds[2])*dims[0]):, :]
+            if "ymax" in self._axis_options and self._axis_options["ymax"] is not None and self._axis_options["ymax"] < yM:
+                yM = self._axis_options["ymax"]
+                im = im[:int((yM-bounds[2])/(bounds[3]-bounds[2])*dims[0]), :]
+            im_set = (im, *self._imshow[0][1:])
+            im_name = self._export_imshow(*im_set, **self._imshow[1]).replace(r"\\", r"/")
             self._elements[0].insert(0, Graph(self, f"graphics [xmin={xm}, xmax={xM}, ymin={ym}, ymax={yM}] {{{im_name}}}", settings={}, xerr=None, yerr=None, onlayer="axis background"))
+        if self._get_all_elements() == [] and self._secondary_y is None:
+            self._axis_options["hide axis"] = None
         axis_opt_str = ""
         auxiliary_opt_str = ""
         if TikzConfig.SCHOOL_AXIS:
