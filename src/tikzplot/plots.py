@@ -239,6 +239,55 @@ def step(*args, **kwargs):
         raise ValueError("step is not supported for 3D axes.")
     return _current_axes.step(*args, **kwargs)
 
+def ecdf(*args, **kwargs):
+    _ensure_axes()
+    assert _current_axes
+    if isinstance(_current_axes, Axes3):
+        raise ValueError("ecdf is not supported for 3D axes.")
+    return _current_axes.ecdf(*args, **kwargs)
+
+def pie(*args, **kwargs):
+    _ensure_axes()
+    assert _current_axes
+    if isinstance(_current_axes, Axes3):
+        raise ValueError("pie is not supported for 3D axes.")
+    return _current_axes.pie(*args, **kwargs)
+
+def pie_label(*args, **kwargs):
+    _ensure_axes()
+    assert _current_axes
+    if isinstance(_current_axes, Axes3):
+        raise ValueError("pie_label is not supported for 3D axes.")
+    return _current_axes.pie_label(*args, **kwargs)
+
+def bxp(*args, **kwargs):
+    _ensure_axes()
+    assert _current_axes
+    if isinstance(_current_axes, Axes3):
+        raise ValueError("bxp is not supported for 3D axes.")
+    return _current_axes.bxp(*args, **kwargs)
+
+def boxplot(*args, **kwargs):
+    _ensure_axes()
+    assert _current_axes
+    if isinstance(_current_axes, Axes3):
+        raise ValueError("boxplot is not supported for 3D axes.")
+    return _current_axes.boxplot(*args, **kwargs)
+
+def violin(*args, **kwargs):
+    _ensure_axes()
+    assert _current_axes
+    if isinstance(_current_axes, Axes3):
+        raise ValueError("violin is not supported for 3D axes.")
+    return _current_axes.violin(*args, **kwargs)
+
+def violinplot(*args, **kwargs):
+    _ensure_axes()
+    assert _current_axes
+    if isinstance(_current_axes, Axes3):
+        raise ValueError("violinplot is not supported for 3D axes.")
+    return _current_axes.violinplot(*args, **kwargs)
+
 def axvline(*args, **kwargs):
     _ensure_axes()
     assert _current_axes

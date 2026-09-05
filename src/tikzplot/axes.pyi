@@ -781,7 +781,7 @@ class BaseAxes:
         """
         ...
 
-    def pie_labels(self, container: Pie, labels: Sequence[str], *, distance: float = 0.6, rotate: bool = False) -> None:
+    def pie_label(self, container: Pie, labels: Sequence[str], *, distance: float = 0.6, rotate: bool = False) -> None:
         """
         Attach labels to wedges in a pie chart.
 
