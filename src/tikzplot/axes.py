@@ -44,6 +44,8 @@ class BaseAxes:
         self._preferred_lims = {}
         self._bar_labels = {}
 
+        self._virtual = False
+
     def _get_overlay(self):
         return sorted(self._elements.keys())[-1]
     def _get_all_elements(self):
@@ -1009,6 +1011,9 @@ class BaseAxes:
                     st["rotate"] = "-90"
             else:
                 st["rotate"] = {}
+        if "\n" in label:
+            label = label.replace("\n", r"\\")
+            st["align"] = "center"
         if st:
             self._update_axis_options("y label style", st)
         self._axis_options["ylabel"] = f"{{{tex_text(label)}}}"
@@ -1428,7 +1433,9 @@ class BaseAxes:
             points = []
             if showmeans and "mean" in d:
                 points.append(d["mean"])
+            ls = ""
             if showextrema:
+                ls = "-"
                 if "min" in d:
                     points.append(d["min"])
                 if "max" in d:
@@ -1446,7 +1453,7 @@ class BaseAxes:
                         settings["mark options"] = {"xshift": "-4pt"}
                     if side == "high":
                         settings["mark options"] = {"xshift": "4pt"}
-                    self._plot([positions[i]] * len(points), points, marker="_", color=fc if fc is not None else lc, lw=1, ms=4, settings=settings)
+                    self._plot([positions[i]] * len(points), points, marker="_", ls=ls, color=fc if fc is not None else lc, lw=1, ms=4, settings=settings)
                 else:
                     if side == "low":
                         settings["mark options"] = {"yshift": "-4pt"}
@@ -1552,6 +1559,8 @@ class BaseAxes:
         return output
         
     def _content_tex(self, filename):
+        if self._virtual:
+            return ""
         element_strings = {i: "\n".join(e._to_tex(filename, self._legend_lab_col) for e in self._elements[i]) for i in self._elements.keys()}
         if self._legend_on:
             element_strings[self._get_overlay()] += self._add_legend_entries()
@@ -1665,6 +1674,8 @@ class Axes(BaseAxes):
         self._int_xmin = None
         self._int_xmax = None
 
+        self._hidable = True
+
         def _posit_string(): # returns neighbour, neighbour corner, anchor
             i = self._index
             if i == 0:
@@ -1706,10 +1717,16 @@ class Axes(BaseAxes):
         if _add_settgs is not None:
             self._axis_options = _add_settgs | self._axis_options
 
-    def _update_size(self):
-        if self._fig._get_width():
+    def _update_size(self, w=None, h=None):
+        if w is not None:
+            self._width = f"{w}cm"
+            self._axis_options["width"] = self._width
+        elif self._fig._get_width():
             self._width= f"{self._fig._get_width() / self._ncols}cm"
-        if self._fig._get_height():
+        if h is not None:
+            self._height = f"{h}cm"
+            self._axis_options["height"] = self._height
+        elif self._fig._get_height():
             self._height = f"{self._fig._get_height() / self._nrows}cm"
 
     def loglog(self, x, y, *args, **kwargs):
@@ -1786,6 +1803,9 @@ class Axes(BaseAxes):
                 st["rotate"] = "-90"
             else:
                 st["rotate"] = {}
+        if "\n" in label:
+            label = label.replace("\n", r"\\")
+            st["align"] = "center"
         if st:
             self._update_axis_options("x label style", st)
         self._axis_options["xlabel"] = f"{{{tex_text(label)}}}"
@@ -1812,6 +1832,9 @@ class Axes(BaseAxes):
             else:
                 st["at"] = {}
                 st["anchor"] = {}
+        if "\n" in title:
+            title = title.replace("\n", r"\\")
+            st["align"] = "center"
         if st:
             self._update_axis_options("title style", st)
         self._axis_options["title"] = f"{{{tex_text(title)}}}"
@@ -1952,7 +1975,8 @@ class Axes(BaseAxes):
                 self._overlay_legend = True
                 self._legend_on = False
         alias = self._axis_options.pop("alias", self._axis_options.pop("name", None))
-        self._update_size()
+        if "width" not in self._axis_options or "height" not in self._axis_options:
+            self._update_size()
         if self._width:
             self._axis_options["width"] = self._width
         if self._height:
@@ -1982,9 +2006,12 @@ class Axes(BaseAxes):
                 yM = self._axis_options["ymax"]
                 im = im[:int((yM-bounds[2])/(bounds[3]-bounds[2])*dims[0]), :]
             im_set = (im, *self._imshow[0][1:])
-            im_name = self._export_imshow(*im_set, **self._imshow[1]).replace(r"\\", r"/")
+            if self._virtual:
+                im_name = ""
+            else:
+                im_name = self._export_imshow(*im_set, **self._imshow[1]).replace(r"\\", r"/")
             self._elements[0].insert(0, Graph(self, f"graphics [xmin={xm}, xmax={xM}, ymin={ym}, ymax={yM}] {{{im_name}}}", settings={}, xerr=None, yerr=None, onlayer="axis background"))
-        if self._get_all_elements() == [] and self._secondary_y is None:
+        if self._hidable and self._get_all_elements() == [] and self._secondary_y is None:
             self._axis_options["hide axis"] = None
         axis_opt_str = ""
         auxiliary_opt_str = ""
@@ -2070,6 +2097,22 @@ class Axes(BaseAxes):
             right += self._secondary_y._padding()
 
         return left, right, top, bottom
+
+    def _simulated_margins(self, preambule):
+        self._virtual = True
+        from .border_finder import _get_sizes
+        self._ext_xmin = self._ext_xmax = self._ext_ymin = self._ext_ymax = True
+        main, _, alias = self._axis_option_string()
+        main = r"""\begin{axis}[""" + main + r"]" + r"\end{axis}" + "\n"
+        if self._secondary_y is not None:
+            aux, _ = self._secondary_y._axis_option_string()
+            aux = r"""\begin{axis}[""" + aux + r"]" + r"\end{axis}" + "\n"
+            main += aux
+        lims = self._fig._lims
+        for k in lims:
+            for j in lims[k]:
+                main = main.replace(j, f"{lims[k][j]}")
+        return _get_sizes(main, preambule, alias)
     
     def _get_row(self):
         return self._row
@@ -2123,6 +2166,8 @@ class Axes(BaseAxes):
             for i in self._elements.keys():
                 spec = ",\n".join([self._parse_entry(k, v) for k, v in self._overlay_special.get(i, {}).items()]) + ",\n" if i in self._overlay_special else ""
                 lines2.append("\\begin{polaraxis}[")
+                if TikzConfig.SCALE_ONLY_AXIS:
+                    lines2.append("scale only axis")
                 if i == self._get_overlay():
                     lines2.append(f"{main_ax}{spec}\n]")
                 else:
@@ -2134,8 +2179,12 @@ class Axes(BaseAxes):
                 lines.append("\\nextgroupplot[")
             if self._polar:
                 lines.append("\\begin{polaraxis}[")
+                if TikzConfig.SCALE_ONLY_AXIS:
+                    lines.append("scale only axis")
             elif not TikzConfig.USE_GROUPPLOTS or (TikzConfig.USE_GROUPPLOTS and single):
                 lines.append("\\begin{axis}[")
+                if TikzConfig.SCALE_ONLY_AXIS:
+                    lines.append("scale only axis")
             if self._get_overlay() == 0:
                 spec = ",\n".join([self._parse_entry(k, v) for k, v in self._overlay_special.get(0, {}).items()]) + ",\n" if 0 in self._overlay_special else ""
                 if self._secondary_y is not None or self._colorbar is not None:
@@ -2151,6 +2200,8 @@ class Axes(BaseAxes):
                     spec = ",\n".join([self._parse_entry(k, v) for k, v in self._overlay_special.get(i, {}).items()]) + ",\n" if i in self._overlay_special else ""
                     if i == 0: continue
                     lines2.append("\\begin{axis}[")
+                    if TikzConfig.SCALE_ONLY_AXIS:
+                        lines2.append("scale only axis")
                     if i == self._get_overlay():
                         lines2.append(f"{main_ax}{spec}at={{({alias}.south west)}}\n]")
                         lines2.append(contents[i])
@@ -2171,6 +2222,8 @@ class Axes(BaseAxes):
                 contents2 = self._secondary_y._content_tex(filename)
                 for i in self._secondary_y._elements.keys():
                     lines2.append("\\begin{axis}[")
+                    if TikzConfig.SCALE_ONLY_AXIS:
+                        lines2.append("scale only axis,")
                     spec = ",\n".join([self._parse_entry(k, v) for k, v in self._secondary_y._overlay_special.get(i, {}).items()]) + ",\n" if i in self._secondary_y._overlay_special else ""
                     if i == sorted(self._secondary_y._elements.keys())[-1]:
                         lines2.append(f"{main_ax2}{spec}\n]")

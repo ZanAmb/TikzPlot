@@ -72,6 +72,9 @@ class Axes3:
         self._bar_code = False
         self._visible_faces = []
 
+        self._hidable = True
+        self._virtual = False
+
         def _posit_string(): # returns neighbour, neighbour corner, anchor
             i = self._index
             if i == 0:
@@ -451,6 +454,9 @@ class Axes3:
             else:
                 st["at"] = {}
                 st["anchor"] = {}
+        if "\n" in title:
+            title = title.replace("\n", r"\\")
+            st["align"] = "center"
         if st:
             self._update_axis_options("title style", st)
         self._axis_options["title"] = f"{{{tex_text(title)}}}"
@@ -484,6 +490,9 @@ class Axes3:
                 st["rotate"] = "90"
             else:
                 st["rotate"] = {}
+        if "\n" in label:
+            label = label.replace("\n", r"\\")
+            st["align"] = "center"
         if st:
             self._update_axis_options("x label style", st)
         self._axis_options["xlabel"] = f"{{{tex_text(label)}}}"
@@ -517,6 +526,9 @@ class Axes3:
                 st["rotate"] = "-90"
             else:
                 st["rotate"] = {}
+        if "\n" in label:
+            label = label.replace("\n", r"\\")
+            st["align"] = "center"
         if st:
             self._update_axis_options("y label style", st)
         self._axis_options["ylabel"] = f"{{{tex_text(label)}}}"
@@ -550,6 +562,9 @@ class Axes3:
                 st["rotate"] = "-90"
             else:
                 st["rotate"] = {}
+        if "\n" in label:
+            label = label.replace("\n", r"\\")
+            st["align"] = "center"
         if st:
             self._update_axis_options("z label style", st)
         self._axis_options["zlabel"] = f"{{{tex_text(label)}}}"
@@ -964,6 +979,8 @@ class Axes3:
         return output
         
     def _content_tex(self, filename):
+        if self._virtual:
+            return ""
         ouptut = "\n".join(e._to_tex(filename) for e in self._get_all_elements())
         ouptut += self._add_legend_entries()
         return ouptut
@@ -1013,11 +1030,17 @@ class Axes3:
         assert self._fig is not None
         self._fig._add_col(r,g,b)
 
-    def _update_size(self):
+    def _update_size(self, w=None, h=None):
         assert self._fig is not None
-        if self._fig._get_width():
+        if w is not None:
+            self._width = f"{w}cm"
+            self._axis_options["width"] = self._width
+        elif self._fig._get_width():
             self._width= f"{self._fig._get_width() / self._ncols}cm"
-        if self._fig._get_height():
+        if h is not None:
+            self._height = f"{h}cm"
+            self._axis_options["height"] = self._height
+        elif self._fig._get_height():
             self._height = f"{self._fig._get_height() / self._nrows}cm"
 
     def grid(self, visible=True, which="major", **kwargs):
@@ -1143,7 +1166,8 @@ class Axes3:
                 self._overlay_legend = True
                 self._legend_on = False
         alias = self._axis_options.get("alias", self._axis_options.get("name", None))
-        self._update_size()
+        if "width" not in self._axis_options or "height" not in self._axis_options:
+            self._update_size()
         if self._width:
             self._axis_options["width"] = self._width
         if self._height:
@@ -1224,6 +1248,19 @@ class Axes3:
         top = TikzConfig.TOP_PADDING + TikzConfig.TITLE_PADDING * ("title" in self._axis_options)
         bottom = TikzConfig.BOTTOM_PADDING * self._xticks + TikzConfig.X_LABEL_PADDING * ("xlabel" in self._axis_options) + TikzConfig.CBAR_Y_MARGIN * (self._colorbar != "" and self._cbar_h)
         return left, right, top, bottom
+
+    def _simulated_margins(self, preambule):
+        self._virtual = True
+        from .border_finder import _get_sizes
+        assert self._fig is not None
+        self._ext_xmin = self._ext_xmax = self._ext_ymin = self._ext_ymax = True
+        main, _, alias = self._axis_option_string()
+        main = r"""\begin{axis}[""" + main + r"]" + r"\end{axis}" + "\n"
+        lims = self._fig._lims
+        for k in lims:
+            for j in lims[k]:
+                main = main.replace(j, f"{lims[k][j]}")
+        return _get_sizes(main, preambule, alias)
     
     def _get_row(self):
         return self._row

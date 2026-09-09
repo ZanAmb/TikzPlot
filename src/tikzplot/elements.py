@@ -72,7 +72,6 @@ class BaseGraph:
             return None
         
         def match_color(input) -> tuple[str, float|int]:
-            self._has_color = True
             if self._axes is None:
                 st = Styles()
             else:
@@ -95,6 +94,7 @@ class BaseGraph:
         if "scatter" in self._settings:
             if "cmap" in self._style:
                 cmap = self._style["cmap"]
+                self._has_color = True
 
         if "fmt" in self._style:
             fmt = self._style["fmt"]
@@ -118,6 +118,7 @@ class BaseGraph:
                 if self._colors is not None:
                     if not isinstance(self._colors[0], (int, float)):
                         self._colors = [match_color(p)[0] for p in self._colors]
+                        self._has_color = True
                 elif self._sizes is not None:
                     c = self._style.get("c", self._style.get("color"))
                     sel_col, self._opacity = match_color(c)
@@ -127,6 +128,7 @@ class BaseGraph:
                 c = self._style.get("c", self._style.get("color"))
                 sel_col, self._opacity = match_color(c)
                 if sel_col:
+                    self._has_color = True
                     if "axhspan" in self._settings or "axvspan" in self._settings:
                         opts["fill"] = f"{{{sel_col}}}"
                     else:
@@ -197,7 +199,7 @@ class BaseGraph:
                 return hatches
             hatch = match_hatch(self._style["hatch"])
             hatch_args = {}
-            hatch_color = match_color(self._style.get("hatch_color", "black")[0])
+            hatch_color = match_color(self._style.get("hatch_color", "black")[0])[0]
             if "hatch_linewidth" in self._style:
                 hatch_args["line width"] = f"{self._style['hatch_linewidth']}pt"
             if "hatch_distance" in self._style:

@@ -4,15 +4,15 @@
 	\definecolor{c012204670706}{rgb}{0.122, 0.467, 0.706}
 	\def\xmina{-0.8}
 	\def\xmaxa{10.8}
-	\begin{groupplot}[group style={group size=2 by 3, horizontal sep=0.8999999999999999cm, vertical sep=1.5cm}]
+	\begin{groupplot}[group style={group size=2 by 3, horizontal sep=1.2395945094783456cm, vertical sep=1.5858133444029339cm}]
 		\nextgroupplot[
 			/pgf/number format/.cd, use comma, 1000 sep={},
 			set layers=standard, cell picture=true, grid style={on layer=axis grid},
 			grid=major,
 			legend style={at={(0.97,0.97)},
 				anchor=north east},
-			width=8.0cm,
-			height=6.666666666666667cm,
+			width=7.023064804206447cm,
+			height=5.356306183294128cm,
 			alias=p0
 			]
 		\addplot [color={blue},
@@ -29,8 +29,8 @@
 			legend style={at={(0.5,0.97)},
 				anchor=north },
 			legend columns=2,
-			width=8.0cm,
-			height=6.666666666666667cm,
+			width=7.023064804206447cm,
+			height=5.356306183294128cm,
 			xmin=\xmina,
 			xmax=\xmaxa,
 			alias=p1
@@ -46,9 +46,10 @@
 			set layers=standard, cell picture=true, grid style={on layer=axis grid},
 			ymode=log,
 			grid=both,
-			title={Semilog Y},
-			width=8.0cm,
-			height=6.666666666666667cm,
+			title style={align=center},
+			title={Semilog Y\\ title in two lines},
+			width=7.023064804206447cm,
+			height=5.356306183294128cm,
 			alias=p2
 			]
 		\addplot [color={violet}] table [x=x,y=y] {datapoints/figure_7.dat};\addlegendentry{$|\sin(x)|$}
@@ -57,10 +58,12 @@
 			set layers=standard, cell picture=true, grid style={on layer=axis grid},
 			xmin=0,
 			xmax=10,
+			xlabel={X-axis},
 			ymin=-1.5,
 			ymax=1.5,
-			width=8.0cm,
-			height=6.666666666666667cm,
+			ylabel={Y-axis},
+			width=7.023064804206447cm,
+			height=5.356306183294128cm,
 			alias=p3
 			]
 		\addplot [solid,
@@ -84,12 +87,12 @@
 		\nextgroupplot[
 			/pgf/number format/.cd, use comma, 1000 sep={},
 			set layers=standard, cell picture=true, grid style={on layer=axis grid},
-			width=8.0cm,
-			height=6.666666666666667cm,
+			width=7.023064804206447cm,
+			height=5.356306183294128cm,
 			alias=p4
 			]
 		\addplot [forget plot,
-			bar width=0.21730614127023395,
+			bar width=0.2278368290751582,
 			ybar,
 			fill=orange,
 			draw=none] table [x=x,y=y] {datapoints/figure_11.dat};
@@ -98,8 +101,8 @@
 			set layers=standard, cell picture=true, grid style={on layer=axis grid},
 			enlargelimits=false,
 			grid=major,
-			width=8.0cm,
-			height=6.666666666666667cm,
+			width=7.023064804206447cm,
+			height=5.356306183294128cm,
 			colormap={urgb}{
 				    rgb=(0.2670, 0.0049, 0.3294)
 				    rgb=(0.2297, 0.3224, 0.5457)
@@ -135,8 +138,8 @@
 			y label style={at={(1.2,0.5)},
 				rotate=180},
 			ylabel={$y$-axis 2},
-			width=8.0cm,
-			height=6.666666666666667cm,
+			width=7.023064804206447cm,
+			height=5.356306183294128cm,
 			xmin=\xmina,
 			xmax=\xmaxa,
 			]

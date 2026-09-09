@@ -373,6 +373,6 @@ def gca():
     _ensure_axes()
     return _current_axes
 
-def tight_layout():
+def tight_layout(*args, **kwargs):
     assert _current_figure
-    _current_figure.tight_layout()
+    _current_figure.tight_layout(*args, **kwargs)

@@ -63,7 +63,8 @@ class _ConfigParams(TypedDict, total=False):
     DEFAULT_3D_AZIM: float
     DEFAULT_3D_ELEV: float
 
-    GROUPPLOT_AXIS_SET_SIZE: bool
+    SCALE_ONLY_AXIS: bool
+    SIMULATE_SIZES: bool
 
     PIE_SIZE_FRACTION: float
 
@@ -124,7 +125,8 @@ class _TikzConfig:
     DEFAULT_3D_AZIM: float
     DEFAULT_3D_ELEV: float
 
-    GROUPPLOT_AXIS_SET_SIZE: bool
+    SCALE_ONLY_AXIS: bool
+    SIMULATE_SIZES: bool
 
     PIE_SIZE_FRACTION: float
 

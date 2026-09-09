@@ -17,6 +17,7 @@ noise = np.random.normal(0, 0.2, size=len(x))
 
 # --- Figure with 2x3 subplots ---
 fig, axs = plt.subplots(3,2)
+fig.set_size_inches(6, 6)
 
 # =========================
 # (1) Basic plot + styling
@@ -49,7 +50,7 @@ ax = axs[1, 0]
 ax.semilogy(x, np.abs(y) + 1e-2, color="purple", label="sin")
 ax.grid(which="both")
 ax.legend(["$|\\sin(x)|$"])
-ax.set_title("Semilog Y")
+ax.set_title("Semilog Y\n title in two lines")
 
 # =========================
 # (4) Errorbar + fill_between
@@ -60,7 +61,7 @@ y = y[::10]
 ax.errorbar(x, y, yerr=0.2, fmt="-", color="black", label="data", ecolor="gray", elinewidth=0.5, capsize=3)
 ax.fill_between(x, y - 0.1, y + 0.1, alpha=0.3, color="gray")
 ax.legend()
-ax.set(xlim=(0,10), ylim=(-1.5,1.5))
+ax.set(xlim=(0,10), ylim=(-1.5,1.5),ylabel="Y-axis", xlabel="X-axis")
 
 # =========================
 # (5) Histogram

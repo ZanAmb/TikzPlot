@@ -60,7 +60,8 @@ class _TikzConfig:
     DEFAULT_3D_AZIM: float
     DEFAULT_3D_ELEV: float
 
-    GROUPPLOT_AXIS_SET_SIZE: bool
+    SCALE_ONLY_AXIS: bool
+    SIMULATE_SIZES: bool
 
     PIE_SIZE_FRACTION: float
 
@@ -122,9 +123,11 @@ class _TikzConfig:
         self.DEFAULT_3D_AZIM = -60
         self.DEFAULT_3D_ELEV = 30
 
-        self.GROUPPLOT_AXIS_SET_SIZE = False    # if True, axis in groupplots will have width and height as set, otherwise, they will be smaller to fit labels and ticks into the set size.
+        self.SCALE_ONLY_AXIS = False    # if True, axis will have width and height as set, otherwise, they will be smaller to fit labels and ticks into the set size.
+        self.SIMULATE_SIZES = False     # requires LaTeX locally installed, it will compile empty axis one at a time to determine the required paddings in groupplots. It will also try adjusting the size to achieve the set figure size. It might take a bit longer.
 
         self.PIE_SIZE_FRACTION = 0.8
+
 
         self._config_file = Path.home() / ".tikz_userconf.json"
         self._load_user_config()

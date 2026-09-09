@@ -1,20 +1,18 @@
 import numpy as np
+import copy
 
 from .axes import Axes
 from .axes3d import Axes3
 from .config import TikzConfig
+from .border_finder import _can_compile_tex
 
 class Figure:
 
     def __init__(self, style):
         self._axes = []
-        self._width = None
-        self._height = None
         self._style = style
-        if TikzConfig.DEFAULT_WIDTH:
-            self._width = TikzConfig.DEFAULT_WIDTH
-        if TikzConfig.DEFAULT_HEIGHT:
-            self._height = TikzConfig.DEFAULT_HEIGHT
+        self._width = TikzConfig.DEFAULT_WIDTH
+        self._height = TikzConfig.DEFAULT_HEIGHT
 
         self._sharex = None
         self._sharey = None
@@ -23,6 +21,8 @@ class Figure:
         self._ncols = 0
 
         self._spacings = None
+
+        self._tight_params = {}
         
         self._last_path_num = 0
 
@@ -34,7 +34,7 @@ class Figure:
 
         self._num_coordinates = 0
 
-        self.texts = []
+        self._texts = []
 
         self._lims = {"xmin": {}, "xmax": {}, "ymin": {}, "ymax": {}, "zmin": {}, "zmax": {}}
 
@@ -102,15 +102,26 @@ class Figure:
             self._axes.remove(ax)
             del ax
     
-    def _compute_group_spacing(self):
-        grid = np.zeros((self._nrows, self._ncols, 4))
-
-        for ax in self._axes:
-            grid[ax._get_row(), ax._get_col()] = np.array(ax._margins())
+    def _compute_group_spacing(self, cpy=None):
+        grid = np.zeros((self._nrows, self._ncols, 6))
+        for i, ax in enumerate(self._axes):
+            if cpy is None:
+                grid[ax._get_row(), ax._get_col()][:4] = np.array(ax._margins())
+            else:
+                cpy._check_required_packages()
+                pre = "\n".join(cpy._required_packages.keys())
+                szs = cpy._axes[i]._simulated_margins(pre)
+                grid[ax._get_row(), ax._get_col()] = np.array(szs)
         l = grid[:, :, 0]
         r = grid[:, :, 1]
         t = grid[:, :, 2]
         b = grid[:, :, 3]
+        if "rect" in self._tight_params:
+            w, h = self._width / self._ncols, self._height / self._nrows
+            l += self._tight_params["rect"][0] * w
+            r += (1-self._tight_params["rect"][2]) * w
+            b += self._tight_params["rect"][1] * h
+            t += (1-self._tight_params["rect"][3]) * h
         if self._nrows > 1:
              row_spacing = np.max(b[:-1, :], axis=1) + np.max(t[1:, :], axis=1)
         else:
@@ -118,7 +129,22 @@ class Figure:
         if self._ncols > 1:
             col_spacing = np.max(r[:, :-1], axis=0) + np.max(l[:, 1:], axis=0)
         else:
-            col_spacing =  [0]
+            col_spacing = [0]
+        if "h_pad" in self._tight_params:
+            row_spacing += self._tight_params["h_pad"]
+        if "w_pad" in self._tight_params:
+            col_spacing += self._tight_params["w_pad"]
+        if cpy is not None:
+            mw = np.max(l[:, 0]) + np.max(r[:, -1]) + max(col_spacing) * (self._ncols - 1) + np.max(grid[:, :, 4]) * self._ncols
+            mh = np.max(t[0, :]) + np.max(b[-1, :]) + max(row_spacing) * (self._nrows - 1) + np.max(grid[:, :, 5]) * self._nrows
+            nw, nh = None, None
+            nw = self._width / self._ncols
+            nw += nw - mw / self._ncols
+            nh = self._height / self._nrows
+            nh += nh - mh / self._nrows
+            if nw is not None or nh is not None:
+                for ax in self._axes:
+                    ax._update_size(nw, nh)
         self._spacings = row_spacing, col_spacing
 
     def _get_spacing(self, row, col):
@@ -153,7 +179,7 @@ class Figure:
         return self._lims[which].get(name)
     
     def _range_setting(self, min_val, max_val, mode):
-        if min_val < max_val:
+        if min_val is not None and max_val is not None and min_val < max_val:
             if mode == "lin":
                 d = max_val - min_val
                 min_val -= d * TikzConfig.SHARED_AXIS_REL_MARGIN
@@ -297,13 +323,24 @@ class Figure:
         nrows = self._axes[0]._get_nrows()
         ncols = self._axes[0]._get_ncols()
         if TikzConfig.USE_GROUPPLOTS and not single:
-            self._compute_group_spacing()
+            if TikzConfig.SIMULATE_SIZES:
+                if _can_compile_tex():
+                    self_copy = copy.deepcopy(self)
+                    for ax in self_copy._axes:
+                        ax._hidable = False
+                        #ax._elements = {0: []}
+                    self._compute_group_spacing(self_copy)
+                else:
+                    print("TikzConfig.SIMULATE_SIZES is enabled, but local pdflatex compiling is not available. Groupplot spacings will not use simulation, which might produce unsatisfactory results.")
+                    self._compute_group_spacing()
+            else:
+                self._compute_group_spacing()
             assert self._spacings is not None
             q = f"\\begin{{groupplot}}[group style={{group size={ncols} by {nrows}"
             if len(self._spacings[0]) > 0 and len(self._spacings[1]) > 0:
                 q += f", horizontal sep={max(self._spacings[1])}cm, vertical sep={max(self._spacings[0])}cm"
             q += f"}}"
-            if TikzConfig.GROUPPLOT_AXIS_SET_SIZE:
+            if TikzConfig.SCALE_ONLY_AXIS:
                 q += ", scale only axis"
             lines.append(q + "]")
         for ax in self._axes:
@@ -316,7 +353,7 @@ class Figure:
         lines += lines2
         for spy in self._spies:
             lines.append(spy)
-        for text in self.texts:
+        for text in self._texts:
             lines.append(text._to_tex_fin())
         for ext in self._external:
             lines.append(ext._to_tex())
@@ -410,10 +447,21 @@ class Figure:
         return f"(coordinate{self._num_coordinates})"
     
     def _add_text(self, text):
-        self.texts.append(text)
+        self._texts.append(text)
 
-    def tight_layout(self):
-        pass
+    def tight_layout(self, h_pad=0, w_pad=0, rect=(0,0,1,1)):
+        if not TikzConfig.USE_GROUPPLOTS:
+            print("Tight layout is only available when using groupplots (TikzConfig.USE_GROUPPLOTS). Command will be ignored.")
+        elif _can_compile_tex():
+            TikzConfig.SIMULATE_SIZES = True
+            for q in rect:
+                if not (0 <= q <= 1):
+                    raise ValueError("rect values must be in the range [0, 1]")
+            tight_params = {"h_pad": h_pad, "w_pad": w_pad, "rect": rect}
+            self._tight_params |= tight_params
+        else:
+            print("Tight layout requires local pdflatex compiling, which is not available. Command will be ignored.")
+        
 
     def _add_required_package(self, package):
         if package not in self._required_packages:

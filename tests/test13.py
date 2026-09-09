@@ -16,7 +16,7 @@ if b:
     ax0.legend(prop={'size': 10})
     ax0.set_title('bars with legend')
 
-    ax1.hist(x, n_bins, density=True, histtype='bar', stacked=True, hatch=['+', '**', '..'], hatch_color='black', hatch_linewidth=0.7, label=["1", "2", "3"])
+    ax1.hist(x, n_bins, density=True, histtype='bar', stacked=True, hatch=['+', '**', '..'], hatch_color='black', hatch_linewidth=0.3, label=["1", "2", "3"])
     ax1.set_title('stacked bar')
     ax1.legend()
 

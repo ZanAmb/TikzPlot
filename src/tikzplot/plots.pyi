@@ -45,31 +45,6 @@ def subplot(
     """
     ...
 
-"""class AxesGrid(Protocol):
-    @overload
-    def __getitem__(self, index: int) -> Axes: ...
-    @overload
-    def __getitem__(self, index: tuple[int, int]) -> Axes: ...
-    def __iter__(self): ...
-
-@overload
-def subplots(
-    nrows: Literal[1] = 1,
-    ncols: Literal[1] = 1,
-    sharex: Optional[str] = None,
-    sharey: Optional[str] = None,
-    **kwargs: Any
-) -> tuple[Figure, Axes]: ...
-
-@overload
-def subplots(
-    nrows: int,
-    ncols: int,
-    sharex: Optional[str] = None,
-    sharey: Optional[str] = None,
-    **kwargs: Any
-) -> tuple[Figure, AxesGrid]: ..."""
-
 def subplots(
     nrows: int = 1,
     ncols: int = 1,
@@ -227,7 +202,7 @@ def yticks(ticks: ArrayLike, labels: Optional[Sequence[str]] = ..., fontsize: Op
         """
         ...
 
-def grid(self, visible: bool = True, which: Literal["major","minor","both"] = "major", alpha: Optional[float] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ...,
+def grid(visible: bool = True, which: Literal["major","minor","both"] = "major", alpha: Optional[float] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ...,
              linestyle: Optional[LineStyle] = ..., ls: Optional[LineStyle] = ..., linewidth: Optional[float]= ..., lw: Optional[float] = ...) -> None: 
     """
     Set grid.
@@ -261,7 +236,7 @@ def set_minorticks_num(num: int) -> None:
     num: int
         Number of minor ticks between major ticks.
     """
-def legend(self, *args: Any, loc: Optional[Union[int,str,Tuple[float,float]]] = ..., facecolor: Optional[ColorLike] = ..., edgecolor: Optional[ColorLike] = ..., labelcolor: Optional[ColorLike] = ..., frameon: Optional[bool] = ..., anchor: Optional[Literal["north", "south", "east", "west", "center", "north west", "north east", "south west", "south east"]] = ..., fontsize: Optional[Literal["xx-small", "x-small", "small", "medium", "large", "x-large", "xx-large"] | int] = ...) -> None:
+def legend(*args: Any, loc: Optional[Union[int,str,Tuple[float,float]]] = ..., facecolor: Optional[ColorLike] = ..., edgecolor: Optional[ColorLike] = ..., labelcolor: Optional[ColorLike] = ..., frameon: Optional[bool] = ..., anchor: Optional[Literal["north", "south", "east", "west", "center", "north west", "north east", "south west", "south east"]] = ..., fontsize: Optional[Literal["xx-small", "x-small", "small", "medium", "large", "x-large", "xx-large"] | int] = ...) -> None:
     """
     Show legend for the selected axis. Despite arguments requires at least one plotted element on the axis (not necesarily with label) to show up (LaTeX does not allow legend on empty axis).
 
@@ -331,7 +306,7 @@ def plot(
         Mark size in pt
     """
     ...
-def errorbar(self, x: ArrayLike = ..., y: ArrayLike = ..., yerr: Optional[ArrayLike | float] = ..., xerr: Optional[ArrayLike | float] = ..., fmt: Optional[str] = ..., *, alpha: Optional[float] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ...,
+def errorbar(x: ArrayLike = ..., y: ArrayLike = ..., yerr: Optional[ArrayLike | float] = ..., xerr: Optional[ArrayLike | float] = ..., fmt: Optional[str] = ..., *, alpha: Optional[float] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ...,
              linestyle: Optional[LineStyle] = ..., ls: Optional[LineStyle] = ..., linewidth: Optional[float]= ..., lw: Optional[float] = ...,
              marker: Optional[MarkerStyle] = ..., markersize: Optional[float] = ..., ms: Optional[float] = ...,  label:Optional[str]=...) -> None:
     """
@@ -381,8 +356,8 @@ def errorbar(self, x: ArrayLike = ..., y: ArrayLike = ..., yerr: Optional[ArrayL
         Errorbar line style
     """
     ...
-def scatter(self, x: ArrayLike = ..., y: ArrayLike = ..., fmt: Optional[str] = ..., *,alpha: Optional[float] = ..., color: Optional[Union[Sequence[ColorLike], ColorLike]] = ..., c: Optional[ColorLike] = ...,
-             marker: Optional[MarkerStyle] = ..., markersize: Optional[Union[ArrayLike, float]] = ..., s: Optional[Union[ArrayLike, float]] = ...,  label:Optional[str]=..., cmap: Optional[Union[str, Colorbar]], vmin: Optional[float] = ..., vmax: Optional[float] = ...) -> None:
+def scatter(x: ArrayLike = ..., y: ArrayLike = ..., fmt: Optional[str] = ..., *,alpha: Optional[float] = ..., color: Optional[Union[Sequence[ColorLike], ColorLike]] = ..., c: Optional[ColorLike] = ...,
+             marker: Optional[MarkerStyle] = ..., markersize: Optional[Union[ArrayLike, float]] = ..., s: Optional[Union[ArrayLike, float]] = ...,  label:Optional[str]=..., cmap: Optional[Union[str, Colorbar]] = ..., vmin: Optional[float] = ..., vmax: Optional[float] = ...) -> None:
     """
     Draw a scatter plot to the selected axis.
     
@@ -466,7 +441,7 @@ def semilogy(
     """
     ...
 
-def stem(self, *args: Any, orientation: Literal["horizontal","vertical"] = "vertical", linefmt:Optional[str] = ..., markerfmt:Optional[str]=...,
+def stem(*args: Any, orientation: Literal["horizontal","vertical"] = "vertical", linefmt:Optional[str] = ..., markerfmt:Optional[str]=...,
          label:Optional[str]=...) -> None: 
     """
     Draw a stem plot to the selected axis.
@@ -533,7 +508,7 @@ def fill_between(
         The distance between hatch lines in points. If not provided, the default distance is used.
     """
     ...
-def text(self, x: float, y: float, s: str, color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ..., fontsize: Optional[FontSize] = ..., on_top: Optional[bool] = ..., size: Optional[FontSize] = ..., backgroundcolor: Optional[ColorLike] = ..., horizontalalignment: Optional[str] = ..., ha: Optional[str] = ..., verticalalignment: Optional[str] = ..., va: Optional[str] = ..., rotation: Optional[Union[float, str]] = ..., label: Optional[str] = ...) -> None:
+def text(x: float, y: float, s: str, color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ..., fontsize: Optional[FontSize] = ..., on_top: Optional[bool] = ..., size: Optional[FontSize] = ..., backgroundcolor: Optional[ColorLike] = ..., horizontalalignment: Optional[str] = ..., ha: Optional[str] = ..., verticalalignment: Optional[str] = ..., va: Optional[str] = ..., rotation: Optional[Union[float, str]] = ..., label: Optional[str] = ...) -> None:
     """
     Add text to the selected axis.
     Parameters
@@ -570,7 +545,7 @@ def text(self, x: float, y: float, s: str, color: Optional[ColorLike] = ..., c: 
     """
     ...
 
-def loglog(self, x: ArrayLike = ..., y: ArrayLike = ..., base: Optional[float] = 10,  fmt: Optional[str] = ...,*, alpha: Optional[float] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ...,
+def loglog(x: ArrayLike = ..., y: ArrayLike = ..., base: Optional[float] = 10,  fmt: Optional[str] = ...,*, alpha: Optional[float] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ...,
              linestyle: Optional[LineStyle] = ..., ls: Optional[LineStyle] = ..., linewidth: Optional[float]= ..., lw: Optional[float] = ...,
              marker: Optional[MarkerStyle] = ..., markersize: Optional[float] = ..., ms: Optional[float] = ...) -> Graph:
     """
@@ -691,7 +666,7 @@ def hist(
     """
     ...
 
-def bar(self, x: ArrayLike | float, height: ArrayLike | float, width: ArrayLike | float = 0.8, bottom: ArrayLike | float = 0.0, *, align: Literal["center", "edge"] = "center", color: Optional[ColorLike] = None, c: Optional[ColorLike] = None, facecolor: Optional[ColorLike] = None, fc: Optional[ColorLike] = None, edgecolor: Optional[ColorLike] = None, ec: Optional[ColorLike] = None, linewidth: Optional[float] = None, lw: Optional[float] = None, tick_label: Optional[str] = None, label: Optional[str] = None, xerr: Optional[ArrayLike] = None, yerr: Optional[ArrayLike] = None, ecolor: Optional[ColorLike] = None, capsize: Optional[float] = None, hatch: Optional[str] = None, hatch_color: Optional[ColorLike] = None, hatch_linewidth: Optional[float] = None, hatch_distance: Optional[float] = None) -> Graph:
+def bar(x: ArrayLike | float, height: ArrayLike | float, width: ArrayLike | float = 0.8, bottom: ArrayLike | float = 0.0, *, align: Literal["center", "edge"] = "center", color: Optional[ColorLike] = None, c: Optional[ColorLike] = None, facecolor: Optional[ColorLike] = None, fc: Optional[ColorLike] = None, edgecolor: Optional[ColorLike] = None, ec: Optional[ColorLike] = None, linewidth: Optional[float] = None, lw: Optional[float] = None, tick_label: Optional[str] = None, label: Optional[str] = None, xerr: Optional[ArrayLike] = None, yerr: Optional[ArrayLike] = None, ecolor: Optional[ColorLike] = None, capsize: Optional[float] = None, hatch: Optional[str] = None, hatch_color: Optional[ColorLike] = None, hatch_linewidth: Optional[float] = None, hatch_distance: Optional[float] = None) -> Graph:
     """
     Draw a bar plot to the selected axis.
 
@@ -747,7 +722,7 @@ def bar(self, x: ArrayLike | float, height: ArrayLike | float, width: ArrayLike 
     """
     ...
 
-def barh(self, y: ArrayLike | float, width: ArrayLike | float, height: ArrayLike | float = 0.8, left: ArrayLike | float = 0.0, *, align: Literal["center", "edge"] = "center", color: Optional[ColorLike] = None, c: Optional[ColorLike] = None, facecolor: Optional[ColorLike] = None, fc: Optional[ColorLike] = None, edgecolor: Optional[ColorLike] = None, ec: Optional[ColorLike] = None, linewidth: Optional[float] = None, lw: Optional[float] = None, tick_label: Optional[str] = None, label: Optional[str] = None, xerr: Optional[ArrayLike] = None, yerr: Optional[ArrayLike] = None, ecolor: Optional[ColorLike] = None, capsize: Optional[float] = None, hatch: Optional[str] = None, hatch_color: Optional[ColorLike] = None, hatch_linewidth: Optional[float] = None, hatch_distance: Optional[float] = None) -> Graph:
+def barh(y: ArrayLike | float, width: ArrayLike | float, height: ArrayLike | float = 0.8, left: ArrayLike | float = 0.0, *, align: Literal["center", "edge"] = "center", color: Optional[ColorLike] = None, c: Optional[ColorLike] = None, facecolor: Optional[ColorLike] = None, fc: Optional[ColorLike] = None, edgecolor: Optional[ColorLike] = None, ec: Optional[ColorLike] = None, linewidth: Optional[float] = None, lw: Optional[float] = None, tick_label: Optional[str] = None, label: Optional[str] = None, xerr: Optional[ArrayLike] = None, yerr: Optional[ArrayLike] = None, ecolor: Optional[ColorLike] = None, capsize: Optional[float] = None, hatch: Optional[str] = None, hatch_color: Optional[ColorLike] = None, hatch_linewidth: Optional[float] = None, hatch_distance: Optional[float] = None) -> Graph:
     """
     Draw a horizontal bar plot to the selected axis.
 
@@ -803,7 +778,7 @@ def barh(self, y: ArrayLike | float, width: ArrayLike | float, height: ArrayLike
     """
     ...
 
-def bar_label(self, container: Graph, labels: Sequence[str|float|int] | None = None, *, color: Optional[ColorLike] = None, c: Optional[ColorLike] = None, fontsize: Optional[FontSize | int] = None, padding: float | None = None, fmt: str = "%g", rotation: float | Literal["vertical", "horizontal"] = 0) -> None:
+def bar_label(container: Graph, labels: Sequence[str|float|int] | None = None, *, color: Optional[ColorLike] = None, c: Optional[ColorLike] = None, fontsize: Optional[FontSize | int] = None, padding: float | None = None, fmt: str = "%g", rotation: float | Literal["vertical", "horizontal"] = 0) -> None:
         """
         Attach labels to bars in a bar container.
 
@@ -832,7 +807,7 @@ def bar_label(self, container: Graph, labels: Sequence[str|float|int] | None = N
         """
         ...
 
-def grouped_bar(self, heights: dict[Any, ArrayLike] | ArrayLike, positions: ArrayLike | None = None, tick_labels: Sequence[str] | None = None, labels: Sequence[str] | None = None, group_spacing: float = 1.5, bar_spacing: float = 0.0, orientation: Literal["vertical", "horizontal"] = "vertical", colors: Optional[Sequence[ColorLike] | ColorLike] = ..., edgecolor: Optional[Sequence[ColorLike] | ColorLike] = ..., ec: Optional[Sequence[ColorLike] | ColorLike] = ..., facecolor: Optional[Sequence[ColorLike] | ColorLike] = ..., fc: Optional[Sequence[ColorLike] | ColorLike] = ..., linewidth: Optional[Sequence[float] |float] = ..., lw: Optional[Sequence[float] | float] = ..., linestyles: Optional[Sequence[LineStyle] | LineStyle] = ..., ls: Optional[Sequence[LineStyle] | LineStyle] = ..., hatch: Optional[Sequence[str] | str] = ..., hatch_color: Optional[Sequence[ColorLike] | ColorLike] = ..., hatch_linewidth: Optional[Sequence[float] | float] = ..., hatch_distance: Optional[Sequence[float] | float] = ...) -> Sequence[Graph]:
+def grouped_bar(heights: dict[Any, ArrayLike] | ArrayLike, positions: ArrayLike | None = None, tick_labels: Sequence[str] | None = None, labels: Sequence[str] | None = None, group_spacing: float = 1.5, bar_spacing: float = 0.0, orientation: Literal["vertical", "horizontal"] = "vertical", colors: Optional[Sequence[ColorLike] | ColorLike] = ..., edgecolor: Optional[Sequence[ColorLike] | ColorLike] = ..., ec: Optional[Sequence[ColorLike] | ColorLike] = ..., facecolor: Optional[Sequence[ColorLike] | ColorLike] = ..., fc: Optional[Sequence[ColorLike] | ColorLike] = ..., linewidth: Optional[Sequence[float] |float] = ..., lw: Optional[Sequence[float] | float] = ..., linestyles: Optional[Sequence[LineStyle] | LineStyle] = ..., ls: Optional[Sequence[LineStyle] | LineStyle] = ..., hatch: Optional[Sequence[str] | str] = ..., hatch_color: Optional[Sequence[ColorLike] | ColorLike] = ..., hatch_linewidth: Optional[Sequence[float] | float] = ..., hatch_distance: Optional[Sequence[float] | float] = ...) -> Sequence[Graph]:
     """
     Draw a grouped bar plot to the selected axis.
 
@@ -881,7 +856,7 @@ def grouped_bar(self, heights: dict[Any, ArrayLike] | ArrayLike, positions: Arra
         Distances between hatch lines. If a single value is provided, it is used for all bars. If a sequence is provided, distances are cycled through the bars.
     """
 
-def stackplot(self, x: ArrayLike, *args, baseline: Literal["zero", "sym", "wiggle", "weighted_wiggle"] = "zero", labels: Optional[Sequence[str]] = ..., colors: Optional[Sequence[ColorLike] | ColorLike] = ..., alpha: Optional[float|Sequence[float]] = ..., facecolor: Optional[Sequence[ColorLike] | ColorLike] = ..., edgecolor: Optional[Sequence[ColorLike] | ColorLike] = ..., linewidth: Optional[Sequence[float] | float] = ..., linestyle: Optional[Sequence[str] | str] = ..., hatch: Optional[Sequence[str] | str] = ..., hatch_color: Optional[Sequence[ColorLike] | ColorLike] = ..., hatch_linewidth: Optional[Sequence[float] | float] = ..., hatch_distance: Optional[Sequence[float] | float] = ...) -> None:
+def stackplot(x: ArrayLike, *args, baseline: Literal["zero", "sym", "wiggle", "weighted_wiggle"] = "zero", labels: Optional[Sequence[str]] = ..., colors: Optional[Sequence[ColorLike] | ColorLike] = ..., alpha: Optional[float|Sequence[float]] = ..., facecolor: Optional[Sequence[ColorLike] | ColorLike] = ..., edgecolor: Optional[Sequence[ColorLike] | ColorLike] = ..., linewidth: Optional[Sequence[float] | float] = ..., linestyle: Optional[Sequence[str] | str] = ..., hatch: Optional[Sequence[str] | str] = ..., hatch_color: Optional[Sequence[ColorLike] | ColorLike] = ..., hatch_linewidth: Optional[Sequence[float] | float] = ..., hatch_distance: Optional[Sequence[float] | float] = ...) -> None:
         """
         Draw a stack plot to the selected axis.
 
@@ -926,7 +901,7 @@ def stackplot(self, x: ArrayLike, *args, baseline: Literal["zero", "sym", "wiggl
         ...
        
 
-def magnify(self, x_p: float, y_p: float, x_m: float, y_m: float, zoom: float, size: float, **kwargs) -> int:
+def magnify(x_p: float, y_p: float, x_m: float, y_m: float, zoom: float, size: float, **kwargs) -> int:
     """
     Add a spyviewer to the selected axis.
     Parameters
@@ -977,7 +952,7 @@ def vlines(
     """
     ...
 
-def semilogx(self, x: ArrayLike = ..., y: ArrayLike = ..., base: Optional[float] = 10,  fmt: Optional[str] = ...,*, alpha: Optional[float] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ...,
+def semilogx(x: ArrayLike = ..., y: ArrayLike = ..., base: Optional[float] = 10,  fmt: Optional[str] = ...,*, alpha: Optional[float] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ...,
              linestyle: Optional[LineStyle] = ..., ls: Optional[LineStyle] = ..., linewidth: Optional[float]= ..., lw: Optional[float] = ...,
              marker: Optional[MarkerStyle] = ..., markersize: Optional[float] = ..., ms: Optional[float] = ...) -> None:
     """
@@ -1015,13 +990,13 @@ def semilogx(self, x: ArrayLike = ..., y: ArrayLike = ..., base: Optional[float]
         Mark size in pt
     """
     ...
-def imshow(self, *args: Any, cmap: Optional[str] = ...) -> Tuple[Any, str, float, float]: 
+def imshow(*args: Any, cmap: Optional[str] = ...) -> Tuple[Any, str, float, float]: 
     """
     Draw image to the selected axis from array. Uses matplotlib imshow() to export to PDF, then inputs the image to the axis. Return may be used to initialize Colorbar().
     """
     ...
 
-def step(self, x: ArrayLike, y: ArrayLike, *args: Any, where: Literal["pre","post","mid"] = "pre", **kwargs: Any) -> None:
+def step(x: ArrayLike, y: ArrayLike, *args: Any, where: Literal["pre","post","mid"] = "pre", **kwargs: Any) -> None:
     """
     Draw a step plot to the selected axis.
     Parameters
@@ -1058,7 +1033,7 @@ def step(self, x: ArrayLike, y: ArrayLike, *args: Any, where: Literal["pre","pos
     """
     ...
 
-def ecdf(self, x: ArrayLike, weights: Optional[ArrayLike] = None, *, complementary: bool = False, orientation: Literal["vertical", "horizontal"] = "vertical", compress: bool = True, fmt: Optional[str] = ..., alpha: float = 1.0, color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ..., linestyle: Optional[LineStyle] = ..., ls: Optional[LineStyle] = ..., linewidth: Optional[float]= ..., lw: Optional[float] = ..., marker: Optional[MarkerStyle] = ..., markersize: Optional[float] = ..., ms: Optional[float] = ...,  label:Optional[str]=...) -> Graph:
+def ecdf(x: ArrayLike, weights: Optional[ArrayLike] = None, *, complementary: bool = False, orientation: Literal["vertical", "horizontal"] = "vertical", compress: bool = True, fmt: Optional[str] = ..., alpha: float = 1.0, color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ..., linestyle: Optional[LineStyle] = ..., ls: Optional[LineStyle] = ..., linewidth: Optional[float]= ..., lw: Optional[float] = ..., marker: Optional[MarkerStyle] = ..., markersize: Optional[float] = ..., ms: Optional[float] = ...,  label:Optional[str]=...) -> Graph:
     """
     Draw an empirical cumulative distribution function (ECDF) plot to the selected axis.
 
@@ -1104,7 +1079,7 @@ def ecdf(self, x: ArrayLike, weights: Optional[ArrayLike] = None, *, complementa
         Legend entry for the ECDF plot.
     """
     ...
-def pie(self, x: ArrayLike, *, explode: Optional[ArrayLike] = None, labels: Optional[Sequence[str]] = None, colors: Optional[Sequence[ColorLike]] = None, autopct: Optional[str] = None, pctdistance: float = 0.6, labeldistance: float = 1.1, radius: float = 1.0, startangle: float = 0.0, counterclock: bool = True, wedgeprops: Optional[dict] = None, rotate_labels: bool = False, normalize: bool = True) -> Pie:
+def pie(x: ArrayLike, *, explode: Optional[ArrayLike] = None, labels: Optional[Sequence[str]] = None, colors: Optional[Sequence[ColorLike]] = None, autopct: Optional[str] = None, pctdistance: float = 0.6, labeldistance: float = 1.1, radius: float = 1.0, startangle: float = 0.0, counterclock: bool = True, wedgeprops: Optional[dict] = None, rotate_labels: bool = False, normalize: bool = True) -> Pie:
     """
     Draw a pie chart to the selected axis.
 
@@ -1150,7 +1125,7 @@ def pie(self, x: ArrayLike, *, explode: Optional[ArrayLike] = None, labels: Opti
         If True (default), normalize x so that it sums to 1.
     """
     ...
-def pie_label(self, container: Pie, labels: Sequence[str], *, distance: float = 0.6, rotate: bool = False) -> None:
+def pie_label(container: Pie, labels: Sequence[str], *, distance: float = 0.6, rotate: bool = False) -> None:
     """
     Attach labels to wedges in a pie chart.
 
@@ -1169,7 +1144,7 @@ def pie_label(self, container: Pie, labels: Sequence[str], *, distance: float = 
         If True, rotate each label to be parallel to its corresponding wedge. Default is False.
     """
     ...
-def bxp(self, bxpstats: list[dict[str, Any]], positions: list[float|int]|None=None, *, widths:float|ArrayLike=0.5, orientation: Literal["vertical", "horizontal"]="vertical", showcaps:bool=True, showbox:bool=True, showfliers:bool=True, showmeans:bool=False, boxprops:dict[str, Any]|None=None, whiskerprops:dict[str, Any]|None=None, flierprops:dict[str, Any]|None=None, medianprops:dict[str, Any]|None=None, meanprops:dict[str, Any]|None=None, capwidths:float|ArrayLike|None=None, tex_settings:dict[str, Any] = {}) -> list[Graph]:
+def bxp(bxpstats: list[dict[str, Any]], positions: list[float|int]|None=None, *, widths:float|ArrayLike=0.5, orientation: Literal["vertical", "horizontal"]="vertical", showcaps:bool=True, showbox:bool=True, showfliers:bool=True, showmeans:bool=False, boxprops:dict[str, Any]|None=None, whiskerprops:dict[str, Any]|None=None, flierprops:dict[str, Any]|None=None, medianprops:dict[str, Any]|None=None, meanprops:dict[str, Any]|None=None, capwidths:float|ArrayLike|None=None, tex_settings:dict[str, Any] = {}) -> list[Graph]:
     """
     Draw a box-and-whisker plot to the selected axis.
 
@@ -1228,7 +1203,7 @@ def bxp(self, bxpstats: list[dict[str, Any]], positions: list[float|int]|None=No
         A dictionary of direct settings for TeX rendering.
     """
     ...
-def boxplot(self, x: ArrayLike | Sequence[Sequence[float|int]], *, sym: str|None=None, orientation:Literal["vertical", "horizontal"]="vertical", whis:float=1.5, positions: ArrayLike | None=None, widths: float | ArrayLike=0.5, usermedians: ArrayLike | None=None, showmeans:bool=False, showcaps:bool=True, showbox:bool=True, showfliers:bool=True, boxprops:dict[str, Any]|None=None, tick_labels:dict[str, Any]|None=None, flierprops:dict[str, Any]|None=None, medianprops:dict[str, Any]|None=None, meanprops:dict[str, Any]|None=None, whiskerprops:dict[str, Any]|None=None, manage_ticks:bool=True, capwidths:float | ArrayLike | None=None, autorange:bool=True) -> list[Graph]:
+def boxplot(x: ArrayLike | Sequence[Sequence[float|int]], *, sym: str|None=None, orientation:Literal["vertical", "horizontal"]="vertical", whis:float=1.5, positions: ArrayLike | None=None, widths: float | ArrayLike=0.5, usermedians: ArrayLike | None=None, showmeans:bool=False, showcaps:bool=True, showbox:bool=True, showfliers:bool=True, boxprops:dict[str, Any]|None=None, tick_labels:dict[str, Any]|None=None, flierprops:dict[str, Any]|None=None, medianprops:dict[str, Any]|None=None, meanprops:dict[str, Any]|None=None, whiskerprops:dict[str, Any]|None=None, manage_ticks:bool=True, capwidths:float | ArrayLike | None=None, autorange:bool=True) -> list[Graph]:
     """
     Draw a box-and-whisker plot to the selected axis.
 
@@ -1295,7 +1270,7 @@ def boxplot(self, x: ArrayLike | Sequence[Sequence[float|int]], *, sym: str|None
         If True (default), automatically adjust the axis limits to fit the boxplots.
     """
     ...
-def violin(self, vpstats: list[dict[str, Any]], positions:ArrayLike|None=None, *, orientation:Literal["vertical", "horizontal"]="vertical", widths:float|ArrayLike=0.5, showmeans:bool=False, showextrema:bool=True, showmedians:bool=False, side:Literal["low", "high", "both"]="both", facecolor:ColorLike|Sequence[ColorLike]|None=None, linecolor:ColorLike|Sequence[ColorLike]|None=None) -> list[Graph]:
+def violin(vpstats: list[dict[str, Any]], positions:ArrayLike|None=None, *, orientation:Literal["vertical", "horizontal"]="vertical", widths:float|ArrayLike=0.5, showmeans:bool=False, showextrema:bool=True, showmedians:bool=False, side:Literal["low", "high", "both"]="both", facecolor:ColorLike|Sequence[ColorLike]|None=None, linecolor:ColorLike|Sequence[ColorLike]|None=None) -> list[Graph]:
     """
     Draw a violin plot to the selected axis.
 
@@ -1339,7 +1314,7 @@ def violin(self, vpstats: list[dict[str, Any]], positions:ArrayLike|None=None, *
         The edge color of the violins. If a single color is provided, it is used for all violins. If a sequence is provided, colors are cycled through the violins.
     """
     ...
-def violinplot(self, dataset: ArrayLike | Sequence[Sequence[float|int]], positions: ArrayLike | None =None, *, orientation:Literal["vertical", "horizontal"]="vertical", widths:float | ArrayLike=0.5, showmeans:bool=False, showextrema:bool=True, showmedians:bool=False, quantiles: Sequence[Sequence[int|float]|None]|None=None, points:int=100, bw_method:Literal["scott", "silverman"]="scott", side:Literal["low", "high", "both"]="both", facecolor:ColorLike|Sequence[ColorLike]|None=None, linecolor:ColorLike|Sequence[ColorLike]|None=None) -> Sequence[Graph]:
+def violinplot(dataset: ArrayLike | Sequence[Sequence[float|int]], positions: ArrayLike | None =None, *, orientation:Literal["vertical", "horizontal"]="vertical", widths:float | ArrayLike=0.5, showmeans:bool=False, showextrema:bool=True, showmedians:bool=False, quantiles: Sequence[Sequence[int|float]|None]|None=None, points:int=100, bw_method:Literal["scott", "silverman"]="scott", side:Literal["low", "high", "both"]="both", facecolor:ColorLike|Sequence[ColorLike]|None=None, linecolor:ColorLike|Sequence[ColorLike]|None=None) -> Sequence[Graph]:
     """
     Draw a violin plot to the selected axis.
     
@@ -1386,7 +1361,7 @@ def violinplot(self, dataset: ArrayLike | Sequence[Sequence[float|int]], positio
     """
     ...
 
-def axvline(self, x:float, ymin:float=0, ymax:float=1, alpha:Optional[float] = ..., color:Optional[ColorLike] = ..., linestyle:Optional[str] = ..., linewidth:Optional[float] = ..., label:Optional[str] = ...) -> None:
+def axvline(x:float, ymin:float=0, ymax:float=1, alpha:Optional[float] = ..., color:Optional[ColorLike] = ..., linestyle:Optional[str] = ..., linewidth:Optional[float] = ..., label:Optional[str] = ...) -> None:
     """
     Draw a vertical line to the selected axis at given x coordinate.
 
@@ -1417,7 +1392,7 @@ def axvline(self, x:float, ymin:float=0, ymax:float=1, alpha:Optional[float] = .
     """
     ...
 
-def axhline(self, y:float, xmin:float=0, xmax:float=1, alpha:Optional[float] = ..., color:Optional[ColorLike] = ..., linestyle:Optional[str] = ..., linewidth:Optional[float] = ..., label:Optional[str] = ...) -> None:
+def axhline(y:float, xmin:float=0, xmax:float=1, alpha:Optional[float] = ..., color:Optional[ColorLike] = ..., linestyle:Optional[str] = ..., linewidth:Optional[float] = ..., label:Optional[str] = ...) -> None:
     """
     Draw a horizontal line to the selected axis at given y coordinate.
 
@@ -1446,7 +1421,7 @@ def axhline(self, y:float, xmin:float=0, xmax:float=1, alpha:Optional[float] = .
     """
     ...
 
-def axvspan(self, xmin:float, xmax:float, ymin:float=0, ymax:float=1, alpha:Optional[float] = ..., color:Optional[ColorLike] = ..., linestyle:Optional[str] = ..., linewidth:Optional[float] = ..., label:Optional[str] = ..., hatch:Optional[str] = ..., hatch_color:Optional[ColorLike] = ..., hatch_linewidth:Optional[float] = ..., hatch_distance:Optional[float] = ...) -> None:
+def axvspan(xmin:float, xmax:float, ymin:float=0, ymax:float=1, alpha:Optional[float] = ..., color:Optional[ColorLike] = ..., linestyle:Optional[str] = ..., linewidth:Optional[float] = ..., label:Optional[str] = ..., hatch:Optional[str] = ..., hatch_color:Optional[ColorLike] = ..., hatch_linewidth:Optional[float] = ..., hatch_distance:Optional[float] = ...) -> None:
     """
     Draw a vertical span to the selected axis between given x coordinates.
 
@@ -1487,7 +1462,7 @@ def axvspan(self, xmin:float, xmax:float, ymin:float=0, ymax:float=1, alpha:Opti
     """
     ...
 
-def axhspan(self, ymin:float, ymax:float, xmin:float=0, xmax:float=1, alpha:Optional[float] = ..., color:Optional[ColorLike] = ..., linestyle:Optional[str] = ..., linewidth:Optional[float] = ..., label:Optional[str] = ..., hatch:Optional[str] = ..., hatch_color:Optional[ColorLike] = ..., hatch_linewidth:Optional[float] = ..., hatch_distance:Optional[float] = ...) -> None:
+def axhspan(ymin:float, ymax:float, xmin:float=0, xmax:float=1, alpha:Optional[float] = ..., color:Optional[ColorLike] = ..., linestyle:Optional[str] = ..., linewidth:Optional[float] = ..., label:Optional[str] = ..., hatch:Optional[str] = ..., hatch_color:Optional[ColorLike] = ..., hatch_linewidth:Optional[float] = ..., hatch_distance:Optional[float] = ...) -> None:
     """
     Draw a horizontal span to the selected axis between given y coordinates.
 
@@ -1528,7 +1503,7 @@ def axhspan(self, ymin:float, ymax:float, xmin:float=0, xmax:float=1, alpha:Opti
     """
     ...
 
-def minorticks_num(self, num: int) -> None:
+def minorticks_num(num: int) -> None:
     ...
     """
     Set number of minor ticks between major ticks.
@@ -1583,4 +1558,17 @@ def gca() -> Axes:
     """
     ...
 
-def tight_layout() -> None: ...
+def tight_layout(h_pad: float=0, w_pad: float=0, rect: tuple[float, float, float, float]=(0, 0, 1, 1)) -> None:
+    """
+    This method works a bit differently than matplotlib's. It requires local pdflatex to compile the empty axis and estimate the required paddings. It will also try adjusting the size of the axis in a way to make whole figure match the set size. It works only with groupplots (TikzConfig.USE_GROUPPLOTS = True). Simulation ignores most of the TikzConfig settings regarding padding, additional padding is set using kwargs here.
+    
+    Parameters
+    ----------
+    h_pad: float, optional
+        Additional padding between rows of subplots, in cm.
+    w_pad: float, optional
+        Additional padding between columns of subplots, in cm.
+    rect: tuple of 4 floats, optional
+        Rectangle in normalized coordinates which the whole subplot will fit into. (left, bottom, right, top) in the range [0, 1].
+    """
+    ...
