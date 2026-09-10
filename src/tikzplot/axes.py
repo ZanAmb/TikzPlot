@@ -45,6 +45,7 @@ class BaseAxes:
         self._bar_labels = {}
 
         self._virtual = False
+        self._extend = None
 
     def _get_overlay(self):
         return sorted(self._elements.keys())[-1]
@@ -537,10 +538,16 @@ class BaseAxes:
                     settings.pop("fill", None)
                     settings.pop("thickness", None)
                     settings.pop("align", None)
-                    self.step([edges[0]] + list(edges), [0] + list(counts) + [0], where="pre", **settings)
+                    if orientation == "horizontal":
+                        e = self.step([0] + list(counts) + [0], [edges[0]] + list(edges), where="post", **settings)
+                    else:
+                        e = self.step([edges[0]] + list(edges), [0] + list(counts) + [0], where="pre", **settings)
+                    outputs.append(e)
             else:
                 if bottom is not None:
                     settings["edge"] = bottom
+                if orientation == "horizontal":
+                    settings["orientation"] = "horizontal"
                 e = self._common_bar(xs, counts, settings=settings, **settings)
                 outputs.append(e)
         return outputs
@@ -974,6 +981,7 @@ class BaseAxes:
         return self._plot([xmin, xmax], [ymin, ymax], settings={"axhspan": None}, **kwargs)
 
     def set_ylabel(self, label, **kwargs):
+        self._not_hidable()
         kws = {"fontsize", "color", "c", "loc", "rotate"}
         kwargs = self._check_kwargs("set_ylabel", kws, **kwargs)
         st = {}
@@ -1070,7 +1078,7 @@ class BaseAxes:
                 self._axis_options["yticklabels"]=r"{}"
                 self._yticks = False
         else:
-            self._axis_options["yticks"]=r"{}"
+            self._axis_options["ytick"]=r"\empty"
             self._yticks = False
 
     def set_yticklabels(self, labels, **kwargs):
@@ -1091,7 +1099,7 @@ class BaseAxes:
             self._yticks = False
 
     def tick_params(self, axis="both", **kwargs):
-        kws = {"color", "c", "labelsize", "labelcolor", "colors", "direction", "top", "bottom", "left", "right"}
+        kws = {"color", "c", "labelsize", "labelcolor", "colors", "direction", "top", "bottom", "left", "right", "labelbottom", "labelleft"}
         kwargs = self._check_kwargs("tick_params", kws, **kwargs)
         if axis not in ["x", "y", "both"]:
             raise Warning(f"Invalid axis: {axis}. Must be one of 'x', 'y', or 'both'.")
@@ -1119,6 +1127,14 @@ class BaseAxes:
             if axis == "x":
                 raise Warning("Cannot set 'right' for x-axis.")
             yt_r = kwargs.pop("right")
+        if kwargs.get("labelbottom", True) == False:
+            if axis == "y":
+                raise Warning("Cannot set 'labelbottom' for y-axis.")
+            self._axis_options["xticklabels"] = r"\empty"
+        if kwargs.get("labelleft", True) == False:
+            if axis == "x":
+                raise Warning("Cannot set 'labelleft' for x-axis.")
+            self._axis_options["yticklabels"] = r"\empty"
         X_INV = {v: k for k, v in X_POS_MAP.items()}
         Y_INV = {v: k for k, v in Y_POS_MAP.items()}
         self._axis_options["xtick pos"] = X_INV[(xt_t, xt_b)]
@@ -1646,13 +1662,22 @@ class BaseAxes:
             if attr in kwargs:
                 defined[attr](kwargs.pop(attr))
 
-class Axes(BaseAxes):
+    def _not_hidable(self):
+        if isinstance(self, Secondary):
+            self._primary._not_hidable()
+        elif isinstance(self, Axes):
+            self._hidable = False
 
+class Axes(BaseAxes):
     def __init__(self, nrows, ncols, index, fig, polar):
         super().__init__()
         self._left = False
         self._neigh = None
         
+        self._placeholder = False
+        if index < 0:
+            self._placeholder = True
+            index = -index
         self._nrows = nrows
         self._ncols = ncols
         self._index = index - 1
@@ -1676,6 +1701,28 @@ class Axes(BaseAxes):
 
         self._hidable = True
 
+        self._new_pos(nrows, ncols, index)
+
+        self._secondary_y = None
+
+        self._width = None
+        self._height = None
+        if self._fig._get_width():
+            self._width= f"{self._fig._get_width() / ncols}cm"
+        if self._fig._get_height():
+            self._height = f"{self._fig._get_height() / nrows}cm"
+
+        self._xticks = True
+
+        self._style_defaults()
+
+    def _new_pos(self, nrows, ncols, index):
+        self._nrows = nrows
+        self._ncols = ncols
+        self._index = index - 1
+        self._row = self._index // self._ncols
+        self._col = self._index - self._row * self._ncols
+
         def _posit_string(): # returns neighbour, neighbour corner, anchor
             i = self._index
             if i == 0:
@@ -1693,19 +1740,6 @@ class Axes(BaseAxes):
             self._axis_options["at"] = f"{{(p{self._neigh}.{pos[1]})}}"
             self._axis_options["anchor"] = pos[2]
 
-        self._secondary_y = None
-
-        self._width = None
-        self._height = None
-        if self._fig._get_width():
-            self._width= f"{self._fig._get_width() / ncols}cm"
-        if self._fig._get_height():
-            self._height = f"{self._fig._get_height() / nrows}cm"
-
-        self._xticks = True
-
-        self._style_defaults()
-
     def _style_defaults(self):
         _gs = self._style._get_grid_cycle()
         if _gs is not None:
@@ -1718,16 +1752,24 @@ class Axes(BaseAxes):
             self._axis_options = _add_settgs | self._axis_options
 
     def _update_size(self, w=None, h=None):
+        prim_size = self._fig._get_prim_size(self)
         if w is not None:
             self._width = f"{w}cm"
             self._axis_options["width"] = self._width
         elif self._fig._get_width():
-            self._width= f"{self._fig._get_width() / self._ncols}cm"
+            self._width= f"{prim_size[0]}cm"
         if h is not None:
             self._height = f"{h}cm"
             self._axis_options["height"] = self._height
         elif self._fig._get_height():
-            self._height = f"{self._fig._get_height() / self._nrows}cm"
+            self._height = f"{prim_size[1]}cm"
+
+    def _extend_axis(self, width, height):
+        self._extend = self._width, self._height
+        self._width, self._height = width, height
+
+    def _update_placeholder_size(self, width, height):
+        self._extend = (width, height)
 
     def loglog(self, x, y, *args, **kwargs):
         kws = {"base", "fmt", "alpha", "color", "c", "linestyle", "ls", "linewidth", "lw", "marker", "markersize", "ms", "label"}
@@ -1775,6 +1817,7 @@ class Axes(BaseAxes):
         return h, xedges, yedges, im
     
     def set_xlabel(self, label, **kwargs):
+        self._not_hidable()
         kws = {"fontsize", "color", "c", "loc", "rotate"}
         kwargs = self._check_kwargs("set_xlabel", kws, **kwargs)
         st = {}
@@ -1811,6 +1854,7 @@ class Axes(BaseAxes):
         self._axis_options["xlabel"] = f"{{{tex_text(label)}}}"
 
     def set_title(self, title, **kwargs):
+        self._not_hidable()
         kws = {"fontsize", "color", "c", "loc"}
         kwargs = self._check_kwargs("set_title", kws, **kwargs)
         st = {}
@@ -1840,6 +1884,7 @@ class Axes(BaseAxes):
         self._axis_options["title"] = f"{{{tex_text(title)}}}"
 
     def grid(self, visible=True, which="major", **kwargs):
+        self._not_hidable()
         if not visible:
             self._axis_options["grid"] = "none"
             return
@@ -1921,7 +1966,7 @@ class Axes(BaseAxes):
                 self._axis_options["xticklabels"]=r"{}"
                 self._xticks = False
         else:
-            self._axis_options["xticks"]=r"{}"
+            self._axis_options["xtick"]=r"\empty"
             self._xticks = False
 
     def set_xticklabels(self, labels, **kwargs):
@@ -2028,9 +2073,10 @@ class Axes(BaseAxes):
                 axis_opt_str += f",\n set layers,\n axis line style={{on layer=axis foreground}}"
                 auxiliary_opt_str += ",\n set layers"
             else:
-                axis_opt_str += f",\nset layers=standard, cell picture=true, grid style={{on layer=axis grid}}"
-                auxiliary_opt_str += "set layers=standard"
-        if self._axis_args:
+                if self._get_all_elements() != []:
+                    axis_opt_str += f",\nset layers=standard, cell picture=true, grid style={{on layer=axis grid}}"
+                    auxiliary_opt_str += "set layers=standard"
+        if self._axis_args and not (self._hidable and self._get_all_elements() == [] and self._secondary_y is None):
             axis_opt_str = ",\n".join(self._axis_args) + axis_opt_str
             if "set layers" in self._axis_args:
                 auxiliary_opt_str += ",\n set layers"
@@ -2099,6 +2145,8 @@ class Axes(BaseAxes):
         return left, right, top, bottom
 
     def _simulated_margins(self, preambule):
+        if self._placeholder:
+            return 0,0,0,0,0,0
         self._virtual = True
         from .border_finder import _get_sizes
         self._ext_xmin = self._ext_xmax = self._ext_ymin = self._ext_ymax = True
@@ -2111,7 +2159,10 @@ class Axes(BaseAxes):
         lims = self._fig._lims
         for k in lims:
             for j in lims[k]:
-                main = main.replace(j, f"{lims[k][j]}")
+                if lims[k][j] is None:
+                    main = main.replace(f"{j.removeprefix('\\')[:4]}={j},\n", "")
+                else:
+                    main = main.replace(j, f"{lims[k][j]}")
         return _get_sizes(main, preambule, alias)
     
     def _get_row(self):
@@ -2161,7 +2212,45 @@ class Axes(BaseAxes):
             self._fig._add_required_package("\\usepgfplotslibrary{polar}")
         main_ax, aux_ax, alias = self._axis_option_string()
         contents = self._content_tex(filename)
-        if self._polar and TikzConfig.USE_GROUPPLOTS and not single:
+        if self._extend is not None:
+            lines.append(f"\\nextgroupplot[alias={alias}, width={self._extend[0]}cm, height={self._extend[1]}cm, hide axis]")
+            for i in self._elements.keys():
+                spec = ",\n".join([self._parse_entry(k, v) for k, v in self._overlay_special.get(i, {}).items()]) + ",\n" if i in self._overlay_special else ""
+                if self._polar:
+                    lines2.append("\\begin{polaraxis}["+ f"\n at={{({alias}.south west)}},")
+                else:
+                    lines2.append("\\begin{axis}[" + f"\n at={{({alias}.south west)}},")
+                if TikzConfig.SCALE_ONLY_AXIS:
+                    lines2.append("scale only axis,")
+                if i == self._get_overlay():
+                    lines2.append(f"{main_ax}{spec}\n]")
+                else:
+                    lines2.append(f"{aux_ax}{spec}\n]")
+                lines2.append(contents[i])
+                if self._polar:
+                    lines2.append("\\end{polaraxis}")
+                else:
+                    lines2.append("\\end{axis}")
+                    if self._secondary_y is not None:
+                        main_ax2, aux_ax2 = self._secondary_y._axis_option_string()
+                        contents2 = self._secondary_y._content_tex(filename)
+                        for i in self._secondary_y._elements.keys():
+                            lines2.append("\\begin{axis}[")
+                            if TikzConfig.SCALE_ONLY_AXIS:
+                                lines2.append("scale only axis,")
+                            spec = ",\n".join([self._parse_entry(k, v) for k, v in self._secondary_y._overlay_special.get(i, {}).items()]) + ",\n" if i in self._secondary_y._overlay_special else ""
+                            if i == sorted(self._secondary_y._elements.keys())[-1]:
+                                lines2.append(f"{main_ax2}{spec}\n]")
+                            else:
+                                lines2.append(f"{aux_ax2}{spec}\n]")
+                            lines2.append(contents2[i])
+                            if i == sorted(self._secondary_y._elements.keys())[-1]:
+                                lines2 += self._secondary_y._overlay_legend_entries
+                                add_l = self._secondary_y._add_legend_entries()
+                                if add_l:
+                                    lines2.append(add_l)
+                            lines2.append("\\end{axis}")
+        elif self._polar and TikzConfig.USE_GROUPPLOTS and not single:
             lines.append(f"\\nextgroupplot[alias={self._axis_options['alias']}, width={self._width}, height={self._height}, hide axis]")
             for i in self._elements.keys():
                 spec = ",\n".join([self._parse_entry(k, v) for k, v in self._overlay_special.get(i, {}).items()]) + ",\n" if i in self._overlay_special else ""
@@ -2254,7 +2343,14 @@ class Axes(BaseAxes):
             r,g,b = ccode
             self._add_col(r,g,b)
             self._axis_options["axis background/.style"] = f"{{fill=c{r:.3f}{g:.3f}{b:.3f}}}".replace(".", "")
-    
+
+    def inset_axes(self, position, relsize=1, sharex=False, sharey=False):
+        if not TikzConfig.USE_GROUPPLOTS:
+            raise Warning("inset_axes is only available when using groupplots (TikzConfig.USE_GROUPPLOTS).")
+        if position not in ["above", "below", "left", "right"]:
+            raise ValueError(f"Invalid position: {position}. Must be one of 'above', 'below', 'left', or 'right'.")
+        return self._fig._inset(self, position, relsize=relsize, sharex=sharex, sharey=sharey)
+        
 class Secondary(BaseAxes):
     def __init__(self, primary):
         super().__init__()

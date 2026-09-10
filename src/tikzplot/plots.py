@@ -1,4 +1,4 @@
-import numpy as np
+import numpy as _np
 
 from tikzplot.styles import Styles
 
@@ -85,34 +85,27 @@ def subplot(nrows, ncols, index, sharex=None, sharey=None, projection=None, pola
 def subplots(nrows=1, ncols=1, sharex=None, sharey=None, subplot_kw=None, **kwargs):
 
     global _current_figure, _current_axes
-
-    _current_figure = Figure(style)
-    axes = _current_figure._add_subplots(nrows, ncols, sharex, sharey, subplot_kw)
-
-    if nrows * ncols == 1:
-        _current_axes = axes[0]
-        return _current_figure, axes[0]
-
-    grid = []
-    k = 0
-    for r in range(nrows):
-        row = []
-        for c in range(ncols):
-            row.append(axes[k])
-            k += 1
-        grid.append(row)
-    _current_axes = axes[0]
-    grid = np.asarray(grid)
-    if grid.shape[0] == 1:
-        grid = grid[0]
+    if _current_figure is None:
+        _current_figure = Figure(style)
+    axs = _current_figure.subplots(nrows=nrows, ncols=ncols, sharex=sharex, sharey=sharey, subplot_kw=subplot_kw, **kwargs)
+    if isinstance(axs, _np.ndarray):
+        if isinstance(axs[0], _np.ndarray):
+            _current_axes = axs[0, 0]
+        else:
+            _current_axes = axs[0]
     else:
-        assert len(grid.shape) == 2
-        if grid.shape[1] == 1:
-            grid = grid[:,0]
+        _current_axes = axs
+    return _current_figure, axs
 
-    if "figsize" in kwargs:
-        _current_figure.set_size_inches(kwargs["figsize"])
-    return _current_figure, grid
+def subplot_mosaic(mosaic, *, sharex=False, sharey=False, width_ratios=None, height_ratios=None, empty_sentinel=".", **kwargs):
+    global _current_figure
+    if _current_figure is None:
+        _current_figure = Figure(style)
+    axs = _current_figure.subplot_mosaic(mosaic, sharex=sharex, sharey=sharey, width_ratios=width_ratios, height_ratios=height_ratios, empty_sentinel=empty_sentinel, **kwargs)
+
+    return _current_figure, axs
+    
+    
 
 def plot(*args, **kwargs):
     _ensure_axes()
@@ -376,3 +369,7 @@ def gca():
 def tight_layout(*args, **kwargs):
     assert _current_figure
     _current_figure.tight_layout(*args, **kwargs)
+
+def sca(ax):
+    global _current_axes
+    _current_axes = ax

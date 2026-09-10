@@ -1,4 +1,4 @@
-import numpy as np
+import numpy as _np
 import copy
 
 from .axes import Axes
@@ -9,7 +9,7 @@ from .border_finder import _can_compile_tex
 class Figure:
 
     def __init__(self, style):
-        self._axes = []
+        self._axes = {}
         self._style = style
         self._width = TikzConfig.DEFAULT_WIDTH
         self._height = TikzConfig.DEFAULT_HEIGHT
@@ -40,6 +40,11 @@ class Figure:
 
         self._required_packages: dict[str, int] = {} # int for priority: 0-tikz, 1-pgfplots, 2-other packages, 3-pgfplotsset, 4-tikzlibraries, 5-pgfplotslibraries
 
+        self._mosaic = {}
+        self._wratios, self._hratios = None, None
+        self._xshare: list[list] = []
+        self._yshare: list[list] = []
+
     def add_subplot(self, *args, sharex=None, sharey=None, projection=None, polar=False):
         nrows = ncols = index = 1
         if len(args) == 0: pass
@@ -59,15 +64,42 @@ class Figure:
         else:
             pol: bool = projection=="polar" or polar
             ax = Axes(nrows, ncols, index, self, pol)
+        if self._nrows != 0 and self._ncols != 0 and (self._nrows != nrows or self._ncols != ncols):
+            raise ValueError("Cannot add subplot with different nrows/ncols than existing subplots")
         self._nrows = nrows
         self._ncols = ncols
-        self._axes.append(ax)
+        if index in self._axes:
+            return self._axes[index]
+        self._axes[index] = ax
         if sharex:
             self._sharex = sharex
         if sharey:
             self._sharey = sharey
-        return ax    
-    
+        return ax
+
+    def subplots(self, nrows=1, ncols=1, sharex=None, sharey=None, subplot_kw=None, **kwargs):
+        axes = self._add_subplots(nrows, ncols, sharex, sharey, subplot_kw)
+        if nrows * ncols == 1:
+            return axes[0]
+        grid = []
+        k = 0
+        for _ in range(nrows):
+            row = []
+            for _ in range(ncols):
+                row.append(axes[k])
+                k += 1
+            grid.append(row)
+        grid = _np.asarray(grid)
+        if grid.shape[0] == 1:
+            grid = grid[0]
+        else:
+            assert len(grid.shape) == 2
+            if grid.shape[1] == 1:
+                grid = grid[:,0]
+        if "figsize" in kwargs:
+            self.set_size_inches(kwargs["figsize"])
+        return grid
+      
     def _add_subplots(self, nrows, ncols, sharex=None, sharey=None, subplot_kw=None):
         grid = []
         if sharex:
@@ -85,6 +117,138 @@ class Figure:
             grid.append(ax)
         return grid
     
+    def subplot_mosaic(self, mosaic, *, sharex=False, sharey=False, width_ratios=None, height_ratios=None, empty_sentinel=".", subplot_kw=None, **kwargs):
+        if not TikzConfig.USE_GROUPPLOTS:
+            raise Warning("subplot_mosaic is only available when using groupplots (TikzConfig.USE_GROUPPLOTS). Command will be ignored.")
+        if isinstance(mosaic, str):
+            mosaic = [list(row) for row in mosaic.splitlines() if row]
+        nrows = len(mosaic)
+        ncols = max(len(row) for row in mosaic)
+        for r in range(nrows):
+            if len(mosaic[r]) < ncols:
+                raise ValueError(f"All rows of mosaic must have the same length.")
+        grid = {}
+        for r in reversed(range(nrows)):
+            for c in range(ncols):
+                n = mosaic[r][c]
+                if r < nrows - 1 and c > 0 and mosaic[r+1][c] == mosaic[r][c-1] != n:
+                    raise ValueError(f"Invalid mosaic: {n} is not a contiguous block")
+                if n != empty_sentinel:
+                    if n in grid:
+                        if grid[n]["r"] < r or grid[n]["c"] > c:
+                            raise ValueError(f"Invalid mosaic: {n} is not a contiguous block")
+                        for i in range(grid[n]["r"], r+1):
+                            for j in range(grid[n]["c"], c+1):
+                                if i == r and j == c:
+                                    continue
+                                if mosaic[i][j] != n:
+                                    raise ValueError(f"Invalid mosaic: {n} is not a contiguous block")
+                        grid[n]["nr"] = max(grid[n]["nr"], grid[n]["r"] - r + 1)
+                        grid[n]["nc"] = max(grid[n]["nc"], c - grid[n]["c"] + 1)
+                    else:
+                        grid[n] = dict(r=r, c=c, nr=1, nc=1)
+        for n in grid:
+            grid[n]["ax"] = self.add_subplot(nrows, ncols, ncols * grid[n]["r"] + grid[n]["c"] + 1, sharex=sharex, sharey=sharey)
+        self._mosaic = grid
+        if width_ratios is not None:
+            if len(width_ratios) != ncols:
+                raise ValueError(f"width_ratios must have length {ncols}")
+            self._wratios = list(width_ratios)
+        if height_ratios is not None:
+            if len(height_ratios) != nrows:
+                raise ValueError(f"height_ratios must have length {nrows}")
+            self._hratios = list(height_ratios)
+        return {n: grid[n]["ax"] for n in grid}
+
+    def _inset(self, ax, position, relsize=1, sharex=False, sharey=False):
+        if not TikzConfig.USE_GROUPPLOTS:
+            raise Warning("inset_axes is only available when using groupplots (TikzConfig.USE_GROUPPLOTS).")
+        if not self._mosaic:
+            for ax in self._axes.values():
+                self._mosaic[ax._index] = dict(r=ax._get_row(), c=ax._get_col(), nr=1, nc=1, ax=ax)
+
+        ax_n = next(n for n in self._mosaic if self._mosaic[n]["ax"] == ax)
+        target_r = self._mosaic[ax_n]["r"]
+        target_c = self._mosaic[ax_n]["c"]
+        target_nr = self._mosaic[ax_n]["nr"]            
+        target_nc = self._mosaic[ax_n]["nc"]            
+        target_r_top = target_r - target_nr + 1
+
+        def insert_col(idx):
+            self._ncols += 1
+            for n in self._mosaic:
+                cc = self._mosaic[n]["c"]
+                nnc = self._mosaic[n]["nc"]
+                cc_right = cc + nnc - 1
+                if cc >= idx:
+                    self._mosaic[n]["c"] += 1
+                elif cc < idx and cc_right >= idx:
+                    self._mosaic[n]["nc"] += 1
+        def insert_row(idx):
+            self._nrows += 1
+            for n in self._mosaic:
+                rr = self._mosaic[n]["r"]
+                nnr = self._mosaic[n]["nr"]
+                rr_top = rr - nnr + 1
+                if rr_top >= idx:
+                    self._mosaic[n]["r"] += 1
+                elif rr_top < idx and rr >= idx:
+                    self._mosaic[n]["r"] += 1
+                    self._mosaic[n]["nr"] += 1
+        def get_free_name():
+            n = 1
+            while True:
+                nm = f"i{n}"
+                if nm not in self._mosaic:
+                    return nm
+                n += 1
+        sum_h, sum_w = 0, 0
+        if position in ("above", "below") and self._hratios is not None:
+            h_slice = self._hratios[target_r_top : target_r_top + target_nr]
+            sum_h = sum(h_slice) if h_slice else 0
+        if position in ("left", "right") and self._wratios is not None:
+            w_slice = self._wratios[target_c : target_c + target_nc]
+            sum_w = sum(w_slice) if w_slice else 0
+
+        new_name = get_free_name()
+        if position == "left":
+            insert_col(target_c)
+            new_axes = Axes(self._nrows, self._ncols, 0, self, False)
+            self._mosaic[new_name] = dict(r=target_r, c=target_c, nr=target_nr, nc=1, ax=new_axes)
+            if self._wratios is not None:
+                self._wratios.insert(target_c, sum_w * relsize)
+        elif position == "right":
+            insert_col(target_c + target_nc)
+            new_axes = Axes(self._nrows, self._ncols, 0, self, False)
+            self._mosaic[new_name] = dict(r=target_r, c=target_c + target_nc, nr=target_nr, nc=1, ax=new_axes)
+            if self._wratios is not None:
+                self._wratios.insert(target_c + target_nc, sum_w * relsize)
+        elif position == "above":
+            insert_row(target_r_top)
+            new_axes = Axes(self._nrows, self._ncols, 0, self, False)
+            self._mosaic[new_name] = dict(r=target_r_top, c=target_c, nr=1, nc=target_nc, ax=new_axes)
+            if self._hratios is not None:
+                self._hratios.insert(target_r_top, sum_h * relsize)
+        else: # below
+            insert_row(target_r + 1)
+            new_axes = Axes(self._nrows, self._ncols, 0, self, False)
+            self._mosaic[new_name] = dict(r=target_r + 1, c=target_c, nr=1, nc=target_nc, ax=new_axes)
+            if self._hratios is not None:
+                self._hratios.insert(target_r + 1, sum_h * relsize)
+
+        if sharex:
+            self._xshare.append([ax, new_axes])
+        if sharey:
+            self._yshare.append([ax, new_axes])
+        temp = {}
+        for n in self._mosaic:
+            nax = self._mosaic[n]["ax"]
+            i = self._mosaic[n]["c"] + 1 + (self._mosaic[n]["r"]) * self._ncols
+            nax._new_pos(self._nrows, self._ncols, i)
+            temp[i] = nax
+        self._axes = temp.copy()
+        return new_axes
+
     def set_size_inches(self, *args):
         if isinstance(args[0], tuple):
             args = args[0]
@@ -92,26 +256,27 @@ class Figure:
             w,h = args
             self._width = w * 2.5
             self._height = h * 2.5
-            for ax in self._axes:
+            for ax in self._axes.values():
                 ax._update_size()
         except:
             pass
 
     def delaxes(self, ax):
-        if ax in self._axes:
-            self._axes.remove(ax)
+        if ax in self._axes.values():
+            key = [k for k, v in self._axes.items() if v == ax][0]
+            del self._axes[key]
             del ax
     
     def _compute_group_spacing(self, cpy=None):
-        grid = np.zeros((self._nrows, self._ncols, 6))
-        for i, ax in enumerate(self._axes):
+        grid = _np.zeros((self._nrows, self._ncols, 6))
+        for i, ax in self._axes.items():
             if cpy is None:
-                grid[ax._get_row(), ax._get_col()][:4] = np.array(ax._margins())
+                grid[ax._get_row(), ax._get_col()][:4] = _np.array(ax._margins())
             else:
                 cpy._check_required_packages()
                 pre = "\n".join(cpy._required_packages.keys())
                 szs = cpy._axes[i]._simulated_margins(pre)
-                grid[ax._get_row(), ax._get_col()] = np.array(szs)
+                grid[ax._get_row(), ax._get_col()] = _np.array(szs)
         l = grid[:, :, 0]
         r = grid[:, :, 1]
         t = grid[:, :, 2]
@@ -123,11 +288,11 @@ class Figure:
             b += self._tight_params["rect"][1] * h
             t += (1-self._tight_params["rect"][3]) * h
         if self._nrows > 1:
-             row_spacing = np.max(b[:-1, :], axis=1) + np.max(t[1:, :], axis=1)
+             row_spacing = _np.max(b[:-1, :], axis=1) + _np.max(t[1:, :], axis=1)
         else:
             row_spacing = [0]
         if self._ncols > 1:
-            col_spacing = np.max(r[:, :-1], axis=0) + np.max(l[:, 1:], axis=0)
+            col_spacing = _np.max(r[:, :-1], axis=0) + _np.max(l[:, 1:], axis=0)
         else:
             col_spacing = [0]
         if "h_pad" in self._tight_params:
@@ -135,17 +300,61 @@ class Figure:
         if "w_pad" in self._tight_params:
             col_spacing += self._tight_params["w_pad"]
         if cpy is not None:
-            mw = np.max(l[:, 0]) + np.max(r[:, -1]) + max(col_spacing) * (self._ncols - 1) + np.max(grid[:, :, 4]) * self._ncols
-            mh = np.max(t[0, :]) + np.max(b[-1, :]) + max(row_spacing) * (self._nrows - 1) + np.max(grid[:, :, 5]) * self._nrows
-            nw, nh = None, None
-            nw = self._width / self._ncols
-            nw += nw - mw / self._ncols
-            nh = self._height / self._nrows
-            nh += nh - mh / self._nrows
-            if nw is not None or nh is not None:
-                for ax in self._axes:
-                    ax._update_size(nw, nh)
+            aw, ah = _np.sum(_np.max(grid[:, :, 4], axis=0)), _np.sum(_np.max(grid[:, :, 5], axis=1))
+            mw = _np.max(l[:, 0]) + _np.max(r[:, -1]) + max(col_spacing) * (self._ncols - 1) + aw
+            mh = _np.max(t[0, :]) + _np.max(b[-1, :]) + max(row_spacing) * (self._nrows - 1) + ah
+            wrs, hrs = self._wratios, self._hratios
+            if wrs is None:
+                wrs = [1] * self._ncols
+            if hrs is None:
+                hrs = [1] * self._nrows
+            aw += self._width - mw
+            ah += self._height - mh
+            unit_w, unit_h = aw / sum(wrs), ah / sum(hrs)
+            for ax in self._axes.values():
+                r,c = ax._get_row(), ax._get_col()
+                nr, nc = next(((d["nr"], d["nc"]) for d in self._mosaic.values() if d["ax"] == ax), (1, 1))
+                if nr > 1 or nc > 1:
+                    rows = [r - i for i in range(nr)]
+                    cols = [c + i for i in range(nc)]
+                    w = unit_w * sum([wrs[c] for c in cols]) + max(col_spacing) * (nc - 1)
+                    h = unit_h * sum([hrs[r] for r in rows]) + max(row_spacing) * (nr - 1)
+                    ax._update_size(w, h)
+                    ax._update_placeholder_size(unit_w * wrs[c], unit_h * hrs[r])
+                else:
+                    ax._update_size(unit_w * wrs[c], unit_h * hrs[r])
         self._spacings = row_spacing, col_spacing
+
+    def _get_prim_size(self, ax):
+        r,c = ax._get_row(), ax._get_col()
+        nr, nc = next(((d["nr"], d["nc"]) for d in self._mosaic.values() if d["ax"] == ax), (1, 1))
+        def default():
+            if self._wratios is not None:
+                w = self._width * self._wratios[c] / sum(self._wratios)
+            else:
+                w = self._width / self._ncols
+            if self._hratios is not None:
+                h = self._height * self._hratios[r] / sum(self._hratios)
+            else:
+                h = self._height / self._nrows
+            return w, h
+        if nr > 1 or nc > 1:
+            rows = [r - i for i in range(nr)]
+            cols = [c + i for i in range(nc)]
+            w = 0
+            if self._wratios is not None:
+                w = self._width * sum([self._wratios[c] for c in cols]) / sum(self._wratios)
+            else:
+                w = self._width * nc / self._ncols
+            h = 0
+            if self._hratios is not None:
+                h = self._height * sum([self._hratios[r] for r in rows]) / sum(self._hratios)
+            else:
+                h = self._height * nr / self._nrows
+            ax._update_placeholder_size(*default())
+            return w, h
+        return default()
+
 
     def _get_spacing(self, row, col):
         if not self._spacings:
@@ -198,32 +407,54 @@ class Figure:
         shared_y = []
         if self._sharex and self._sharex != "none":
             if self._sharex == "all" or self._sharex == True:
-                shared_x = [self._axes]
+                shared_x = [self._axes.values()]
             if self._sharex == "row":
                 shared_x = [[] for _ in range(self._nrows)]
-                for ax in self._axes:
+                for ax in self._axes.values():
                     shared_x[ax._get_row()].append(ax)
             elif self._sharex == "col":
                 shared_x = [[] for _ in range(self._ncols)]
-                for ax in self._axes:
+                for ax in self._axes.values():
                     shared_x[ax._get_col()].append(ax)
         if self._sharey and self._sharey != "none":
             if self._sharey == "all" or self._sharey == True:
-                shared_y = [self._axes]
+                shared_y = [self._axes.values()]
             if self._sharey == "row":
                 shared_y = [[] for _ in range(self._nrows)]
-                for ax in self._axes:
+                for ax in self._axes.values():
                     shared_y[ax._get_row()].append(ax)
             elif self._sharey == "col":
                 shared_y = [[] for _ in range(self._ncols)]
-                for ax in self._axes:
+                for ax in self._axes.values():
                     shared_y[ax._get_col()].append(ax)
+        shared_x += self._xshare
+        shared_y += self._yshare
+
+        def merger(groups):
+            sets = [set(g) for g in groups]
+            merged = True
+            while merged:
+                merged = False
+                new_sets = []
+                while sets:
+                    s = sets.pop()
+                    i = 0
+                    while i < len(sets):
+                        if s & sets[i]:
+                            s |= sets.pop(i)
+                            merged = True
+                        else:
+                            i += 1
+                    new_sets.append(s)
+                sets = new_sets
+            return [list(s) for s in sets]
+        shared_x = merger(shared_x)
+        shared_y = merger(shared_y)
 
         def set_ax_ranges(which, group):        
             hard_min_vals = []
             hard_max_vals = []
             mode = "lin"
-        
             for ax in group:
                 hmin, m = ax._get_hard_range(which + "min")
                 if m == "log":
@@ -288,7 +519,7 @@ class Figure:
     
     def _reduce_points(self):
         counts = [0]
-        for ax in self._axes:
+        for ax in self._axes.values():
             counts += ax._num_points()
         counts = [min(c, TikzConfig.MAX_POINTS_PER_ELEMENT) for c in counts]
         limit = max(counts)
@@ -303,7 +534,7 @@ class Figure:
                     hi = mid - 1
             limit = lo
 
-        for ax in self._axes:
+        for ax in self._axes.values():
             ax._reduce_points(limit)
 
     def _to_tex(self, filename, png=False, standalone=None, print_requirements=False):
@@ -320,13 +551,16 @@ class Figure:
             lines0.append("\\begin{tikzpicture}[spy using outlines={}]")
         else:
             lines0.append("\\begin{tikzpicture}")
-        nrows = self._axes[0]._get_nrows()
-        ncols = self._axes[0]._get_ncols()
+        nrows = self._nrows
+        ncols = self._ncols
+        for i in range(1, 1 + nrows * ncols):
+            if i not in self._axes:
+                self._axes[i] = Axes(nrows, ncols, -i, self, False)
         if TikzConfig.USE_GROUPPLOTS and not single:
             if TikzConfig.SIMULATE_SIZES:
                 if _can_compile_tex():
                     self_copy = copy.deepcopy(self)
-                    for ax in self_copy._axes:
+                    for ax in self_copy._axes.values():
                         ax._hidable = False
                         #ax._elements = {0: []}
                     self._compute_group_spacing(self_copy)
@@ -343,7 +577,8 @@ class Figure:
             if TikzConfig.SCALE_ONLY_AXIS:
                 q += ", scale only axis"
             lines.append(q + "]")
-        for ax in self._axes:
+        for i in range(nrows * ncols):
+            ax = self._axes[i + 1]
             prim, sec = ax._to_tex(filename, single)
             lines += prim
             if sec:
@@ -450,6 +685,7 @@ class Figure:
         self._texts.append(text)
 
     def tight_layout(self, h_pad=0, w_pad=0, rect=(0,0,1,1)):
+        TikzConfig.SCALE_ONLY_AXIS = True
         if not TikzConfig.USE_GROUPPLOTS:
             print("Tight layout is only available when using groupplots (TikzConfig.USE_GROUPPLOTS). Command will be ignored.")
         elif _can_compile_tex():

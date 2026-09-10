@@ -10,6 +10,7 @@ from .colorbar import Colorbar
 from .figure import Figure as Figure
 from .state import main_name as main_name, next_show_num as next_show_num
 from .axes import Axes
+from .axes3d import Axes3
 from .elements import Graph
 from .pie import Pie
 
@@ -50,7 +51,8 @@ def subplots(
     ncols: int = 1,
     sharex: Optional[ShareOptions] = None,
     sharey: Optional[ShareOptions] = None,
-    **kwargs: Any,
+    subplot_kw: Optional[dict] = None,
+    figsize: Optional[tuple[float, float]] = None,
 ) -> tuple[Figure, Any]:
     """
     Create a figure and a set of subplots.
@@ -68,6 +70,43 @@ def subplots(
 
     sharex, sharey : Axes, optional
         Specify if row, column or all subplots should share x or y axis.
+
+    subplot_kw : dict, optional
+        Additional keyword arguments for subplot creation (currently supported: projection).
+
+    figsize: tuple of 2 floats, optional
+        Figure size in inches (width, height).
+    """
+    ...
+
+def subplot_mosaic(mosaic: str | list[list[str]], *, sharex: bool = False, sharey: bool = False, width_ratios: Optional[Sequence[float]] = None, height_ratios: Optional[Sequence[float]] = None, empty_sentinel: str = ".", figsize: Optional[tuple[float, float]] = None) ->  tuple[Figure, dict[str, Any]]:
+    """
+    Create a figure and a set of subplots arranged in a mosaic layout.
+
+    Parameters
+    ----------
+    mosaic : str or list of lists of str
+        A string or 2D list representing the layout of the subplots. Each unique character or string represents a subplot.
+
+    sharex, sharey : bool, optional
+        Specify if row, column or all subplots should share x or y axis.
+
+    width_ratios : list of float, optional
+        Ratios for the widths of the columns. Must match the number of columns.
+
+    height_ratios : list of float, optional
+        Ratios for the heights of the rows. Must match the number of rows.
+
+    empty_sentinel : str, optional
+        Character to represent empty spaces in the mosaic layout.
+
+    figsize : tuple of 2 floats, optional
+        Figure size in inches (width, height).
+
+    Returns
+    -------
+    axs : dict
+        A dictionary mapping subplot names to Axes objects.
     """
     ...
 
@@ -1570,5 +1609,16 @@ def tight_layout(h_pad: float=0, w_pad: float=0, rect: tuple[float, float, float
         Additional padding between columns of subplots, in cm.
     rect: tuple of 4 floats, optional
         Rectangle in normalized coordinates which the whole subplot will fit into. (left, bottom, right, top) in the range [0, 1].
+    """
+    ...
+
+def sca(ax: Axes | Axes3) -> None:
+    """
+    Set current axis.
+    
+    Parameters
+    ----------
+    ax: Axes
+        The axis to set as current.
     """
     ...

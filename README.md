@@ -97,7 +97,9 @@ If axes and plot have different name for command with same effect, both are impl
 - `ax.twinx()`,
 - `ax.set()`,
 - `ax.tick_params()`,
-- `fig.tight_layout()` (requires local pdflatex).
+- `tight_layout()` (requires local pdflatex),
+- `subplot_mosaic()` (requires TikzConfig USE_GROUPPLOTS=True),
+- `ax.inset_axes()` (requires TikzConfig USE_GROUPPLOTS=True).
 
 There is a limited support for built-in styles (e.g. `plt.style.use("default")`), you may also define your own style using `plt.style.set_profile()`. Currently supported features are: color cycle (hex colors sequence), line width (in pt), grid (with matplotlib kwargs), background (latex style key=value), additional settings (raw latex code for optional arguments to axis: key=value).
 

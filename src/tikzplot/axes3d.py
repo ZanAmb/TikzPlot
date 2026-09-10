@@ -74,6 +74,26 @@ class Axes3:
 
         self._hidable = True
         self._virtual = False
+        self._extend = None
+        self._placeholder = False
+
+        self._new_pos(nrows, ncols, index)
+        
+        self._width = None
+        self._height = None
+        if self._fig._get_width():
+            self._width= f"{self._fig._get_width() / ncols}cm"
+        if self._fig._get_height():
+            self._height = f"{self._fig._get_height() / nrows}cm"
+
+        self._style_defaults()
+
+    def _new_pos(self, nrows, ncols, index):
+        self._nrows = nrows
+        self._ncols = ncols
+        self._index = index - 1
+        self._row = self._index // self._ncols
+        self._col = self._index - self._row * self._ncols
 
         def _posit_string(): # returns neighbour, neighbour corner, anchor
             i = self._index
@@ -91,15 +111,6 @@ class Axes3:
         if pos is not None and not TikzConfig.USE_GROUPPLOTS:
             self._axis_options["at"] = f"{{(p{self._neigh}.{pos[1]})}}"
             self._axis_options["anchor"] = pos[2]
-
-        self._width = None
-        self._height = None
-        if self._fig._get_width():
-            self._width= f"{self._fig._get_width() / ncols}cm"
-        if self._fig._get_height():
-            self._height = f"{self._fig._get_height() / nrows}cm"
-
-        self._style_defaults()
 
     def _style_defaults(self):
         _gs = self._style._get_grid_cycle()
@@ -1032,16 +1043,24 @@ class Axes3:
 
     def _update_size(self, w=None, h=None):
         assert self._fig is not None
+        prim_size = self._fig._get_prim_size(self)
         if w is not None:
             self._width = f"{w}cm"
             self._axis_options["width"] = self._width
         elif self._fig._get_width():
-            self._width= f"{self._fig._get_width() / self._ncols}cm"
+            self._width= f"{prim_size[0]}cm"
         if h is not None:
             self._height = f"{h}cm"
             self._axis_options["height"] = self._height
         elif self._fig._get_height():
-            self._height = f"{self._fig._get_height() / self._nrows}cm"
+            self._height = f"{prim_size[1]}cm"
+
+    def _extend_axis(self, width, height):
+        self._extend = self._width, self._height
+        self._width, self._height = width, height
+
+    def _update_placeholder_size(self, width, height):
+        self._extend = (width, height)
 
     def grid(self, visible=True, which="major", **kwargs):
         if not visible:
@@ -1074,6 +1093,8 @@ class Axes3:
         self._axis_options["minor tick num"] = num
 
     def _axis_option_string(self):
+        if self._extend:
+            self._axis_options.pop("alias", self._axis_options.pop("name", None))
         if self._bar_code:
             view = self._axis_options.get(
                 "view",
@@ -1250,16 +1271,21 @@ class Axes3:
         return left, right, top, bottom
 
     def _simulated_margins(self, preambule):
+        if self._placeholder:
+            return 0,0,0,0,0,0
         self._virtual = True
         from .border_finder import _get_sizes
-        assert self._fig is not None
         self._ext_xmin = self._ext_xmax = self._ext_ymin = self._ext_ymax = True
         main, _, alias = self._axis_option_string()
         main = r"""\begin{axis}[""" + main + r"]" + r"\end{axis}" + "\n"
+        assert self._fig is not None
         lims = self._fig._lims
         for k in lims:
             for j in lims[k]:
-                main = main.replace(j, f"{lims[k][j]}")
+                if lims[k][j] is None:
+                    main = main.replace(f"{j.removeprefix('\\')[:4]}={j},\n", "")
+                else:
+                    main = main.replace(j, f"{lims[k][j]}")
         return _get_sizes(main, preambule, alias)
     
     def _get_row(self):
@@ -1283,6 +1309,13 @@ class Axes3:
     
     def _to_tex(self, filename, single):
         lines = []
+        lines2 = []
+        if self._extend is not None:
+            lines.append(f"\\nextgroupplot[alias=p{self._index}, width={self._extend[0]}cm, height={self._extend[1]}cm, hide axis]")
+            lines2.append("\\begin{axis}")
+            lines2.append(f"[at={{(p{self._index}).south west}},\n{self._axis_option_string()}]")
+            lines2.append(self._content_tex(filename))
+            lines2.append("\\end{axis}")
         if TikzConfig.USE_GROUPPLOTS and not single:
             lines.append("\\nextgroupplot")
             lines.append(f"[{self._axis_option_string()}]")
@@ -1292,7 +1325,7 @@ class Axes3:
             lines.append(f"[{self._axis_option_string()}]")
             lines.append(self._content_tex(filename))
             lines.append("\\end{axis}")
-        return lines, []
+        return lines, lines2
     
     def set(self, **kwargs):
         defined = {"title": self.set_title, "xlim": self.set_xlim, "xlabel": self.set_xlabel, "xscale": self.set_xscale, "xticklabels": self.set_xticklabels, "xticks": self.set_xticks, "ylim": self.set_ylim, "ylabel": self.set_ylabel, "yscale": self.set_yscale, "yticklabels": self.set_yticklabels, "yticks": self.set_yticks, "zlim": self.set_zlim, "zlabel": self.set_zlabel, "zscale": self.set_zscale, "zticklabels": self.set_zticklabels, "zticks": self.set_zticks}

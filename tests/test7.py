@@ -93,6 +93,6 @@ cbar = Colorbar(
     horizontal=False
 )
 
-
+plt.tight_layout()
 # --- Save ---
 plt.savefig("figure.tex")

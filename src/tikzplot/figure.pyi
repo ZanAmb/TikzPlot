@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
-from typing import Optional
+from typing import Optional, Any
 from typing_extensions import Literal, Sequence, overload, Union
 
 from tikzplot.styles import Styles
@@ -51,6 +51,74 @@ class Figure:
             Use polar projection for axis.
         """
         ...
+
+    def subplots(
+        self,
+        nrows: int = 1,
+        ncols: int = 1,
+        sharex: Optional[ShareOptions] = None,
+        sharey: Optional[ShareOptions] = None,
+        subplot_kw: Optional[dict] = None,
+        figsize: Optional[tuple[float, float]] = None,
+    ) -> Any:
+        """
+        Create a figure and a set of subplots.
+
+        Returns
+        -------
+        fig : Figure
+        ax : Axes or ndarray of Axes
+            - Single Axes if nrows*ncols == 1
+            - 1D array if one dimension is 1
+            - 2D array otherwise
+
+        figsize : tuple, optional
+            Figure size in inches (width, height).
+
+        sharex, sharey : Axes, optional
+            Specify if row, column or all subplots should share x or y axis.
+
+        subplot_kw : dict, optional
+            Additional keyword arguments for subplot creation (currently supported: projection).
+
+        figsize: tuple of 2 floats, optional
+            Figure size in inches (width, height).
+        """
+        ...
+
+    def subplot_mosaic(self, mosaic: str | list[list[str]], *, sharex: bool = False, sharey: bool = False, width_ratios: Optional[Sequence[float]] = None, height_ratios: Optional[Sequence[float]] = None, empty_sentinel: str = ".", figsize: Optional[tuple[float, float]] = None) ->  dict[str, Any]:
+        """
+        Create a figure and a set of subplots arranged in a mosaic layout.
+
+        Parameters
+        ----------
+        mosaic : str or list of lists of str
+            A string or 2D list representing the layout of the subplots. Each unique character or string represents a subplot.
+
+        sharex, sharey : bool, optional
+            Specify if row, column or all subplots should share x or y axis.
+
+        width_ratios : list of float, optional
+            Ratios for the widths of the columns. Must match the number of columns.
+
+        height_ratios : list of float, optional
+            Ratios for the heights of the rows. Must match the number of rows.
+
+        empty_sentinel : str, optional
+            Character to represent empty spaces in the mosaic layout.
+
+        figsize : tuple of 2 floats, optional
+            Figure size in inches (width, height).
+
+        Returns
+        -------
+        axs : dict
+            A dictionary mapping subplot names to Axes objects.
+        """
+        ...
+
+    def _inset(self, ax: Axes, position: str, relsize: float = 1, sharex: bool = False, sharey: bool = False) -> Axes: ...
+
     def _add_subplots(self, nrows:int, ncols:int, sharex:Optional[ShareOptions], sharey:Optional[ShareOptions], subplot_kw:Optional[dict]) -> Sequence[Axes]:
         """
         Add multiple subplots to figure.
