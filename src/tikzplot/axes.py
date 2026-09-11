@@ -1577,6 +1577,8 @@ class BaseAxes:
     def _content_tex(self, filename):
         if self._virtual:
             return ""
+        for which in ["xmin", "xmax", "ymin", "ymax"]:
+            self._get_range(which)
         element_strings = {i: "\n".join(e._to_tex(filename, self._legend_lab_col) for e in self._elements[i]) for i in self._elements.keys()}
         if self._legend_on:
             element_strings[self._get_overlay()] += self._add_legend_entries()
@@ -1591,8 +1593,13 @@ class BaseAxes:
         if arg in self._axis_options:
             mode = self._axis_options[arg]
         if which in self._axis_options:
-            for e in self._get_all_elements():
-                e._filter(which, self._axis_options[which])
+            other = which.replace("min", "max") if "min" in which else which.replace("max", "min")
+            if other in self._axis_options and (("min" in which and self._axis_options[which] > self._axis_options[other]) or ("max" in which and self._axis_options[which] < self._axis_options[other])):
+                for e in self._get_all_elements():
+                    e._filter(other, self._axis_options[which])
+            else:
+                for e in self._get_all_elements():
+                    e._filter(which, self._axis_options[which])
             return (self._axis_options[which], mode)
         return None, mode
     
@@ -1604,9 +1611,14 @@ class BaseAxes:
         common = self._get_all_elements().copy()
         if "x" in which and isinstance(self,Axes) and self._secondary_y:
             common += self._secondary_y._get_all_elements()
-        if which in self._axis_options:
-            for e in common:
-                e._filter(which, self._axis_options[which])
+        if which in self._axis_options and isinstance(self._axis_options[which], (int, float)):
+            other = which.replace("min", "max") if "min" in which else which.replace("max", "min")
+            if other in self._axis_options and (("min" in which and self._axis_options[which] > self._axis_options[other]) or ("max" in which and self._axis_options[which] < self._axis_options[other])):
+                for e in common:
+                    e._filter(other, self._axis_options[which])
+            else:
+                for e in common:
+                    e._filter(which, self._axis_options[which])
             return (self._axis_options[which], True, mode)
         values = [e._get_erange(which) for e in common]
         if which in self._preferred_lims:
@@ -1667,6 +1679,21 @@ class BaseAxes:
             self._primary._not_hidable()
         elif isinstance(self, Axes):
             self._hidable = False
+
+    def _inverted_axis(self, which):
+        if self._axis_options.get(f"{which} dir") == "reverse": pass
+        elif which == "x" and isinstance(self, Axes):
+            self._axis_options["x dir"] = "reverse"
+            if isinstance(self._axis_options.get("xmin"), (int, float)) and isinstance(self._axis_options.get("xmax"), (int, float)):
+                self._axis_options["xmin"], self._axis_options["xmax"] = self._axis_options.get("xmax"), self._axis_options.get("xmin")
+            if self._secondary_y is not None:
+                self._secondary_y._axis_options["x dir"] = "reverse"
+                if isinstance(self._secondary_y._axis_options.get("xmin"), (int, float)) and isinstance(self._secondary_y._axis_options.get("xmax"), (int, float)):
+                    self._secondary_y._axis_options["xmin"], self._secondary_y._axis_options["xmax"] = self._secondary_y._axis_options.get("xmax"), self._secondary_y._axis_options.get("xmin")
+        elif which == "y":
+            self._axis_options["y dir"] = "reverse"
+            if isinstance(self._axis_options.get("ymin"), (int, float)) and isinstance(self._axis_options.get("ymax"), (int, float)):
+                self._axis_options["ymin"], self._axis_options["ymax"] = self._axis_options.get("ymax"), self._axis_options.get("ymin")
 
 class Axes(BaseAxes):
     def __init__(self, nrows, ncols, index, fig, polar):
@@ -2007,11 +2034,19 @@ class Axes(BaseAxes):
             _plt.yscale("log", base=base)
         _plt.axis("off")
         _plt.imshow(*args, **kwargs)
+        if self._axis_options.get("x dir") == "reverse":
+            _plt.gca().invert_xaxis()
+        if self._axis_options.get("y dir") == "reverse":
+            _plt.gca().invert_yaxis()
         im_name = f"{str(main_name()[1]).removesuffix('.py')}_{TikzConfig.IMSHOW_SAVENAME}{_next_imshow_num()}.pdf"
         _plt.savefig(im_name, bbox_inches='tight', pad_inches=0)
         return im_name
 
     def _axis_option_string(self):
+        if "xmin" in self._axis_options and "xmax" in self._axis_options and self._axis_options["xmin"] > self._axis_options["xmax"]:
+            self._inverted_axis("x")
+        if "ymin" in self._axis_options and "ymax" in self._axis_options and self._axis_options["ymin"] > self._axis_options["ymax"]:
+            self._inverted_axis("y")
         if self._elements[self._get_overlay()] == [] and self._get_overlay() > 0:
             del self._elements[self._get_overlay()]
         if self._get_overlay() > 0:
@@ -2055,6 +2090,10 @@ class Axes(BaseAxes):
                 im_name = ""
             else:
                 im_name = self._export_imshow(*im_set, **self._imshow[1]).replace(r"\\", r"/")
+            if self._axis_options.get("x dir") == "reverse":
+                xm, xM = xM, xm
+            if self._axis_options.get("y dir") == "reverse":
+                ym, yM = yM, ym
             self._elements[0].insert(0, Graph(self, f"graphics [xmin={xm}, xmax={xM}, ymin={ym}, ymax={yM}] {{{im_name}}}", settings={}, xerr=None, yerr=None, onlayer="axis background"))
         if self._hidable and self._get_all_elements() == [] and self._secondary_y is None:
             self._axis_options["hide axis"] = None

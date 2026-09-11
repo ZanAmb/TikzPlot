@@ -5,6 +5,7 @@ from .axes import Axes
 from .axes3d import Axes3
 from .config import TikzConfig
 from .border_finder import _can_compile_tex
+from .colorbar import Colorbar
 
 class Figure:
 
@@ -266,6 +267,23 @@ class Figure:
             key = [k for k, v in self._axes.items() if v == ax][0]
             del self._axes[key]
             del ax
+
+    def colorbar(self, mappable, cax=None, location=None, orientation=None, shrink=1, pad=None, ticks=None, label=None):
+        horizontal = False
+        if orientation is not None:
+            if orientation == "horizontal":
+                horizontal = True
+            elif orientation == "vertical":
+                horizontal = False
+            else:
+                raise ValueError("orientation must be 'horizontal' or 'vertical'")
+        if location is None:
+            if horizontal:
+                location = "bottom"
+            else:
+                location = "right"
+        cbar = Colorbar(mappable, axis=cax, location=location, horizontal=horizontal, rel_len=shrink, pad=pad, ticks=ticks, label=label)
+        return cbar
     
     def _compute_group_spacing(self, cpy=None):
         grid = _np.zeros((self._nrows, self._ncols, 6))
@@ -471,7 +489,12 @@ class Figure:
             if hard_min_vals or hard_max_vals:
                 min_val = min(hard_min_vals) if hard_min_vals else None
                 max_val = max(hard_max_vals) if hard_max_vals else None
-        
+
+                inv = min_val is not None and max_val is not None and min_val > max_val
+                if inv:
+                    min_val, max_val = max_val, min_val
+                    for ax in group:
+                        ax._inverted_axis(which)
                 if min_val is not None:
                     for ax in group:
                         ax._set_range(which + "min", min_val)
@@ -479,7 +502,7 @@ class Figure:
                 if max_val is not None:
                     for ax in group:
                         ax._set_range(which + "max", max_val)
-                
+
             mins = [ax._get_range(which + "min") for ax in group]
             maxes = [ax._get_range(which + "max") for ax in group]
         

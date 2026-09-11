@@ -124,6 +124,7 @@ Colorbars and colormaps are implemented a bit differently than in matplotlib (si
 - if you use `imshow()`, you may use its return in `Colorbar()` (which you have to import as `from tikzplot import Colorbar`),
 - you may use `Colorbar(axis, cmap, lower, upper, ...)` for manual colorbar. Additional kwargs may also be used by `imshow()` return,
 - note that only one colorbar/colormap per axis is allowed (also if you use `scatter` with colormap/colorbar).
+- `plt.colorbar()` or `fig.colorbar()` are also supported (with limited kwargs), and create instance of `Colorbar()`. 
 
 #### TikzConfig
 For plot configurations (default sizes, paddings, etc.), use `from tikzplot import TikzConfig`:

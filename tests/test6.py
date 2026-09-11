@@ -14,7 +14,8 @@ Z = (Z1 - Z2) * 2
 fig, ax = plt.subplots()
 im = ax.imshow(Z, interpolation='bilinear', cmap="Pastel1", origin='lower', extent=[1, 3, 1, 3], vmax=abs(Z).max(), vmin=-abs(Z).max())
 ax.grid()
-cbar = Colorbar(im, label="$x$", rel_len=0.9, horizontal=True, tick_labels=[])
+fig.colorbar(im, cax=ax, label="$x$", shrink=0.9, location='bottom', ticks=[-1,0,1])
+#cbar = Colorbar(im, label="$x$", rel_len=0.9, horizontal=True, tick_labels=[])
 #plt.show()
 
 plt.savefig("figure.tex")

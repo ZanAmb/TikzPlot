@@ -14,7 +14,9 @@ class _Colorbar:
         self._tick_labels = None
         self._label = None
         self._width = 0.3
+        self._pad = None
         self._horizontal = False
+        self._location = None
         self._rel_len = 1
         self._divs = 0          # 0 for contiuous
 
@@ -39,13 +41,33 @@ class _Colorbar:
             self._width = kwargs["width"]
         if "horizontal" in kwargs and kwargs["horizontal"]:
             self._horizontal = True
+        if "location" in kwargs:
+            if kwargs["location"] in ["top", "bottom", "left", "right"]:
+                self._location = kwargs["location"]
+                if kwargs["location"] in ["top", "bottom"]:
+                    self._horizontal = True
+                else:
+                    self._horizontal = False
+                if "orientation" in kwargs:
+                    if (kwargs["orientation"] == "horizontal" and kwargs["location"] in ["top", "bottom"]) or (kwargs["orientation"] == "vertical" and kwargs["location"] in ["left", "right"]):
+                        raise ValueError("Colorbar orientation and location are incompatible")
+            elif kwargs["location"] is not None:
+                raise ValueError("location must be one of 'top', 'bottom', 'left', or 'right'")
+        else:
+            if self._horizontal:
+                self._location = "bottom"
+            else:
+                self._location = "right"
         if "rel_len" in kwargs:
             self._rel_len = kwargs["rel_len"]
+        if "pad" in kwargs:
+            self._pad = kwargs["pad"]
         if "divisions" in kwargs:
             self._divs = kwargs["divisions"]
         if self._axis:
             self._axis._show_colorbar(str(self))
-        
+        if self._pad is None:
+            self._pad = 0.05 if self._horizontal else 0.15        
         if self._cmap is None:
             self._cmap = "viridis"
 
@@ -202,16 +224,38 @@ class _Colorbar:
         else: _st_settings = {}
         if TikzConfig.USE_DECIMAL_COMMA:
             lines.append("/pgf/number format/use comma,")
+        if self._location == "right":
+            lines.append(f"at={{(p{self._axis._get_index()}.east)}},")
+            lines.append(f"anchor=west,")
+            if self._pad is None:
+                lines.append(f"xshift={TikzConfig.CBAR_X_OFFSET * (not tridim) + TikzConfig.CBAR3_H_OFFSET * tridim}cm,")
+            else:
+                lines.append(f"xshift={self._pad}*\\pgfkeysvalueof{{/pgfplots/parent axis width}},")
+        elif self._location == "left":
+            lines.append(f"at={{(p{self._axis._get_index()}.west)}},")
+            lines.append(f"anchor=east,")
+            if self._pad is None:
+                lines.append(f"xshift=-{self._width + TikzConfig.CBAR_X_OFFSET * (not tridim) + TikzConfig.CBAR3_H_OFFSET * tridim}cm,")
+            else:
+                lines.append(f"xshift=-{self._pad}*\\pgfkeysvalueof{{/pgfplots/parent axis width}},")
+        elif self._location == "top":
+            lines.append(f"at={{(p{self._axis._get_index()}.north)}},")
+            lines.append(f"anchor=south,")
+            if self._pad is None:
+                lines.append(f"yshift={self._width + TikzConfig.CBAR_Y_OFFSET * (not tridim) + TikzConfig.CBAR3_Z_OFFSET * tridim}cm,")
+            else:
+                lines.append(f"yshift={self._pad}*\\pgfkeysvalueof{{/pgfplots/parent axis height}},")
+        elif self._location == "bottom":
+            lines.append(f"at={{(p{self._axis._get_index()}.south)}},")
+            lines.append(f"anchor=north,")
+            if self._pad is None:
+                lines.append(f"yshift=-{TikzConfig.CBAR_Y_OFFSET * (not tridim) + TikzConfig.CBAR3_Z_OFFSET * tridim}cm,")
+            else:
+                lines.append(f"yshift=-{self._pad}*\\pgfkeysvalueof{{/pgfplots/parent axis height}},")
         if self._horizontal:
             lines.append(f"height={self._width}cm,")
-            lines.append(f"anchor=north,")
-            lines.append(f"at={{(p{self._axis._get_index()}.south)}},")
-            lines.append(f"yshift=-{TikzConfig.CBAR_Y_OFFSET * (not tridim) + TikzConfig.CBAR3_Z_OFFSET * tridim}cm,")
         else:
             lines.append(f"width={self._width}cm,")
-            lines.append(f"anchor=west,")
-            lines.append(f"at={{(p{self._axis._get_index()}.east)}},")
-            lines.append(f"xshift={TikzConfig.CBAR_X_OFFSET * (not tridim) + + TikzConfig.CBAR3_H_OFFSET * tridim}cm,")
         if self._rel_len:
             lines.append(f"{'width' if self._horizontal else 'height'}={self._rel_len}*\\pgfkeysvalueof{{/pgfplots/parent axis {'width' if self._horizontal else 'height'}}},")
         if self._label:
@@ -220,18 +264,30 @@ class _Colorbar:
             _add_color = ""
             if _st_settings and "text" in _st_settings:
                 _add_color = f", text={_st_settings['text']}"
-            if self._horizontal:
+            if self._location == "bottom":
                 lines.append(f"title style={{at={{(0.5, -{offset})}}, anchor=base{_add_color}}}, ")
-            else:
+            elif self._location == "top":
+                lines.append(f"title style={{at={{(0.5, {offset})}}, anchor=base{_add_color}}}, ")
+            elif self._location == "right":
                 lines.append(f"title style={{at={{({offset},0.5)}}, anchor=base, yshift=-7pt, rotate=-90{_add_color}}},")
+            elif self._location == "left":
+                lines.append(f"title style={{at={{(-{offset},0.5)}}, anchor=base, yshift=7pt, rotate=-90{_add_color}}},")
         if self._ticks is not None:
-            lines.append(f"{'x' if self._horizontal else 'y'}tick={{{','.join(str(a) for a in self._ticks)}}},")
+            if self._ticks == []:
+                lines.append(f"{'x' if self._horizontal else 'y'}tick=\\empty,")
+            else:
+                lines.append(f"{'x' if self._horizontal else 'y'}tick={{{','.join(str(a) for a in self._ticks)}}},")
             if self._tick_labels and len(self._tick_labels) == len(self._ticks):
                 lines.append(f"{'x' if self._horizontal else 'y'}ticklabels={{{','.join(str(a) for a in self._tick_labels)}}},")
         if self._tick_labels == []:
             lines.append(f"{'x' if self._horizontal else 'y'}ticklabels=\\empty,")
             if self._divs > 0:
                 lines.append(f"{'x' if self._horizontal else 'y'}tick =\\empty,")
+        else:
+            if self._location == "top":
+                lines.append("xticklabel pos=top,")
+            if self._location == "left":
+                lines.append("yticklabel pos=left,")
         lines.append(r"},")
         if not _np.isnan(self._lower):
             lines.append(f"point meta min={{{self._lower}}},")

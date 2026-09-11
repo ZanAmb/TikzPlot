@@ -1622,3 +1622,35 @@ def sca(ax: Axes | Axes3) -> None:
         The axis to set as current.
     """
     ...
+
+def colorbar(mappable: Any, *, cax: Optional[Axes | Axes3] = None, location: Literal["right", "left", "top", "bottom"] | None = None, orientation: Literal["horizontal", "vertical"] | None = None, shrink: float = 1.0, pad: float |None= None, ticks: Sequence[float] | None = None, label: str | None = None) -> Colorbar:
+    """
+    Add a colorbar to the figure.
+
+    Parameters
+    ----------
+    mappable : Any
+        The object to which the colorbar applies (e.g. imshow).
+
+    cax : Axes or Axes3, optional
+        The axes in which to draw the colorbar. If None, colorbar will not be shown.
+
+    location : str, optional
+        Location of the colorbar. Options are "right", "left", "top", "bottom".
+
+    orientation : str, optional
+        Orientation of the colorbar. Options are "horizontal" or "vertical".
+
+    shrink : float, optional
+        Fraction of width/height of axes to use for the colorbar.
+
+    pad : float, optional
+        Padding between the colorbar and the parent axes as fraction of axes size. If None, default padding from TikzConfig is used.
+
+    ticks : sequence of float, optional
+        Positions of ticks on the colorbar.
+
+    label : str, optional
+        Label for the colorbar.
+    """
+    ...

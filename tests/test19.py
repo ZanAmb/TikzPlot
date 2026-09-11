@@ -9,6 +9,7 @@ fig, ax = plt.subplots(2,2)
 np.random.seed(1)
 x = 4 + np.random.normal(0, 1.5, 200)
 ax[0,0].ecdf(x)
+ax[0,0].set_xlim(0,6)
 
 x = np.random.randn(5000)
 y = 1.2 * x + np.random.randn(5000) / 3

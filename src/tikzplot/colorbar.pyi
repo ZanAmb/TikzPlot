@@ -1,4 +1,4 @@
-from typing import Any, Iterable, Optional, Sequence, Tuple
+from typing import Any, Iterable, Optional, Sequence, Tuple, Literal
 import numpy.typing as npt
 from .axes import Axes
 from .axes3d import Axes3
@@ -34,6 +34,8 @@ class Colorbar:
         label: Optional[str] = None,
         width: Optional[float] = 0.3,
         horizontal: Optional[bool] = None,
+        location: Literal["right", "left", "top", "bottom"] | None = None,
+        pad: Optional[float] = None,
         rel_len: Optional[float] = 1,
         divisions: Optional[int] = 0
     ) -> None:
@@ -82,8 +84,16 @@ class Colorbar:
 
         horizontal : bool, default = False
             If True, renders a horizontal colorbar.
-            Otherwise, a vertical colorbar is used.
+            Otherwise, a vertical colorbar is used or as infered from location (if set).
+        
+        location : {"right", "left", "top", "bottom"}, optional
+            Location of the colorbar relative to the parent axis.
+            "top" and "bottom" imply a horizontal colorbar, while "left" and "right" imply a vertical colorbar. If the orientation disagrees, error is raised.
 
+        pad : float, optional
+            Padding between the colorbar and the parent axis, in units of parent axis width (for horizontal colorbars) or height (for vertical colorbars).
+            If None, a default padding is used (0.05 for horizontal, 0.15 for vertical).
+            
         rel_len : float, default = 1
             Relative length of the colorbar with respect to the parent axis.
 

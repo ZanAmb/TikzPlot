@@ -373,3 +373,9 @@ def tight_layout(*args, **kwargs):
 def sca(ax):
     global _current_axes
     _current_axes = ax
+
+def colorbar(*args, **kwargs):
+    global _current_figure
+    if _current_figure is None:
+        _current_figure = Figure(style)
+    return _current_figure.colorbar(*args, **kwargs)
