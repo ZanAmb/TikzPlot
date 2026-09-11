@@ -1,6 +1,6 @@
 # plots.pyi
 
-from typing import Any, Optional, Tuple, Union, Sequence, Literal, overload, Protocol
+from typing import Any, Optional, Tuple, Union, Sequence, Literal, overload, Protocol, Callable
 import numpy as np
 
 from tikzplot.styles import Styles
@@ -1118,6 +1118,267 @@ def ecdf(x: ArrayLike, weights: Optional[ArrayLike] = None, *, complementary: bo
         Legend entry for the ECDF plot.
     """
     ...
+
+def magnitude_spectrum(self, x: ArrayLike, *, Fs: float = 2.0, Fc: float = 0.0, window: Optional[Union[str, np.ndarray]] = None, pad_to: Optional[int] = None, sides: Literal["default", "onesided", "twosided"] = "default", scale: Literal["default", "linear", "dB"] = "default", fmt: Optional[str] = ..., alpha: float = 1.0, color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ..., linestyle: Optional[LineStyle] = ..., ls: Optional[LineStyle] = ..., linewidth: Optional[float]= ..., lw: Optional[float] = ..., marker: Optional[MarkerStyle] = ..., markersize: Optional[float] = ..., ms: Optional[float] = ...,  label:Optional[str]=...) -> tuple[Sequence[float], Sequence[float], Graph]:
+    """
+    Draw the magnitude spectrum of a signal to the selected axis.
+
+    Parameters
+    ----------
+    x: ArrayLike
+        Input signal for which the magnitude spectrum is computed.
+
+    Fs: float, optional
+        Sampling frequency of the input signal. Default is 2.0.
+
+    Fc: float, optional
+        Center frequency for the spectrum. Default is 0.0.
+
+    window: str or ndarray, optional
+        Window function to apply to the signal before computing the spectrum. If None, no windowing is applied.
+
+    pad_to: int, optional
+        Length to which the signal is zero-padded before computing the FFT. If None, no padding is applied.
+
+    sides: {"default", "onesided", "twosided"}, optional
+        Specifies whether to return a one-sided or two-sided spectrum. Default is "default".
+
+    scale: {"default", "linear", "dB"}, optional
+        Scale of the magnitude spectrum. Default is "default".
+
+    fmt: str, optional
+        Style format string for the plot.
+
+    alpha: float, optional
+        Opacity of the plot.
+
+    color or c: all matplotlib color formats (without X11/xkcd), optional
+        Color of the line and markers.
+
+    linestyle or ls: str, optional
+        Line style for the magnitude spectrum plot.
+
+    linewidth or lw: float, optional
+        Line width in points for the magnitude spectrum plot.
+
+    marker: str, optional
+        Marker style for the data points in the magnitude spectrum plot.
+
+    markersize or ms: float, optional
+        Size of the markers in points.
+
+    label: str, optional
+        Legend entry for the magnitude spectrum plot.
+    """
+    ...
+def phase_spectrum(self, x: ArrayLike, *, Fs: float = 2.0, Fc: float = 0.0, window: Optional[Union[str, np.ndarray]] = None, pad_to: Optional[int] = None, sides: Literal["default", "onesided", "twosided"] = "default", fmt: Optional[str] = ..., alpha: float = 1.0, color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ..., linestyle: Optional[LineStyle] = ..., ls: Optional[LineStyle] = ..., linewidth: Optional[float]= ..., lw: Optional[float] = ..., marker: Optional[MarkerStyle] = ..., markersize: Optional[float] = ..., ms: Optional[float] = ...,  label:Optional[str]=...) -> tuple[Sequence[float], Sequence[float], Graph]:
+    """
+    Draw the phase spectrum of a signal to the selected axis.
+
+    Parameters
+    ----------
+    x: ArrayLike
+        Input signal for which the magnitude spectrum is computed.
+
+    Fs: float, optional
+        Sampling frequency of the input signal. Default is 2.0.
+
+    Fc: float, optional
+        Center frequency for the spectrum. Default is 0.0.
+
+    window: str or ndarray, optional
+        Window function to apply to the signal before computing the spectrum. If None, no windowing is applied.
+
+    pad_to: int, optional
+        Length to which the signal is zero-padded before computing the FFT. If None, no padding is applied.
+
+    sides: {"default", "onesided", "twosided"}, optional
+        Specifies whether to return a one-sided or two-sided spectrum. Default is "default".
+
+    fmt: str, optional
+        Style format string for the plot.
+
+    alpha: float, optional
+        Opacity of the plot.
+
+    color or c: all matplotlib color formats (without X11/xkcd), optional
+        Color of the line and markers.
+
+    linestyle or ls: str, optional
+        Line style for the magnitude spectrum plot.
+
+    linewidth or lw: float, optional
+        Line width in points for the magnitude spectrum plot.
+
+    marker: str, optional
+        Marker style for the data points in the magnitude spectrum plot.
+
+    markersize or ms: float, optional
+        Size of the markers in points.
+
+    label: str, optional
+        Legend entry for the magnitude spectrum plot.
+    """
+    ...
+def angle_spectrum(self, x: ArrayLike, *, Fs: float = 2.0, Fc: float = 0.0, window: Optional[Union[str, np.ndarray]] = None, pad_to: Optional[int] = None, sides: Literal["default", "onesided", "twosided"] = "default", fmt: Optional[str] = ..., alpha: float = 1.0, color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ..., linestyle: Optional[LineStyle] = ..., ls: Optional[LineStyle] = ..., linewidth: Optional[float]= ..., lw: Optional[float] = ..., marker: Optional[MarkerStyle] = ..., markersize: Optional[float] = ..., ms: Optional[float] = ...,  label:Optional[str]=...) -> tuple[Sequence[float], Sequence[float], Graph]:
+    """
+    Draw the angle spectrum of a signal to the selected axis.
+
+    Parameters
+    ----------
+    x: ArrayLike
+        Input signal for which the magnitude spectrum is computed.
+
+    Fs: float, optional
+        Sampling frequency of the input signal. Default is 2.0.
+
+    Fc: float, optional
+        Center frequency for the spectrum. Default is 0.0.
+
+    window: str or ndarray, optional
+        Window function to apply to the signal before computing the spectrum. If None, no windowing is applied.
+
+    pad_to: int, optional
+        Length to which the signal is zero-padded before computing the FFT. If None, no padding is applied.
+
+    sides: {"default", "onesided", "twosided"}, optional
+        Specifies whether to return a one-sided or two-sided spectrum. Default is "default".
+
+    fmt: str, optional
+        Style format string for the plot.
+
+    alpha: float, optional
+        Opacity of the plot.
+
+    color or c: all matplotlib color formats (without X11/xkcd), optional
+        Color of the line and markers.
+
+    linestyle or ls: str, optional
+        Line style for the magnitude spectrum plot.
+
+    linewidth or lw: float, optional
+        Line width in points for the magnitude spectrum plot.
+
+    marker: str, optional
+        Marker style for the data points in the magnitude spectrum plot.
+
+    markersize or ms: float, optional
+        Size of the markers in points.
+
+    label: str, optional
+        Legend entry for the magnitude spectrum plot.
+    """
+    ...
+def specgram(self, x: ArrayLike, *, NFFT: int = 256, Fs: float = 2.0, Fc: float = 0.0, detrend: Optional[Union[str, Callable]] = None, window: Optional[Union[str, np.ndarray]] = None, noverlap: int = 0, pad_to: Optional[int] = None, sides: Literal["default", "onesided", "twosided"] = "default", scale_by_freq: bool = True, mode: Literal["psd", "spectrum", "magnitude", "phase", "angle"] = "psd", scale: Literal["default", "linear", "dB"] = "default", cmap: str = "viridis", **kwargs) -> tuple[ArrayLike, ArrayLike, ArrayLike, Graph]:
+    """
+    Draw a spectrogram to the selected axis.
+
+    Parameters
+    ----------
+    x: ArrayLike
+        Input signal for which the spectrogram is computed.
+
+    NFFT: int, optional
+        The number of data points used in each block for the FFT. Default is 256.
+
+    Fs: float, optional
+        Sampling frequency of the input signal. Default is 2.0.
+
+    Fc: float, optional
+        Center frequency for the spectrum. Default is 0.0.
+
+    detrend: str or callable, optional
+        Specifies how to detrend each segment. If None, no detrending is applied.
+
+    window: str or ndarray, optional
+        Window function to apply to each segment before computing the FFT. If None, no windowing is applied.
+
+    noverlap: int, optional
+        The number of points of overlap between segments. Default is 0.
+
+    pad_to: int, optional
+        Length to which each segment is zero-padded before computing the FFT. If None, no padding is applied.
+
+    sides: {"default", "onesided", "twosided"}, optional
+        Specifies whether to return a one-sided or two-sided spectrum. Default is "default".
+
+    scale_by_freq: bool, optional
+        If True (default), scale the power spectral density by the frequency bin width.
+
+    mode: {"psd", "spectrum", "magnitude", "phase", "angle"}, optional
+        Specifies what type of spectrum to compute. Default is "psd".
+
+    scale: {"default", "linear", "dB"}, optional
+        Scale of the spectrogram. Default is "default".
+
+    cmap: str, optional
+        Colormap for the spectrogram. Default is "viridis".
+
+    kwargs: additional keyword arguments for imshow.
+    """
+    ...
+def psd(self, x: ArrayLike, *, NFFT: int = 256, Fs: float = 2.0, Fc: float = 0.0, detrend: Optional[Union[str, Callable]] = None, window: Optional[Union[str, np.ndarray]] = None, noverlap: int = 0, pad_to: Optional[int] = None, sides: Literal["default", "onesided", "twosided"] = "default", scale_by_freq: bool = True, fmt: Optional[str] = ..., alpha: float = 1.0, color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ..., linestyle: Optional[LineStyle] = ..., ls: Optional[LineStyle] = ..., linewidth: Optional[float]= ..., lw: Optional[float] = ..., marker: Optional[MarkerStyle] = ..., markersize: Optional[float] = ..., ms: Optional[float] = ...,  label:Optional[str]=...) -> tuple[np.ndarray, np.ndarray, Graph]:
+    """
+    Draw a power spectral density (PSD) plot to the selected axis.
+
+    Parameters
+    ----------
+    x: ArrayLike
+        Input signal for which the PSD is computed.
+
+    NFFT: int, optional
+        The number of data points used in each block for the FFT. Default is 256.
+
+    Fs: float, optional
+        Sampling frequency of the input signal. Default is 2.0.
+
+    Fc: float, optional
+        Center frequency for the spectrum. Default is 0.0.
+
+    detrend: str or callable, optional
+        Specifies how to detrend each segment. If None, no detrending is applied.
+
+    window: str or ndarray, optional
+        Window function to apply to each segment before computing the FFT. If None, no windowing is applied.
+
+    noverlap: int, optional
+        The number of points of overlap between segments. Default is 0.
+
+    pad_to: int, optional
+        Length to which each segment is zero-padded before computing the FFT. If None, no padding is applied.
+
+    sides: {"default", "onesided", "twosided"}, optional
+        Specifies whether to return a one-sided or two-sided spectrum. Default is "default".
+
+    scale_by_freq: bool, optional
+        If True (default), scale the power spectral density by the frequency bin width.
+
+    fmt: str, optional
+        Style format string for the plot.
+
+    alpha: float, optional
+        Opacity of the plot.
+
+    color or c: all matplotlib color formats (without X11/xkcd), optional
+        Color of the line and markers.
+
+    linestyle or ls: str, optional
+        Line style for the PSD plot.
+
+    linewidth or lw: float, optional
+        Line width in points for the PSD plot.
+
+    marker: str, optional
+        Marker style for the data points in the PSD plot.
+
+    markersize or ms: float, optional
+        Size of the markers in points.
+
+    label: str, optional
+        Legend entry for the PSD plot.
+    """
+    ...
+
 def pie(x: ArrayLike, *, explode: Optional[ArrayLike] = None, labels: Optional[Sequence[str]] = None, colors: Optional[Sequence[ColorLike]] = None, autopct: Optional[str] = None, pctdistance: float = 0.6, labeldistance: float = 1.1, radius: float = 1.0, startangle: float = 0.0, counterclock: bool = True, wedgeprops: Optional[dict] = None, rotate_labels: bool = False, normalize: bool = True) -> Pie:
     """
     Draw a pie chart to the selected axis.
@@ -1623,7 +1884,7 @@ def sca(ax: Axes | Axes3) -> None:
     """
     ...
 
-def colorbar(mappable: Any, *, cax: Optional[Axes | Axes3] = None, location: Literal["right", "left", "top", "bottom"] | None = None, orientation: Literal["horizontal", "vertical"] | None = None, shrink: float = 1.0, pad: float |None= None, ticks: Sequence[float] | None = None, label: str | None = None) -> Colorbar:
+def colorbar(mappable: Any, *, ax: Optional[Axes | Axes3] = None, location: Literal["right", "left", "top", "bottom"] | None = None, orientation: Literal["horizontal", "vertical"] | None = None, shrink: float = 1.0, pad: float |None= None, ticks: Sequence[float] | None = None, label: str | None = None) -> Colorbar:
     """
     Add a colorbar to the figure.
 
@@ -1632,7 +1893,7 @@ def colorbar(mappable: Any, *, cax: Optional[Axes | Axes3] = None, location: Lit
     mappable : Any
         The object to which the colorbar applies (e.g. imshow).
 
-    cax : Axes or Axes3, optional
+    ax : Axes or Axes3, optional
         The axes in which to draw the colorbar. If None, colorbar will not be shown.
 
     location : str, optional

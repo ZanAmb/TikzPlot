@@ -268,7 +268,7 @@ class Figure:
             del self._axes[key]
             del ax
 
-    def colorbar(self, mappable, cax=None, location=None, orientation=None, shrink=1, pad=None, ticks=None, label=None):
+    def colorbar(self, mappable, ax=None, location=None, orientation=None, shrink=1, pad=None, ticks=None, label=None):
         horizontal = False
         if orientation is not None:
             if orientation == "horizontal":
@@ -282,7 +282,7 @@ class Figure:
                 location = "bottom"
             else:
                 location = "right"
-        cbar = Colorbar(mappable, axis=cax, location=location, horizontal=horizontal, rel_len=shrink, pad=pad, ticks=ticks, label=label)
+        cbar = Colorbar(mappable, axis=ax, location=location, horizontal=horizontal, rel_len=shrink, pad=pad, ticks=ticks, label=label)
         return cbar
     
     def _compute_group_spacing(self, cpy=None):

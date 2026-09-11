@@ -239,6 +239,41 @@ def ecdf(*args, **kwargs):
         raise ValueError("ecdf is not supported for 3D axes.")
     return _current_axes.ecdf(*args, **kwargs)
 
+def magnitude_spectrum(*args, **kwargs):
+    _ensure_axes()
+    assert _current_axes
+    if isinstance(_current_axes, Axes3):
+        raise ValueError("magnitude_spectrum is not supported for 3D axes.")
+    return _current_axes.magnitude_spectrum(*args, **kwargs)
+
+def angle_spectrum(*args, **kwargs):
+    _ensure_axes()
+    assert _current_axes
+    if isinstance(_current_axes, Axes3):
+        raise ValueError("angle_spectrum is not supported for 3D axes.")
+    return _current_axes.angle_spectrum(*args, **kwargs)
+
+def phase_spectrum(*args, **kwargs):
+    _ensure_axes()
+    assert _current_axes
+    if isinstance(_current_axes, Axes3):
+        raise ValueError("phase_spectrum is not supported for 3D axes.")
+    return _current_axes.phase_spectrum(*args, **kwargs)
+
+def specgram(*args, **kwargs):
+    _ensure_axes()
+    assert _current_axes
+    if isinstance(_current_axes, Axes3):
+        raise ValueError("specgram is not supported for 3D axes.")
+    return _current_axes.specgram(*args, **kwargs)
+
+def psd(*args, **kwargs):
+    _ensure_axes()
+    assert _current_axes
+    if isinstance(_current_axes, Axes3):
+        raise ValueError("psd is not supported for 3D axes.")
+    return _current_axes.psd(*args, **kwargs)
+
 def pie(*args, **kwargs):
     _ensure_axes()
     assert _current_axes

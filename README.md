@@ -65,6 +65,11 @@ Some basic plot commands are already implemented with commonly used arguments:
 - `pie()`,
 - `pie_label()` (basic only for now),
 - `ecdf()` (empirical cumulative distribution function),
+- `magnitue_spectrum()`,
+- `phase_spectrum()`,
+- `angle_spectrum()`,
+- `specgram()`,
+- `psd()` (power spectral density),
 - `magnify()` (used to magnify part of a plot, but Tikz cannot handle `fill_between` if this one is used, which is a long known issue),
 - `axvline()/axhline()`,
 - `axvspan()/axhspan()` (background span).

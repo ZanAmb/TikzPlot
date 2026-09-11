@@ -934,6 +934,123 @@ class BaseAxes:
             cum_weights = 1 - cum_weights
         return self.plot(x, cum_weights, **kwargs)
 
+    def _fft_core(self, x_win, n, sides, Fs) -> tuple[_np.ndarray, _np.ndarray]:
+        if sides == "onesided":
+            return _np.fft.rfft(x_win, n=n), _np.fft.rfftfreq(n, d=1.0 / Fs)
+        X, freqs = _np.fft.fft(x_win, n=n), _np.fft.fftfreq(n, d=1.0 / Fs)
+        return (_np.fft.fftshift(X), _np.fft.fftshift(freqs)) if sides == "twosided" else (X, freqs)
+
+    def _get_window(self, window, NFFT) -> _np.ndarray:
+        if window is None:
+            return _np.hanning(NFFT)
+        win = _np.asarray(window(_np.ones(NFFT)) if callable(window) else window)
+        if len(win) != NFFT:
+            raise ValueError(f"Window length ({len(win)}) must equal NFFT ({NFFT})")
+        return win
+
+    def _apply_detrend(self, s, detrend) -> _np.ndarray:
+        if detrend in (None, "none"):
+            return s
+        if detrend == "mean":
+            return s - _np.mean(s)
+        if detrend == "linear":
+            t = _np.arange(len(s), dtype=_np.float64)
+            return s - _np.polyval(_np.polyfit(t, s, 1), t)
+        if callable(detrend):
+            d = detrend(s)
+            assert isinstance(d, _np.ndarray) and d.shape == s.shape, "Detrending function must return an array of the same shape as input."
+            return d
+        raise ValueError(f"Unknown detrend option: {detrend}")
+
+    def _spect_helper(self, x, Fs=2.0, Fc=0.0, window=None, pad_to=None, sides="default"):
+        x = _np.asarray(x)
+        Fs, Fc, n_fft = float(Fs or 2.0), float(Fc or 0.0), pad_to or len(x)
+        sides = ("onesided" if _np.isrealobj(x) else "twosided") if sides == "default" else sides
+        win = self._get_window(window, len(x))
+        X, freqs = self._fft_core(x * win, n_fft, sides, Fs)
+        return X, freqs + Fc, win, sides, n_fft
+
+    def _plot_spectrum(self, name, x, mode, ylabel, Fs=2.0, Fc=0.0, window=None, pad_to=None, sides="default", scale=None, **kwargs):
+        kws = {"alpha", "color", "c", "linestyle", "ls", "linewidth", "lw", "marker", "markersize", "ms", "label"}
+        kwargs = self._check_kwargs(name, kws, **kwargs)
+        X, freqs, win, sides, n_fft = self._spect_helper(x, Fs=Fs, Fc=Fc, window=window, pad_to=pad_to, sides=sides)
+        if mode == "mag":
+            y = _np.abs(X) / _np.abs(win).sum()
+            if sides == "onesided":
+                y[1 : None if n_fft % 2 else -1] *= 2.0
+            if scale == "dB":
+                y, ylabel = 20 * _np.log10(y), "Magnitude (dB)"
+        elif mode == "phase":
+            y = _np.unwrap(_np.angle(X))
+        else:  # angle
+            y = _np.angle(X)
+        self.set_ylabel(ylabel)
+        if isinstance(self, Axes):
+            self.set_xlabel("Frequency")
+        return y, freqs, self.plot(freqs, y, **kwargs)
+
+    def magnitude_spectrum(self, x, *, Fs=2.0, Fc=0.0, window=None, pad_to=None, sides="default", scale=None, **kwargs):
+        return self._plot_spectrum("magnitude_spectrum", x, "mag", "Magnitude (energy)", Fs, Fc, window, pad_to, sides, scale, **kwargs)
+
+    def phase_spectrum(self, x, *, Fs=2.0, Fc=0.0, window=None, pad_to=None, sides="default", **kwargs):
+        return self._plot_spectrum("phase_spectrum", x, "phase", "Phase (radians)", Fs, Fc, window, pad_to, sides, **kwargs)
+
+    def angle_spectrum(self, x, *, Fs=2.0, Fc=0.0, window=None, pad_to=None, sides="default", **kwargs):
+        return self._plot_spectrum("angle_spectrum", x, "angle", "Angle (radians)", Fs, Fc, window, pad_to, sides, **kwargs)
+
+    def _ft_helper(self, x, NFFT=256, Fs=2.0, Fc=0.0, detrend=None, window=None, noverlap=0, pad_to=None, sides="default", scale_by_freq=True, mode="psd", scale="default") -> tuple[_np.ndarray, _np.ndarray, float]:
+        x = _np.asarray(x)
+        sides = ("onesided" if _np.isrealobj(x) else "twosided") if sides == "default" else sides
+        step, n_fft = NFFT - noverlap, pad_to or NFFT
+        if step <= 0 or n_fft < NFFT:
+            raise ValueError("Invalid noverlap or pad_to value")
+        win = self._get_window(window, NFFT)
+        num_segments = (len(x) - noverlap) // step
+        if num_segments == 0:
+            raise ValueError("Not enough data to compute spectrum")
+        mode = "psd" if mode in (None, "default") else mode.lower()
+        cols = []
+        for i in range(num_segments):
+            seg = self._apply_detrend(x[i * step : i * step + NFFT], detrend)
+            X, _ = self._fft_core(seg * win, n_fft, sides, Fs)
+            if mode in ("psd", "spectrum", "magnitude"):
+                is_p = mode in ("psd", "spectrum")
+                sf = ((Fs if mode == "psd" and scale_by_freq else 1.0) * (_np.abs(win) ** 2).sum()) if is_p else _np.abs(win).sum()
+                val = ((_np.abs(X) ** 2) if is_p else _np.abs(X)) / sf
+                if sides == "onesided":
+                    val[1 : None if n_fft % 2 else -1] *= 2.0
+            elif mode in ("angle", "phase"):
+                val = _np.angle(X)
+            else:
+                raise ValueError(f"Unknown mode: {mode}")
+            cols.append(val)
+        Pxx_matrix = _np.column_stack(cols)
+        if mode == "phase":
+            Pxx_matrix = _np.unwrap(Pxx_matrix, axis=0)
+        scale = ("dB" if mode in ("psd", "spectrum") else "linear") if scale in (None, "default") else scale.lower()
+        if scale == "dB":
+            mult = 20.0 if mode == "magnitude" else 10.0
+            Pxx_matrix = mult * _np.log10(_np.maximum(Pxx_matrix, 1e-20))
+        _, freqs = self._fft_core(win, n_fft, sides, Fs)
+        return Pxx_matrix, freqs + Fc, step
+
+    def specgram(self, x, *, NFFT=256, Fs=2.0, Fc=0.0, detrend=None, window=None, noverlap=0, pad_to=None, sides="default", scale_by_freq=True, mode="psd", scale="default", cmap="viridis", **kwargs):
+        Pxx, freqs, step = self._ft_helper(x, NFFT=NFFT, Fs=Fs, Fc=Fc, detrend=detrend, window=window, noverlap=noverlap, pad_to=pad_to, sides=sides, scale_by_freq=scale_by_freq, mode=mode, scale=scale)
+        t = (_np.arange(Pxx.shape[1]) * step + (NFFT / 2.0)) / Fs
+        if not isinstance(self, Axes):
+            raise Warning("specgram is only supported on primary axes.")
+        extent = [t[0], t[-1], freqs[0], freqs[-1]] if len(t) > 1 else None
+        return Pxx, freqs, t, self.imshow(Pxx, cmap=cmap, origin="lower", aspect="auto", extent=extent, **kwargs)
+
+    def psd(self, x, *, NFFT=256, Fs=2.0, Fc=0.0, detrend=None, window=None, noverlap=0, pad_to=None, sides="default", scale_by_freq=True, **kwargs):
+        kws = {"alpha", "color", "c", "linestyle", "ls", "linewidth", "lw", "marker", "markersize", "ms", "label"}
+        kwargs = self._check_kwargs("psd", kws, **kwargs)
+        Pxx, freqs, _ = self._ft_helper(x, NFFT=NFFT, Fs=Fs, Fc=Fc, detrend=detrend, window=window, noverlap=noverlap, pad_to=pad_to, sides=sides, scale_by_freq=scale_by_freq, mode="psd", scale="linear")
+        self.set_ylabel("Power Spectral Density (dB/Hz)")
+        if isinstance(self, Axes):
+            self.set_xlabel("Frequency (Hz)")
+        return Pxx, freqs, self.plot(freqs, 10 * _np.log10(_np.mean(Pxx, axis=1)), **kwargs)
+        
     def pie(self, x, *, explode=None, labels=None, colors=None, autopct=None, pctdistance=0.6, labeldistance=1.1, radius=1, startangle=0, counterclock=True, wedgeprops=None, rotate_labels=False, normalize=True):
         kws = {"width"}
         kwargs = self._check_kwargs("pie: wedgeprops", kws, **wedgeprops) if wedgeprops else {}
