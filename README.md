@@ -45,6 +45,7 @@ Some basic plot commands are already implemented with commonly used arguments:
 #### Plotting
 - `plot()`,
 - `scatter()`,
+- `quiver()`,
 - `loglog()`,
 - `semilogx()/semilogy()`,
 - `errorbar()`,

@@ -117,6 +117,13 @@ def scatter(*args, **kwargs):
     assert _current_axes
     _current_axes.scatter(*args, **kwargs)
 
+def quiver(*args, **kwargs):
+    _ensure_axes()
+    assert _current_axes
+    if isinstance(_current_axes, Axes3):
+        raise ValueError("quiver is currently not supported for 3D axes.")
+    _current_axes.quiver(*args, **kwargs)
+
 def loglog(*args, **kwargs):
     _ensure_axes()
     assert _current_axes

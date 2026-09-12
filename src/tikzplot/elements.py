@@ -302,6 +302,8 @@ class BaseGraph:
                     self._p_dict[i] = self._st_dict[st]
                 opts["point meta"] = "explicit symbolic"
                 opts["scatter/classes"] = f"{{\n" + ',\n'.join(f"{v}={{{k}}}" for k,v in self._st_dict.items()) + "\n}"
+        if "quiver" in self._settings:
+            opts["-stealth"] = None
         self._style_str = ""
         for o in opts:
             if opts[o] is None:
@@ -475,6 +477,13 @@ class Graph(BaseGraph):
             self._st_dict = {}
             self._p_dict = {}
             self._colors = None
+        if "quiver" in self._settings:
+            self._u = self._style.pop("u", None)
+            self._v = self._style.pop("v", None)
+            self._c = None
+            if "cmap" in self._style and "C" in self._style:
+                self._has_color = True
+                self._c = self._style.pop("C", None)
         if "axvline" in settings or "axhline" in settings or "axvspan" in settings or "axhspan" in settings:
             self._x, self._y=coordinates
         elif isinstance(coordinates, tuple):
@@ -544,6 +553,10 @@ class Graph(BaseGraph):
                     cols.append("label")                
             if self._sizes is not None:
                     cols.append("size")
+        elif "quiver" in self._settings:
+            cols += ["u", "v"]
+            if self._c is not None:
+                cols.append("c")
         elif self._meta is not None:
             cols.append("meta")
         return " ".join(cols)
@@ -570,6 +583,11 @@ class Graph(BaseGraph):
                         line.append(self._p_dict[i])
                 if self._sizes is not None:
                     line.append(f"{self._sizes[i]:.9f} pt")
+            elif "quiver" in self._settings:
+                line.append(self._u[i])
+                line.append(self._v[i])
+                if self._c is not None:
+                    line.append(self._c[i])
             elif self._meta is not None:
                 line.append(str(self._meta[i]))
             rows.append(" ".join(str(v) for v in line))
@@ -840,6 +858,11 @@ class Graph(BaseGraph):
                         self._colors = self._colors[mask]
                     if self._sizes is not None:
                         self._sizes = self._sizes[mask]
+                elif "quiver" in self._settings:
+                    self._u = self._u[mask]
+                    self._v = self._v[mask]
+                    if self._c is not None:
+                        self._c = self._c[mask]
 
     def _check_equal(self, x,y):
         if self._classic:
@@ -918,6 +941,11 @@ class Graph(BaseGraph):
                                 self._colors = self._colors[mask]
                             if self._sizes is not None:
                                 self._sizes = self._sizes[mask]
+                        if "quiver" in self._settings:
+                            self._u = self._u[mask]
+                            self._v = self._v[mask]
+                            if self._c is not None:
+                                self._c = self._c[mask]
 
 class Graph3(BaseGraph):
     def __init__(self, axes, coordinates, settings={}, xerr=None, yerr=None, zerr=None, path_name=None, **style):

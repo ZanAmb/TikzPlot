@@ -225,6 +225,67 @@ class BaseAxes:
         except: pass
         
         return self._plot(x, y, **kwargs, ls="", settings={"scatter": None})
+
+    def quiver(self, *args, **kwargs):
+        kws = {"pivot", "scale", "color", "c", "alpha", "cmap", "width", "linewidth", "lw"}
+        kwargs = self._check_kwargs("quiver", kws, **kwargs)
+        X = Y = C = None
+        if len(args) == 2:
+            U, V = _np.atleast_1d(*args)
+        elif len(args) == 3:
+            U, V, C = _np.atleast_1d(*args)
+        elif len(args) == 4:
+            X, Y, U, V = _np.atleast_1d(*args)
+        elif len(args) == 5:
+            X, Y, U, V, C = _np.atleast_1d(*args)
+        else:
+            raise Warning("Invalid number of arguments for quiver. Expected 2 to 5 arguments.")
+        nr, nc = (1, U.shape[0]) if U.ndim == 1 else U.shape
+        if X is not None and Y is not None:
+            X, Y = X.ravel(), Y.ravel()
+            if len(X) == nc and len(Y) == nr:
+                X, Y = (a.ravel() for a in _np.meshgrid(X, Y))
+            elif len(X) != len(Y):
+                raise Warning("X and Y must have the same length.")
+        else:
+            ind_grid = _np.meshgrid(_np.arange(nc), _np.arange(nr))
+            X, Y = (a.ravel() for a in ind_grid)
+        X, Y, U, V = (a.flatten() for a in (X, Y, U, V))
+        sc = kwargs.pop("scale", None)
+        if sc is not None:
+            U *= sc
+            V *= sc
+        pivot = kwargs.get("pivot", None)
+        if pivot is not None:
+            if pivot == "tail":
+                pass
+            elif pivot == "middle":
+                X -= U / 2
+                Y -= V / 2
+            elif pivot == "tip":
+                X -= U
+                Y -= V
+            else:
+                raise Warning(f"Invalid pivot: {pivot}. Must be one of 'tail', 'middle', or 'tip'.")
+        if C is not None:
+            cmap = kwargs.get("cmap", "viridis")
+            kwargs["cmap"] = Colorbar(cmap=cmap, lower=_np.min(C), upper=_np.max(C))
+            if self._cmap_bar and self._cmap_bar != kwargs["cmap"]:
+                raise Warning("Multiple colormaps on same axis! Only one per axis is allowed.")
+            self._cmap_bar = kwargs["cmap"]
+            kwargs["C"] = C.flatten()
+        else:
+            kwargs["color"] = kwargs.get("color", kwargs.get("c", "k"))
+        kwargs["u"] = U
+        kwargs["v"] = V
+        if "width" in kwargs:
+            kwargs["line width"] = kwargs.pop("width")
+        settings = {}
+        settings["quiver"] = dict(u=r"\thisrow{u}", v=r"\thisrow{v}")
+        if "cmap" in kwargs:
+            settings["quiver"].update({"every arrow/.append style": "mapped color"})
+            settings["point meta"] = r"\thisrow{c}"
+        return self._plot(X, Y, **kwargs, settings=settings)
                         
     def semilogy(self, x, y, *args, **kwargs):
         kws = {"fmt", "base", "alpha", "color", "c", "linestyle", "ls", "linewidth", "lw", "marker", "markersize", "ms", "label"}

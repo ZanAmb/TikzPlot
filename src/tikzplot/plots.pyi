@@ -431,6 +431,36 @@ def scatter(x: ArrayLike = ..., y: ArrayLike = ..., fmt: Optional[str] = ..., *,
     """
     ...
 
+def quiver(self, *args, pivot: Literal["tail", "middle", "tip"]="tail", scale:float=1.0, alpha: float = 1.0, color: Optional[Union[Sequence[ColorLike], ColorLike]] = ..., c: Optional[ColorLike] = ...,
+         linewidth: Optional[float]= ..., lw: Optional[float] = ..., cmap: Optional[Union[str, Colorbar]] = ..., width: Optional[float] = ...) -> Graph:
+    """
+    Draw a quiver plot to the selected axis.
+    
+    Parameters
+    ----------
+    args : ArrayLike
+        Datapoints for quiver plot, (X, Y, U, V, C) or (U, V) for grid (thus 2, 4 or 5 args).
+        
+    pivot: {"tail", "middle", "tip"}, optional
+        The part of the arrow that is at the grid point. Default is "tail".
+        
+    scale: float, optional
+        Scale factor for arrows. Default is 1.0.
+        
+    alpha: float, optional
+        Opacity
+        
+    color or c: ColorLike, optional:
+        all matplotlib color formats (without X11/xkcd)
+        
+    width or linewidth or lw: float, optional
+        Line width in pt
+        
+    cmap: str or list (R, G, B), optional
+        Colormap for quiver arrows, if color is given as float or sequence of floats. Can be a colormap name or a Colorbar object.
+    """
+    ...
+
 def semilogy(
     x: ArrayLike = ..., y: ArrayLike = ..., base: Optional[float] = 10,
     fmt: Optional[str] = ...,
