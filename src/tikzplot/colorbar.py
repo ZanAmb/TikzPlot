@@ -1,7 +1,8 @@
 import numpy as _np
 
 from tikzplot.styles import Styles
-from .elements import Graph
+from .colors import _tex_color_rgb
+from .elements import Graph, Single, Graph3
 from .config import TikzConfig
 
 class _Colorbar:
@@ -19,14 +20,24 @@ class _Colorbar:
         self._location = None
         self._rel_len = 1
         self._divs = 0          # 0 for contiuous
+        self._targets = None
 
         if im is not None:
-            self._axis, self._cmap, self._lower, self._upper = im
+            try:
+                self._axis, self._cmap, self._lower, self._upper = im
+            except:
+                if isinstance(im, (Graph, Single, Graph3)):
+                    self._axis = im._axes
+                    if self._axis._cmap_bar is not None:
+                        self = self._axis._cmap_bar
+                        self._axis = im._axes
 
-        if "axis" in kwargs:
+        if "axis" in kwargs and kwargs["axis"] is not None:
             self._axis = kwargs["axis"]
         if "cmap" in kwargs:
             self._cmap = kwargs["cmap"]
+            if isinstance(self._cmap, list):
+                self._cmap = [tuple(i / 255 for i in _tex_color_rgb(c)[0]) for c in self._cmap]
         if "lower" in kwargs:
             self._lower = kwargs["lower"]
         if "upper" in kwargs:
@@ -70,6 +81,17 @@ class _Colorbar:
             self._pad = 0.05 if self._horizontal else 0.15        
         if self._cmap is None:
             self._cmap = "viridis"
+        self._targets = kwargs.get("targets", None)
+        if self._targets is not None:
+            dif = self._upper - self._lower
+            self._targets = [(t - self._lower) / dif for t in self._targets]
+            if isinstance(self._cmap, list):
+                if len(self._targets) != len(self._cmap):
+                    raise ValueError("Number of targets must match number of colors in the colormap")
+                self._cmap = [x for _, x in sorted(zip(self._targets, self._cmap))]
+                self._cmap = [self._cmap[0]] + self._cmap + [self._cmap[-1]]
+                self._targets = [0] + self._targets + [1]
+            self._targets = sorted(self._targets)
 
     _discrete = {'Pastel1':9, 'Pastel2':8, 'Paired':12, 'Accent':8, 'Dark2':8, 'Set1': 9, 'Set2':8, 'Set3':12, 'tab10':10, 'tab20':20, 'tab20b':20, 'tab20c':20}
     _dictionary = {
@@ -166,6 +188,11 @@ class _Colorbar:
 }
     
     def _get_samples(self, colors, n):
+        if isinstance(self._cmap, list) and self._targets is not None:
+            if len(colors) != len(self._targets):
+                raise Exception(f"% Error: length of colors and targets must be the same")
+            return self._cmap
+
         if n == len(colors):
             return colors
         
@@ -200,8 +227,13 @@ class _Colorbar:
         elif self._divs > 0:
             colors = self._get_samples(colors, self._divs)
         if self._divs == 0:
-            for r, g, b in colors:
-                output.append(f"    rgb=({r:.4f}, {g:.4f}, {b:.4f})")
+            if self._targets is not None:
+                for i in range(len(self._targets)):
+                    r,g,b = colors[i]
+                    output.append(f"    rgb({self._targets[i]})=({r:.4f}, {g:.4f}, {b:.4f})")
+            else:
+                for r, g, b in colors:
+                    output.append(f"    rgb=({r:.4f}, {g:.4f}, {b:.4f})")
         else:
             lims = _np.linspace(0,1, self._divs+1, endpoint=True)
             lims[-1] += 0.001
@@ -315,6 +347,12 @@ class _Colorbar:
         n_colors = len(colors)
         if n_colors == 1:
             return colors[0]
+        elif self._targets is not None:
+            idx = _np.searchsorted(self._targets, value, side='left')
+            weight = (self._targets[idx] - value) / (self._targets[idx] - self._targets[idx - 1])
+            c_low = _np.array(colors[idx - 1])
+            c_high = _np.array(colors[idx])
+            rgb = (1 - weight) * c_low + weight * c_high
         elif self._divs == 0:
             float_idx = norm_val * (n_colors - 1)
             idx_low = int(_np.floor(float_idx))

@@ -104,84 +104,89 @@ def subplot_mosaic(mosaic, *, sharex=False, sharey=False, width_ratios=None, hei
     axs = _current_figure.subplot_mosaic(mosaic, sharex=sharex, sharey=sharey, width_ratios=width_ratios, height_ratios=height_ratios, empty_sentinel=empty_sentinel, **kwargs)
 
     return _current_figure, axs
-    
-    
 
 def plot(*args, **kwargs):
     _ensure_axes()
     assert _current_axes
-    _current_axes.plot(*args, **kwargs)
+    return _current_axes.plot(*args, **kwargs)
 
 def scatter(*args, **kwargs):
     _ensure_axes()
     assert _current_axes
-    _current_axes.scatter(*args, **kwargs)
+    return _current_axes.scatter(*args, **kwargs)
 
 def quiver(*args, **kwargs):
     _ensure_axes()
     assert _current_axes
     if isinstance(_current_axes, Axes3):
         raise ValueError("quiver is currently not supported for 3D axes.")
-    _current_axes.quiver(*args, **kwargs)
+    return _current_axes.quiver(*args, **kwargs)
+
+def contour(*args, **kwargs):
+    _ensure_axes()
+    assert _current_axes
+    if isinstance(_current_axes, Axes3):
+        raise ValueError("contour is not supported for 3D axes.")
+    return _current_axes.contour(*args, **kwargs)
 
 def loglog(*args, **kwargs):
     _ensure_axes()
     assert _current_axes
     if isinstance(_current_axes, Axes3):
         raise ValueError("loglog is not supported for 3D axes.")
-    _current_axes.loglog(*args, **kwargs)
+    return _current_axes.loglog(*args, **kwargs)
 
 def semilogx(*args, **kwargs):
     _ensure_axes()
     assert _current_axes
     if isinstance(_current_axes, Axes3):
         raise ValueError("semilogx is not supported for 3D axes.")
-    _current_axes.semilogx(*args, **kwargs)
+    return _current_axes.semilogx(*args, **kwargs)
 
 def semilogy(*args, **kwargs):
     _ensure_axes()
     assert _current_axes
     if isinstance(_current_axes, Axes3):
         raise ValueError("semilogy is not supported for 3D axes.")
-    _current_axes.semilogy(*args, **kwargs)
+    return _current_axes.semilogy(*args, **kwargs)
 
 def errorbar(*args, **kwargs):
     _ensure_axes()
     assert _current_axes
     if isinstance(_current_axes, Axes3):
         raise ValueError("errorbar is not supported for 3D axes.")
-    _current_axes.errorbar(*args, **kwargs)
+    return _current_axes.errorbar(*args, **kwargs)
 
 def stem(*args, **kwargs):
     _ensure_axes()
     assert _current_axes
     if isinstance(_current_axes, Axes3):
         raise ValueError("stem is not supported for 3D axes.")
-    _current_axes.stem(*args, **kwargs)
+    return _current_axes.stem(*args, **kwargs)
 
 def fill_between(*args, **kwargs):
     _ensure_axes()
     assert _current_axes
-    _current_axes.fill_between(*args, **kwargs)
+    return _current_axes.fill_between(*args, **kwargs)
 
 def text(*args, **kwargs):
     _ensure_axes()
     assert _current_axes
-    _current_axes.text(*args, **kwargs)
+    return _current_axes.text(*args, **kwargs)
 
 def hlines(*args, **kwargs):
     _ensure_axes()
     assert _current_axes
     if isinstance(_current_axes, Axes3):
         raise ValueError("hlines is not supported for 3D axes.")
-    _current_axes.hlines(*args, **kwargs)
+    return _current_axes.hlines(*args, **kwargs)
 
 def vlines(*args, **kwargs):
     _ensure_axes()
     assert _current_axes
     if isinstance(_current_axes, Axes3):
         raise ValueError("vlines is not supported for 3D axes.")
-    _current_axes.vlines(*args, **kwargs)
+    return _current_axes.vlines(*args, **kwargs)
 
 def imshow(*args, **kwargs):
     _ensure_axes()

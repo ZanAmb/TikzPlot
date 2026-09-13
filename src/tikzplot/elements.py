@@ -1,4 +1,5 @@
-from typing import Any
+import itertools
+from typing import Any, Sequence
 
 import numpy as np
 from pathlib import Path
@@ -18,7 +19,7 @@ class BaseGraph:
     _settings: dict[str, Any]
     _style: dict[str, Any]
     _style_str: str | None
-    _x: np.ndarray
+    _x: np.ndarray | Any
     _y: np.ndarray
     _p_dict: dict[int, str]
     _st_dict: dict[str, str]
@@ -338,6 +339,13 @@ class BaseGraph:
         return pname
     
     def _num_points(self):
+        if "contour prepared" in self._settings:
+            assert isinstance(self._x, dict)
+            n = 0
+            for z in self._x.keys():
+                for g in self._x[z]:
+                    n += len(g)
+            return n
         if self._classic:
             return len(self._x)
         return 0
@@ -349,7 +357,7 @@ class Single(BaseGraph):
     def __init__(self, axes, datapoints, settings={}, path_name=None, **style):
         super().__init__()
         self._axes = axes
-        self._x = datapoints
+        self._x: Sequence[float] | np.ndarray | dict = datapoints
         self._classic = True
         self._special = ""
         self._style = {}
@@ -366,9 +374,20 @@ class Single(BaseGraph):
     def _header(self):
         if "boxplot prepared" in self._settings or "boxplot" in self._settings:
             return "y"
+        if "contour prepared" in self._settings:
+            return ""
 
     def _rows(self):
         rows = []
+        if "contour prepared" in self._settings:
+            assert isinstance(self._x, dict)
+            for z in self._x.keys():
+                for i in range(len(self._x[z])):
+                    for x,y in self._x[z][i]:
+                        rows.append(f"{x} {y} {z}")
+                    rows.append("")
+            rows.pop()
+            return "\n".join(rows)
         for i in range(len(self._x)):
             line = [self._x[i]]
             rows.append(" ".join(str(v) for v in line))
@@ -419,6 +438,7 @@ class Single(BaseGraph):
 
     def _data_range(self):
         if "boxplot prepared" in self._settings or "boxplot" in self._settings:
+            assert isinstance(self._x, np.ndarray)
             orient = self._settings.get("draw direction", "y")
             w = self._settings.get("box extend", 0.8)
             q = self._settings.get("draw position", 0)
@@ -432,31 +452,144 @@ class Single(BaseGraph):
                 return q - w/2, q + w/2, min(data), max(data)
             else:
                 return min(data), max(data), q - w/2, q + w/2
+        if "contour prepared" in self._settings:
+            assert isinstance(self._x, dict)
+            xvals = []
+            yvals = []
+            for z in self._x.keys():
+                for x,y in list(itertools.chain.from_iterable(self._x[z])):
+                    xvals.append(x)
+                    yvals.append(y)
+            return min(xvals), max(xvals), min(yvals), max(yvals)
         return None, None, None, None
 
     def _get_erange(self, which):
-        if "boxplot prepared" in self._settings or "boxplot" in self._settings:
+        if "boxplot prepared" in self._settings or "boxplot" in self._settings or "contour prepared" in self._settings:
             ind_table = ["xmin", "xmax", "ymin", "ymax"]
             i = ind_table.index(which)
             return self._data_range()[i]
         return None
 
     def _filter(self, which, value):
-        pass
+        if "contour prepared" in self._settings:
+            assert isinstance(self._x, dict)
+            new_x = {}
+            for z in self._x.keys():
+                group = []
+                for g in self._x[z]:
+                    g = np.asarray(g)
+                    if which[0] == "x":
+                        q = np.asarray([p[0] for p in g])
+                    else: # y
+                        q = np.asarray([p[1] for p in g])
+                    if which[1:] == "min":
+                        mask = q >= value
+                        idx_keep = np.where(q < value)[0]
+                        if len(idx_keep) > 0:
+                            idx_keep = idx_keep[-1]
+                    else: # max
+                        mask = q <= value
+                        idx_keep = np.where(q > value)[0]
+                        if len(idx_keep) > 0:
+                            idx_keep = idx_keep[0]
+                    mask[idx_keep] = True
+                    group.append(g[mask])
+                new_x[z] = group
+            self._x = new_x
 
     def _check_equal(self, x):
+        if "contour prepared" in self._settings:
+            return False
         if self._classic:
             return np.all(self._x == x)
 
     def _get_points(self):
+        if "contour prepared" in self._settings:
+            assert isinstance(self._x, dict)
+            x = []
+            y = []
+            for z in self._x.keys():
+                for xx,yy in self._x[z]:
+                    x.append(xx)
+                    y.append(yy)
+            return np.asarray(x), np.asarray(y)
         if self._classic:
             return self._x
         return None
 
     def _reduce_points(self, limit):
-        pass
+        if "contour prepared" in self._settings:
+            xm, xmode, xbase = self._axes._get_limit("xmin")
+            xM, _, _ = self._axes._get_limit("xmax")
+            ym, ymode, ybase = self._axes._get_limit("ymin")
+            yM, _, _ = self._axes._get_limit("ymax")
+            if xm == None: xm = self._get_erange("xmin")
+            if xM == None: xM = self._get_erange("xmax")
+            if ym == None: ym = self._get_erange("ymin")
+            if yM == None: yM = self._get_erange("ymax")
+            assert xm != None and xM != None and ym != None and yM != None
+            assert isinstance(self._x, dict)
+            counts = list(itertools.chain.from_iterable([[len(l) for l in self._x[z]] for z in self._x.keys()]))
+            counts = sorted(counts, reverse=True)
+            margin = max(counts)
+            if sum(counts) > limit:
+                lo, hi = 0, max(counts)
+                while lo < hi:
+                    mid = (lo + hi + 1) // 2
+                    if sum(min(c, mid) for c in counts) > limit:
+                        hi = mid
+                    else:
+                        lo = mid - 1
+                margin = lo
+            for z in self._x.keys():
+                group = []
+                for g in self._x[z]:
+                    g = np.asarray(g)
+                    if len(g) > margin:
+                        if TikzConfig.REDUCE_METHOD == 0:
+                            idx_keep = np.linspace(0, len(g)-1, margin, dtype=int)
+                            group.append(g[idx_keep])
+                        elif TikzConfig.REDUCE_METHOD in [1,2]:
+                            xs, ys = g[:,0], g[:,1]
+                            if xmode == "log":
+                                fac = xM / xm
+                                if fac > 0: fac = np.log(fac) / np.log(xbase)
+                                else: fac = 1
+                                vis_x = np.log(xs) / fac
+                            else:
+                                fac = xM - xm
+                                if fac == 0: fac = 1
+                                vis_x = xs / fac
+                            if ymode == "log":
+                                fac = yM / ym
+                                if fac > 0: fac = np.log(fac) / np.log(ybase)
+                                else: fac = 1
+                                vis_y = np.log(ys) / fac
+                            else:
+                                fac = yM - ym
+                                if fac == 0: fac = 1
+                                vis_y = ys / fac
+                            while len(self._x) > limit:
+                                if TikzConfig.REDUCE_METHOD == 1:
+                                    dx1 = vis_x[1:-1] - vis_x[:-2]
+                                    dy1 = vis_y[1:-1] - vis_y[:-2]
+                                    dx2 = vis_x[2:] - vis_x[1:-1]
+                                    dy2 = vis_y[2:] - vis_y[1:-1]
+                                    crit = np.hypot(dx1, dy1) + np.hypot(dx2, dy2)
+                                else: #TikzConfig.REDUCE_METHOD == 2:
+                                    x0, x1, x2 = vis_x[:-2], vis_x[1:-1], vis_x[2:]
+                                    y0, y1, y2 = vis_y[:-2], vis_y[1:-1], vis_y[2:]
+                                    crit = np.abs((x1 - x0)*(y2 - y0) - (y1 - y0)*(x2 - x0))
+                                idx_remove = np.argmin(crit)+1
+                                if idx_remove == len(crit): idx_remove -= 1
+                                mask = np.ones(len(self._x), dtype=bool)
+                                mask[idx_remove] = False
+                                g = g[mask]
+                                vis_x = vis_x[mask]
+                                vis_y = vis_y[mask]
+                    group.append(g)
+                self._x[z] = group
 
-    
 class Graph(BaseGraph):
     def __init__(self, axes, coordinates, settings={}, xerr=None, yerr=None, path_name=None, **style):
         super().__init__()

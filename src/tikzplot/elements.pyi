@@ -50,7 +50,7 @@ class Single(BaseGraph):
     def __init__(
         self,
         axes: Any,
-        datapoints: ArrayLike | Any,
+        datapoints: ArrayLike | dict | Any,
         settings: dict[str, Any] = ...,
         path_name: str | None = ...,
         **style: Any,

@@ -1,7 +1,8 @@
 from typing import Any, Iterable, Optional, Sequence, Tuple, Literal
 import numpy.typing as npt
-from .axes import Axes
+from .axes import Axes, ColorLike
 from .axes3d import Axes3
+from .elements import Graph, Single, Graph3
 
 ArrayLike = npt.ArrayLike
 
@@ -23,10 +24,10 @@ class Colorbar:
     _cmap: Any
     def __init__(
         self,
-        im: Optional[Tuple[Axes, str, float, float]] = None,
+        im: Optional[Tuple[Axes, str, float, float] | Graph | Single | Graph3] = None,
         *,
         axis: Optional[Axes | Axes3] = None,
-        cmap: Optional[str] = "viridis",
+        cmap: Optional[str|list[ColorLike]] = "viridis",
         lower: Optional[float] = 0,
         upper: Optional[float] = 1,
         ticks: Optional[Sequence[ float]] = None,
@@ -37,22 +38,24 @@ class Colorbar:
         location: Literal["right", "left", "top", "bottom"] | None = None,
         pad: Optional[float] = None,
         rel_len: Optional[float] = 1,
-        divisions: Optional[int] = 0
+        divisions: Optional[int] = 0,
+        targets: Optional[Sequence[float]] = None,
     ) -> None:
         """
         Parameters
         ----------
-        im : imshow() return: tuple(axis, cmap, lower, upper), optional
+        im : imshow() return: tuple(axis, cmap, lower, upper) or plot element instance, optional
             Tuple describing the associated image:
             - axis : parent axis object
             - cmap : name of the colormap
             - lower : minimum value of the color scale
             - upper : maximum value of the color scale
+            For plot element instances (Single, Graph, Graph3), the axis and colormap are inferred from the element.
 
         axis: reference to axis, optional
             Axis to which the color bar is plotted.
 
-        cmap : str, optional
+        cmap : str or list of colors, optional
             Name of the colormap to use.
             Supports reversed colormaps via suffix "_r".
 
@@ -101,6 +104,9 @@ class Colorbar:
                 width or height = rel_len * parent axis dimension
         divisions: int, optional
             May be used with continuous colormaps do discretize number of colors, 0 for continuous.
+
+        targets: Sequence[float], optional
+            Positions of manually specified cmap.
         """
         ...
 

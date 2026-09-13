@@ -116,6 +116,41 @@ class BaseAxes:
         """
         ...
 
+    def contour(self, *args: Any, levels: Optional[Sequence[float]] = None, cmap: Optional[str] = None, colors: Optional[Sequence[ColorLike]] = None, vmin: Optional[float] = None, vmax: Optional[float] = None, alpha: float = 1.0, linewidth: Optional[float] = None, lw: Optional[float] = None, linestyle: Optional[LineStyle] = None, ls: Optional[LineStyle] = None, labels: bool = False) -> Graph:
+        """
+        Draw a contour plot to the selected axis.
+        
+        Parameters
+        ----------
+        args : ArrayLike
+            Datapoints for contour plot, (X, Y, Z) or (Z) for grid (thus 1 or 3 args).
+
+        levels: int or sequence of float, optional
+            Number of contour levels to draw or list of level values. If not provided, but colors is set, it will match the length, otherwise it will be set to a value of 7 or less.
+
+        cmap: str, optional
+            Colormap name for lines, if colors is not provided.
+
+        colors: sequence of ColorLike, optional
+            List of colors for lines. If provided, it will override cmap. It will pair with levels if provided.
+
+        vmin, vmax: float, optional
+            Normalization values, if not set, they will be set to the min and max of Z.
+
+        alpha: float, optional
+            Opacity
+
+        linewidth or lw: float, optional
+            Line width in pt
+
+        linestyle or ls: str, optional
+            Line style
+
+        labels: bool, optional
+            Whether to draw labels on the contour lines. Default is False.
+        """
+        ...
+
     def semilogy(self, x: ArrayLike = ..., y: ArrayLike = ..., base: Optional[float] = 10,  fmt: Optional[str] = ...,*, alpha: float = 1.0, color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ...,
              linestyle: Optional[LineStyle] = ..., ls: Optional[LineStyle] = ..., linewidth: Optional[float]= ..., lw: Optional[float] = ...,
              marker: Optional[MarkerStyle] = ..., markersize: Optional[float] = ..., ms: Optional[float] = ...,  label:Optional[str]=...) -> Graph:

@@ -4,6 +4,7 @@ import copy
 
 import numpy as _np
 import matplotlib.pyplot as _plt
+from skimage import measure
 
 from .elements import Graph, Single
 from .texts import Text
@@ -219,7 +220,7 @@ class BaseAxes:
                             vmax = kwargs.pop("vmax", max(c))
                             kwargs["cmap"] = Colorbar(cmap=cmap, lower=vmin, upper=vmax)
                     if self._cmap_bar and self._cmap_bar != kwargs["cmap"]:
-                        raise Warning("Multiple colormaps on same axis! Only one per axis is allowed.")
+                        print("Multiple colormaps on same axis! Old will be replaced by new one.")
                     else:
                         self._cmap_bar = kwargs["cmap"]
         except: pass
@@ -271,7 +272,7 @@ class BaseAxes:
             cmap = kwargs.get("cmap", "viridis")
             kwargs["cmap"] = Colorbar(cmap=cmap, lower=_np.min(C), upper=_np.max(C))
             if self._cmap_bar and self._cmap_bar != kwargs["cmap"]:
-                raise Warning("Multiple colormaps on same axis! Only one per axis is allowed.")
+                print("Multiple colormaps on same axis! Old will be replaced by new one.")
             self._cmap_bar = kwargs["cmap"]
             kwargs["C"] = C.flatten()
         else:
@@ -286,6 +287,62 @@ class BaseAxes:
             settings["quiver"].update({"every arrow/.append style": "mapped color"})
             settings["point meta"] = r"\thisrow{c}"
         return self._plot(X, Y, **kwargs, settings=settings)
+
+    def contour(self, *args, **kwargs):
+        kws = {"levels", "alpha", "cmap", "colors", "vmin", "vmax", "linewidth", "lw", "linestyle", "ls", "labels"}
+        kwargs = self._check_kwargs("contour", kws, **kwargs)
+        settings = {}
+        st = {}
+        X = Y = Z = None
+        if len(args) == 1:
+            Z = _np.atleast_2d(args[0])
+            X, Y = _np.meshgrid(range(Z.shape[1]), range(Z.shape[0]))
+        elif len(args) == 3:
+            X, Y, Z = (_np.atleast_1d(a) for a in args)
+        else:
+            raise Warning("Invalid number of arguments for contour. Expected 1 or 3 arguments.")
+        levels = kwargs.pop("levels", None)
+        if levels is None:
+            if "colors" in kwargs and isinstance(kwargs["colors"], list):
+                levels = len(kwargs["colors"])
+            else:
+                levels = min(7, _np.sqrt(len(X.flatten()))//5)
+        vmin = kwargs.pop("vmin", _np.min(Z))
+        vmax = kwargs.pop("vmax", _np.max(Z))
+        if isinstance(levels, int):
+            levels = _np.linspace(vmin, vmax, 2*levels+1, endpoint=True)[1::2]
+        cnts = {}
+        for l in levels:
+            cnts[l] = []
+            contours = measure.find_contours(Z, level=l)
+            for contour in contours:
+                x_real = _np.interp(contour[:, 1], _np.arange(len(X[0])), X[0])
+                y_real = _np.interp(contour[:, 0], _np.arange(len(Y)), Y[:, 0])
+                points = list(zip(x_real, y_real))
+                cnts[l].append(points)
+        if "colors" in kwargs:
+            colors = kwargs.pop("colors")
+            if isinstance(colors, list):
+                trgts = None if _np.isclose(_np.min(_np.diff(levels)), _np.max(_np.diff(levels))) else levels
+                kwargs["cmap"] = colors
+                cb = Colorbar(cmap=colors, lower=vmin, upper=vmax, targets=trgts)
+            else:
+                cb = None
+                kwargs["color"] = colors
+        else:
+            cmap = kwargs.pop("cmap", "viridis")
+            cb = Colorbar(cmap=cmap, lower=vmin, upper=vmax)
+        if self._cmap_bar and cb and self._cmap_bar != cb:
+            raise Warning("Multiple colormaps on same axis! Only one per axis is allowed.")
+        else:
+            self._cmap_bar = cb
+        if not kwargs.pop("labels", False):
+            st["labels"] = "false"
+
+        settings["contour prepared"] = st if st else None
+        e = Single(self, cnts, settings=settings, colorbar=cb, **kwargs)
+        self._elements[self._get_overlay()].append(e)
+        return e
                         
     def semilogy(self, x, y, *args, **kwargs):
         kws = {"fmt", "base", "alpha", "color", "c", "linestyle", "ls", "linewidth", "lw", "marker", "markersize", "ms", "label"}
