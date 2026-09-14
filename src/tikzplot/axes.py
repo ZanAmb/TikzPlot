@@ -34,7 +34,7 @@ class BaseAxes:
         self._add_legend = []
         self._legend_lab_col: Any = None
         self._coordinates = {}
-        self._cmap_bar = None
+        self._cmap_bar: dict[int, None|Colorbar] = {0: None}
 
         self._ext_ymin = False
         self._ext_ymax = False
@@ -48,12 +48,17 @@ class BaseAxes:
         self._virtual = False
         self._extend = None
 
+        self._later_reverse_x = False
+        self._later_reverse_y = False
+
+        self._externs = False
+
     def _get_overlay(self):
         return sorted(self._elements.keys())[-1]
     def _get_all_elements(self):
         return [i for l in self._elements.values() for i in l]
     def _get_free_overlay(self):
-        if len(self._elements[self._get_overlay()]) > 0:
+        if len(self._elements[self._get_overlay()]) > 0 or self._cmap_bar.get(self._get_overlay(), None) is not None:
             new_overlay = self._get_overlay() + 1
             self._elements[new_overlay] = []
             return new_overlay
@@ -157,18 +162,22 @@ class BaseAxes:
             return f"{k}={{" + ",\n".join(f"{kk}={vv}" for kk, vv in v.items() if vv != {}) + "}"
         return f"{k}={v}"
 
-    def _plot(self, x, y, settings={}, xerr=None, yerr=None, overlay=None, note=None, **style):
+    def _plot(self, x, y, settings={}, xerr=None, yerr=None, overlay=None, note=None, cb=None, **style):
         spec = None
         if self._get_overlay() in self._overlay_special:
             spec = ",\n".join([self._parse_entry(k, v) for k, v in self._overlay_special[self._get_overlay()].items()])
         if note != spec:
             self._get_free_overlay()
-            
+        if cb is not None:
+            if self._cmap_bar.get(self._get_overlay(), None) is not None and self._cmap_bar[self._get_overlay()] != cb:
+                self._get_free_overlay()
         if isinstance(self, Axes) and self._polar:
             x = _np.rad2deg(x)
         e = Graph(self, (x, y), settings, xerr=xerr, yerr=yerr, **style)
         if overlay is None:
             overlay = self._get_overlay()
+        if cb is not None:
+            self._cmap_bar[overlay] = cb
         if TikzConfig.USE_GROUPPLOTS and ("axvspan" in settings or "axhspan" in settings):
             self._elements[overlay].insert(0, e)
         else:
@@ -219,13 +228,9 @@ class BaseAxes:
                             vmin = kwargs.pop("vmin", min(c))
                             vmax = kwargs.pop("vmax", max(c))
                             kwargs["cmap"] = Colorbar(cmap=cmap, lower=vmin, upper=vmax)
-                    if self._cmap_bar and self._cmap_bar != kwargs["cmap"]:
-                        print("Multiple colormaps on same axis! Old will be replaced by new one.")
-                    else:
-                        self._cmap_bar = kwargs["cmap"]
         except: pass
         
-        return self._plot(x, y, **kwargs, ls="", settings={"scatter": None})
+        return self._plot(x, y, **kwargs, ls="", settings={"scatter": None}, cb = kwargs.get("cmap", None))
 
     def quiver(self, *args, **kwargs):
         kws = {"pivot", "scale", "color", "c", "alpha", "cmap", "width", "linewidth", "lw"}
@@ -271,9 +276,6 @@ class BaseAxes:
         if C is not None:
             cmap = kwargs.get("cmap", "viridis")
             kwargs["cmap"] = Colorbar(cmap=cmap, lower=_np.min(C), upper=_np.max(C))
-            if self._cmap_bar and self._cmap_bar != kwargs["cmap"]:
-                print("Multiple colormaps on same axis! Old will be replaced by new one.")
-            self._cmap_bar = kwargs["cmap"]
             kwargs["C"] = C.flatten()
         else:
             kwargs["color"] = kwargs.get("color", kwargs.get("c", "k"))
@@ -286,7 +288,7 @@ class BaseAxes:
         if "cmap" in kwargs:
             settings["quiver"].update({"every arrow/.append style": "mapped color"})
             settings["point meta"] = r"\thisrow{c}"
-        return self._plot(X, Y, **kwargs, settings=settings)
+        return self._plot(X, Y, **kwargs, settings=settings, cb = kwargs.get("cmap", None))
 
     def contour(self, *args, **kwargs):
         kws = {"levels", "alpha", "cmap", "colors", "vmin", "vmax", "linewidth", "lw", "linestyle", "ls", "labels"}
@@ -332,13 +334,12 @@ class BaseAxes:
         else:
             cmap = kwargs.pop("cmap", "viridis")
             cb = Colorbar(cmap=cmap, lower=vmin, upper=vmax)
-        if self._cmap_bar and cb and self._cmap_bar != cb:
-            raise Warning("Multiple colormaps on same axis! Only one per axis is allowed.")
-        else:
-            self._cmap_bar = cb
+        if cb is not None:
+            if self._cmap_bar.get(self._get_overlay(), None) is not None and self._cmap_bar[self._get_overlay()] != cb:
+                self._get_free_overlay()
+            self._cmap_bar[self._get_overlay()] = cb
         if not kwargs.pop("labels", False):
             st["labels"] = "false"
-
         settings["contour prepared"] = st if st else None
         e = Single(self, cnts, settings=settings, colorbar=cb, **kwargs)
         self._elements[self._get_overlay()].append(e)
@@ -1175,6 +1176,7 @@ class BaseAxes:
         assert self._fig is not None
         self._fig._add_required_package("\\usepackage{wheelchart}")
         e = Pie(self, x, explode=explode, labels=labels, colors=colors, autopct=autopct, pctdistance=pctdistance, labeldistance=labeldistance, radius=radius, startangle=startangle, counterclock=counterclock, wedgeprops=kwargs, rotate_labels=rotate_labels, normalize=normalize, at=self._axis_options.get("alias", self._axis_options.get("name", None)))
+        self._externs = True
         self._fig._add_external(e)
         return e
 
@@ -1642,7 +1644,6 @@ class BaseAxes:
         if not (isinstance(vpstats, list) and all(isinstance(d, dict) for d in vpstats)):
             raise Warning("vpstats must be a list of dictionaries.")
         if positions is None: positions = list(range(1, 1+len(vpstats)))
-        output = []
         if isinstance(widths, (int, float)): widths = [widths] * len(vpstats)
         if facecolor is None and linecolor is None:
             assert isinstance(self, Axes) or isinstance(self, Secondary)
@@ -1656,6 +1657,7 @@ class BaseAxes:
                 continue
             l, u = None, None
             fac = widths[i] / max(d["vals"]) if len(d["vals"]) > 0 else 1
+            fac /= 2
             if side in ["both", "low"]:
                 l = positions[i] - fac * d["vals"]
             else: l = positions[i]
@@ -1767,8 +1769,8 @@ class BaseAxes:
                 })
             else:
                 stats.append({"vals": [], "coords": []})
-            stats.append(stat)
-
+                if stat != {}:
+                    stats.append(stat)
         return self.violin(stats, positions=positions, orientation=orientation, widths=widths, showmeans=showmeans, showextrema=showextrema, showmedians=showmedians, side=side, facecolor=facecolor, linecolor=linecolor)
 
     def text(self, x, y, s, **kwargs):
@@ -1859,6 +1861,21 @@ class BaseAxes:
         if which in self._preferred_lims:
             values.append(self._preferred_lims[which])
         values = [v for v in values if v is not None]
+        if isinstance(self, Axes) and self._imshow is not None:
+            im = self._imshow[0][0]
+            dims = _np.shape(im)
+            bounds = [0, dims[1], 0, dims[0]]
+            if "extent" in self._imshow[1]:
+                bounds = self._imshow[1]["extent"]
+            xm, xM, ym, yM = bounds
+            if "xmin" in which:
+                values.append(xm)
+            elif "xmax" in which:
+                values.append(xM)
+            elif "ymin" in which:
+                values.append(ym)
+            elif "ymax" in which:
+                values.append(yM)
         if not values:
             return (None, False, mode)
         if "min" in which:
@@ -1920,15 +1937,20 @@ class BaseAxes:
         elif which == "x" and isinstance(self, Axes):
             self._axis_options["x dir"] = "reverse"
             if isinstance(self._axis_options.get("xmin"), (int, float)) and isinstance(self._axis_options.get("xmax"), (int, float)):
-                self._axis_options["xmin"], self._axis_options["xmax"] = self._axis_options.get("xmax"), self._axis_options.get("xmin")
+                if self._axis_options.get("xmin") > self._axis_options.get("xmax"):
+                    self._axis_options["xmin"], self._axis_options["xmax"] = self._axis_options.get("xmax"), self._axis_options.get("xmin")
             if self._secondary_y is not None:
                 self._secondary_y._axis_options["x dir"] = "reverse"
                 if isinstance(self._secondary_y._axis_options.get("xmin"), (int, float)) and isinstance(self._secondary_y._axis_options.get("xmax"), (int, float)):
-                    self._secondary_y._axis_options["xmin"], self._secondary_y._axis_options["xmax"] = self._secondary_y._axis_options.get("xmax"), self._secondary_y._axis_options.get("xmin")
+                    if self._secondary_y._axis_options.get("xmin") > self._secondary_y._axis_options.get("xmax"):
+                        self._secondary_y._axis_options["xmin"], self._secondary_y._axis_options["xmax"] = self._secondary_y._axis_options.get("xmax"), self._secondary_y._axis_options.get("xmin")
         elif which == "y":
             self._axis_options["y dir"] = "reverse"
             if isinstance(self._axis_options.get("ymin"), (int, float)) and isinstance(self._axis_options.get("ymax"), (int, float)):
-                self._axis_options["ymin"], self._axis_options["ymax"] = self._axis_options.get("ymax"), self._axis_options.get("ymin")
+                ymin, ymax = self._axis_options.get("ymin"), self._axis_options.get("ymax")
+                assert isinstance(ymin, (int, float)) and isinstance(ymax, (int, float))
+                if ymin > ymax:
+                    self._axis_options["ymin"], self._axis_options["ymax"] = ymax, ymin
 
 class Axes(BaseAxes):
     def __init__(self, nrows, ncols, index, fig, polar):
@@ -1951,7 +1973,8 @@ class Axes(BaseAxes):
         self._imshow = None
 
         self._defcol_counter = {0: 0} # 0 - std, 1 - fill between, 2 - violins
-        self._colorbar = ""
+        self._colorbar: dict[int, None|str] = {0: None}
+        self._cbar_v = False
         self._cbar_h = False
         self._polar = polar
 
@@ -2033,6 +2056,101 @@ class Axes(BaseAxes):
     def _update_placeholder_size(self, width, height):
         self._extend = (width, height)
 
+    def contourf(self, *args, **kwargs):
+        kws = {"levels", "alpha", "cmap", "colors", "vmin", "vmax"}
+        kwargs = self._check_kwargs("contour", kws, **kwargs)
+        X = Y = Z = None
+        if len(args) == 1:
+            Z = _np.atleast_2d(args[0])
+            X, Y = _np.meshgrid(range(Z.shape[1]), range(Z.shape[0]))
+        elif len(args) == 3:
+            X, Y, Z = (_np.atleast_1d(a) for a in args)
+        else:
+            raise Warning("Invalid number of arguments for contour. Expected 1 or 3 arguments.")
+        levels = kwargs.pop("levels", None)
+        if levels is None:
+            if "colors" in kwargs and isinstance(kwargs["colors"], list):
+                levels = len(kwargs["colors"])
+            else:
+                levels = min(7, _np.sqrt(len(X.flatten()))//5)
+        vmin = kwargs.pop("vmin", _np.min(Z))
+        vmax = kwargs.pop("vmax", _np.max(Z))
+        if isinstance(levels, int):
+            levels = _np.linspace(vmin, vmax, 2*levels+1, endpoint=True)[1::2]
+        if "colors" in kwargs:
+            colors = kwargs.pop("colors")
+            if isinstance(colors, list):
+                trgts = None if _np.isclose(_np.min(_np.diff(levels)), _np.max(_np.diff(levels))) else levels
+                kwargs["cmap"] = colors
+                cb = Colorbar(cmap=colors, lower=vmin, upper=vmax, targets=trgts)
+                self.imshow(Z, levels=levels, colors=colors, extent=[_np.min(X), _np.max(X), _np.min(Y), _np.max(Y)], origin='lower', contourf=True, **kwargs)
+            else:
+                raise Warning("Invalid 'colors' argument. Must be a list of colors.")
+        else:
+            cmap = kwargs.pop("cmap", "viridis")
+            cb = Colorbar(cmap=cmap, lower=vmin, upper=vmax)
+            self.imshow(Z, levels=levels, cmap=cmap, extent=[_np.min(X), _np.max(X), _np.min(Y), _np.max(Y)], origin='lower', contourf=True, **kwargs)
+        cm = None
+        if cb is not None:
+            if self._cmap_bar.get(self._get_overlay(), None) is not None and self._cmap_bar[self._get_overlay()] != cb:
+                self._get_free_overlay()
+            self._cmap_bar[self._get_overlay()] = cb
+            cm = cb._cmap
+        return (self, cm, vmin, vmax)
+
+    def matshow(self, Z, **kwargs):
+        Z = _np.atleast_2d(Z)
+        if Z.ndim != 2:
+            raise Warning("Input Z must be a 2D array.")
+        extent = [0, Z.shape[1], 0, Z.shape[0]]
+        try: # pgfplots first
+            X, Y = _np.meshgrid(range(Z.shape[1]), range(Z.shape[0]))
+            if Z.shape[0] * Z.shape[1] > TikzConfig.MAX_POINTS_PER_ELEMENT:
+                raise Warning("Matrix too large for pgfplots. Using imshow instead.")
+            kws = {"cmap", "vmin", "vmax", "alpha", "labels", "label_color", "label_size", "extent", "origin"}
+            kwrgs = self._check_kwargs("matshow", kws, **kwargs)
+            if "extent" in kwrgs:
+                extent = kwrgs["extent"]
+                xm, xM, ym, yM = extent
+                X, Y = _np.meshgrid(_np.linspace(xm, xM, Z.shape[1]), _np.linspace(ym, yM, Z.shape[0]))
+            settings = {}
+            if "origin" in kwrgs:
+                if kwrgs["origin"] == "lower":
+                    settings["matrix plot*"] = None
+                    #Z = _np.flipud(Z)
+                elif kwrgs["origin"] == "upper":
+                    settings["matrix plot"] = None
+                else:
+                    raise Warning("Invalid origin. Must be 'upper' or 'lower'.")
+            settings["mesh/cols"] = Z.shape[1]
+            settings["point meta"] = "explicit"
+            if kwrgs.get("labels", False):
+                settings["nodes near coords"] = None
+                settings["nodes near coords align"] = "center"
+                st = {}
+                if "label_color" in kwrgs:
+                    st["color"] = self._match_color(kwrgs["label_color"])
+                if "label_size" in kwrgs:
+                    st["font"] = self._tex_fontsize(kwrgs["label_size"])
+                if st != {}:
+                    settings["node near coord style"] = st
+            settings["meta"] = Z.flatten()
+            cb = None
+            if "cmap" in kwrgs:
+                cmap = kwrgs["cmap"]
+                cb = Colorbar(cmap=cmap, lower=kwrgs.get("vmin", _np.nanmin(Z)), upper=kwrgs.get("vmax", _np.nanmax(Z)))
+            self._axis_options["enlargelimits"] = "false"
+            return self._plot(X.flatten(), Y.flatten(), settings=settings, cb=cb)
+        except:
+            kwargs.pop("labels", None)
+            kwargs.pop("label_color", None)
+            kwargs.pop("label_size", None)
+            if kwargs.get("origin", "upper") == "upper":
+                Z = _np.flipud(Z)
+                self._later_reverse_y = not self._later_reverse_y
+            self.imshow(Z, extent=kwargs.get("extent", extent), **kwargs)
+            return (self, kwargs.get("cmap", "viridis"), kwargs.get("vmin", _np.nanmin(Z)), kwargs.get("vmax", _np.nanmax(Z)))
+
     def loglog(self, x, y, *args, **kwargs):
         kws = {"base", "fmt", "alpha", "color", "c", "linestyle", "ls", "linewidth", "lw", "marker", "markersize", "ms", "label"}
         kwargs = self._check_kwargs("loglog", kws, **kwargs)
@@ -2064,6 +2182,10 @@ class Axes(BaseAxes):
             cmap = kwargs["cmap"]
         else:
             cmap = "viridis"
+        cb = Colorbar(cmap=cmap, lower=kwargs.get("vmin", m), upper=kwargs.get("vmax", M))
+        if self._cmap_bar.get(self._get_overlay(), None) is not None and self._cmap_bar[self._get_overlay()] != cb:
+            self._get_free_overlay()
+        self._cmap_bar[self._get_overlay()] = cb
         return (self, cmap, m, M)
 
     def hist2d(self, x, y, bins=10, **kwargs):
@@ -2268,19 +2390,25 @@ class Axes(BaseAxes):
                 base = self._axis_options["log basis y"]
             _plt.yscale("log", base=base)
         _plt.axis("off")
-        _plt.imshow(*args, **kwargs)
+        if kwargs.pop("contourf", False):
+            kwargs.pop("extent", None)
+            kwargs.pop("origin", None)
+            _plt.contourf(*args, **kwargs)
+        else:
+            _plt.imshow(*args, **kwargs)
         if self._axis_options.get("x dir") == "reverse":
             _plt.gca().invert_xaxis()
         if self._axis_options.get("y dir") == "reverse":
             _plt.gca().invert_yaxis()
         im_name = f"{str(main_name()[1]).removesuffix('.py')}_{TikzConfig.IMSHOW_SAVENAME}{_next_imshow_num()}.pdf"
         _plt.savefig(im_name, bbox_inches='tight', pad_inches=0)
+        _plt.close()
         return im_name
 
     def _axis_option_string(self):
-        if "xmin" in self._axis_options and "xmax" in self._axis_options and self._axis_options["xmin"] > self._axis_options["xmax"]:
+        if ("xmin" in self._axis_options and "xmax" in self._axis_options and self._axis_options["xmin"] > self._axis_options["xmax"]) or self._later_reverse_x:
             self._inverted_axis("x")
-        if "ymin" in self._axis_options and "ymax" in self._axis_options and self._axis_options["ymin"] > self._axis_options["ymax"]:
+        if ("ymin" in self._axis_options and "ymax" in self._axis_options and self._axis_options["ymin"] > self._axis_options["ymax"]) or self._later_reverse_y:
             self._inverted_axis("y")
         if self._elements[self._get_overlay()] == [] and self._get_overlay() > 0:
             del self._elements[self._get_overlay()]
@@ -2395,11 +2523,16 @@ class Axes(BaseAxes):
                         auxiliary_opt_str += entry + ",\n"
         axis_opt_str = axis_opt_str.removesuffix(",,\n")
         auxiliary_opt_str = auxiliary_opt_str.removesuffix(",,\n")
-        if self._colorbar:
-            axis_opt_str += self._colorbar
-        elif self._cmap_bar:
-            axis_opt_str += f"colormap={self._cmap_bar._generate_tex_colormap(self._cmap_bar._cmap)},\n"
-        return axis_opt_str, "hide axis,\n" + auxiliary_opt_str, alias
+        adds = {}
+        for c in self._elements.keys():
+            adds[c] = ""
+            if self._colorbar.get(c, None) is not None:
+                adds[c] += self._colorbar[c]
+            elif self._cmap_bar.get(c, None) is not None:
+                cm = self._cmap_bar[c]
+                assert isinstance(cm, Colorbar)
+                adds[c] += f"colormap={cm._generate_tex_colormap(cm._cmap)},\n"
+        return axis_opt_str, "hide axis,\n" + auxiliary_opt_str, alias, adds
 
     def _parse_entry(self, k, v):
         if v is None:
@@ -2410,9 +2543,9 @@ class Axes(BaseAxes):
     
     def _margins(self):
         left = TikzConfig.LEFT_PADDING + TikzConfig.YTICK_PADDING * self._yticks + TikzConfig.Y_LABEL_PADDING * ("ylabel" in self._axis_options)
-        right = TikzConfig.RIGHT_PADDING + TikzConfig.CBAR_X_MARGIN * (self._colorbar != "" and not self._cbar_h)
+        right = TikzConfig.RIGHT_PADDING + TikzConfig.CBAR_X_MARGIN * self._cbar_v
         top = TikzConfig.TOP_PADDING + TikzConfig.TITLE_PADDING * ("title" in self._axis_options)
-        bottom = TikzConfig.BOTTOM_PADDING  + TikzConfig.XTICK_PADDING * self._xticks + TikzConfig.X_LABEL_PADDING * ("xlabel" in self._axis_options) + TikzConfig.CBAR_Y_MARGIN * (self._colorbar != "" and self._cbar_h)
+        bottom = TikzConfig.BOTTOM_PADDING  + TikzConfig.XTICK_PADDING * self._xticks + TikzConfig.X_LABEL_PADDING * ("xlabel" in self._axis_options) + TikzConfig.CBAR_Y_MARGIN * self._cbar_h
         if self._secondary_y is not None:
             right += self._secondary_y._padding()
 
@@ -2424,12 +2557,18 @@ class Axes(BaseAxes):
         self._virtual = True
         from .border_finder import _get_sizes
         self._ext_xmin = self._ext_xmax = self._ext_ymin = self._ext_ymax = True
-        main, _, alias = self._axis_option_string()
+        main, aux, alias, adds = self._axis_option_string()
+        if 0 in adds:
+            main += adds[0]
         main = r"""\begin{axis}[""" + main + r"]" + r"\end{axis}" + "\n"
         if self._secondary_y is not None:
-            aux, _ = self._secondary_y._axis_option_string()
-            aux = r"""\begin{axis}[""" + aux + r"]" + r"\end{axis}" + "\n"
-            main += aux
+            main2, aux2 = self._secondary_y._axis_option_string()
+            main2 = r"""\begin{axis}[""" + main2 + r"]" + r"\end{axis}" + "\n"
+            main += main2
+        for k in adds:
+            if k == 0: continue
+            if adds[k] != "":
+                main += r"\begin{axis}[" + f"at={{({alias}.south west)}}," + aux.replace("set layers=standard", "") + adds[k] + r"]" + r"\end{axis}" + "\n"
         lims = self._fig._lims
         for k in lims:
             for j in lims[k]:
@@ -2452,9 +2591,17 @@ class Axes(BaseAxes):
             self._defcol_counter[index] = 0
         self._defcol_counter[index] += 1
         return self._defcol_counter[index] - 1
-    def _show_colorbar(self, cbar, horizontal=False):
-        self._colorbar = ",\n" + cbar
-        self._cbar_h = horizontal
+    def _show_colorbar(self, cbar, cbar_s, horizontal=False):
+        overlay = [k for k in self._cmap_bar if self._cmap_bar[k] is cbar]
+        if len(overlay) == 0:
+            overlay = 0
+        else:
+            overlay = overlay[0]
+        self._colorbar[overlay] = ",\n" + cbar_s
+        if horizontal:
+            self._cbar_h = True
+        else:
+            self._cbar_v = True
     def _get_index(self):
         return self._index
     
@@ -2484,7 +2631,7 @@ class Axes(BaseAxes):
         lines2 = []
         if self._polar:
             self._fig._add_required_package("\\usepgfplotslibrary{polar}")
-        main_ax, aux_ax, alias = self._axis_option_string()
+        main_ax, aux_ax, alias, adds = self._axis_option_string()
         contents = self._content_tex(filename)
         if self._extend is not None:
             lines.append(f"\\nextgroupplot[alias={alias}, width={self._extend[0]}cm, height={self._extend[1]}cm, hide axis]")
@@ -2513,6 +2660,8 @@ class Axes(BaseAxes):
                             if TikzConfig.SCALE_ONLY_AXIS:
                                 lines2.append("scale only axis,")
                             spec = ",\n".join([self._parse_entry(k, v) for k, v in self._secondary_y._overlay_special.get(i, {}).items()]) + ",\n" if i in self._secondary_y._overlay_special else ""
+                            if i in adds:
+                                spec += adds[i]
                             if i == sorted(self._secondary_y._elements.keys())[-1]:
                                 lines2.append(f"{main_ax2}{spec}\n]")
                             else:
@@ -2528,6 +2677,8 @@ class Axes(BaseAxes):
             lines.append(f"\\nextgroupplot[alias={self._axis_options['alias']}, width={self._width}, height={self._height}, hide axis]")
             for i in self._elements.keys():
                 spec = ",\n".join([self._parse_entry(k, v) for k, v in self._overlay_special.get(i, {}).items()]) + ",\n" if i in self._overlay_special else ""
+                if i in adds:
+                    spec += adds[i]
                 lines2.append("\\begin{polaraxis}[")
                 if TikzConfig.SCALE_ONLY_AXIS:
                     lines2.append("scale only axis")
@@ -2550,21 +2701,27 @@ class Axes(BaseAxes):
                     lines.append("scale only axis")
             if self._get_overlay() == 0:
                 spec = ",\n".join([self._parse_entry(k, v) for k, v in self._overlay_special.get(0, {}).items()]) + ",\n" if 0 in self._overlay_special else ""
-                if self._secondary_y is not None or self._colorbar is not None:
+                if 0 in adds:
+                    spec += adds[0]
+                if self._secondary_y is not None or any([c is not None for c in self._colorbar.values()]) or self._externs:
                     lines.append(f"{main_ax}{spec}alias={alias}\n]")
                 else:
                     lines.append(f"{main_ax}{spec}\n]")
                 lines.append(contents[0])
             else:
                 spec = ",\n".join([self._parse_entry(k, v) for k, v in self._overlay_special.get(0, {}).items()]) + ",\n" if 0 in self._overlay_special else ""
+                if 0 in adds:
+                    spec += adds[0]
                 lines.append(f"{aux_ax}{spec}alias={alias}\n]")
                 lines.append(contents[0])
                 for i in self._elements.keys():
-                    spec = ",\n".join([self._parse_entry(k, v) for k, v in self._overlay_special.get(i, {}).items()]) + ",\n" if i in self._overlay_special else ""
                     if i == 0: continue
+                    spec = ",\n".join([self._parse_entry(k, v) for k, v in self._overlay_special.get(i, {}).items()]) + ",\n" if i in self._overlay_special else ""
+                    if i in adds:
+                        spec += adds[i]
                     lines2.append("\\begin{axis}[")
                     if TikzConfig.SCALE_ONLY_AXIS:
-                        lines2.append("scale only axis")
+                        lines2.append("scale only axis,")
                     if i == self._get_overlay():
                         lines2.append(f"{main_ax}{spec}at={{({alias}.south west)}}\n]")
                         lines2.append(contents[i])

@@ -129,6 +129,20 @@ def contour(*args, **kwargs):
         raise ValueError("contour is not supported for 3D axes.")
     return _current_axes.contour(*args, **kwargs)
 
+def contourf(*args, **kwargs):
+    _ensure_axes()
+    assert _current_axes
+    if isinstance(_current_axes, Axes3):
+        raise ValueError("contourf is not supported for 3D axes.")
+    return _current_axes.contourf(*args, **kwargs)
+
+def matshow(*args, **kwargs):
+    _ensure_axes()
+    assert _current_axes
+    if isinstance(_current_axes, Axes3):
+        raise ValueError("matshow is not supported for 3D axes.")
+    return _current_axes.matshow(*args, **kwargs)
+
 def loglog(*args, **kwargs):
     _ensure_axes()
     assert _current_axes

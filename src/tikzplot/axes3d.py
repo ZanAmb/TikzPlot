@@ -33,7 +33,7 @@ class Axes3:
         self._add_legend = []
         self._legend_lab_col: Any = None
         self._coordinates = {}
-        self._cmap_bar = None
+        self._cmap_bar: dict[int, None|Colorbar] = {0: None}
 
         self._ext_xmin = False
         self._ext_xmax = False
@@ -66,7 +66,8 @@ class Axes3:
         self._style = self._fig._style
         
         self._defcol_counter = {0: 0}
-        self._colorbar = ""
+        self._colorbar: dict[int, None|str] = {0: None}
+        self._cbar_v = False
         self._cbar_h = False
 
         self._bar_code = False
@@ -128,7 +129,7 @@ class Axes3:
     def _get_all_elements(self):
         return [i for l in self._elements.values() for i in l]
     def _get_free_overlay(self):
-        if len(self._elements[self._get_overlay()]) > 0:
+        if len(self._elements[self._get_overlay()]) > 0 or self._cmap_bar.get(self._get_overlay(), None) is not None:
             new_overlay = self._get_overlay() + 1
             self._elements[new_overlay] = []
             return new_overlay
@@ -232,12 +233,15 @@ class Axes3:
             return f"{k}={{" + ",\n".join(f"{kk}={vv}" for kk, vv in v.items() if vv != {}) + "}"
         return f"{k}={v}"
 
-    def _plot(self, xs, ys, zs, zdir="z", settings={}, xerr=None, yerr=None, zerr=None, overlay=None, note=None, **style):
+    def _plot(self, xs, ys, zs, zdir="z", settings={}, xerr=None, yerr=None, zerr=None, overlay=None, note=None, cb=None, **style):
         spec = None
         if self._get_overlay() in self._overlay_special:
             spec = ",\n".join([self._parse_entry(k, v) for k, v in self._overlay_special[self._get_overlay()].items()])
         if note != spec:
             self._get_free_overlay()
+        if cb is not None:
+            if self._cmap_bar.get(self._get_overlay(), None) is not None and self._cmap_bar[self._get_overlay()] != cb:
+                self._get_free_overlay()
 
         if isinstance(zs, (float,int)):
             zs = [zs] * len(xs)
@@ -248,6 +252,8 @@ class Axes3:
         e = Graph3(self, (xs, ys, zs), settings, xerr=xerr, yerr=yerr, zerr=zerr, **style)
         if overlay is None:
             overlay = self._get_overlay()
+        if cb is not None:
+            self._cmap_bar[overlay] = cb
         self._elements[overlay].append(e)
         return e
 
@@ -289,13 +295,9 @@ class Axes3:
                             vmin = kwargs.pop("vmin", min(c))
                             vmax = kwargs.pop("vmax", max(c))
                             kwargs["cmap"] = Colorbar(cmap=cmap, lower=vmin, upper=vmax)
-                    if self._cmap_bar and self._cmap_bar != kwargs["cmap"]:
-                        raise Warning("Multiple colormaps on same axis! Only one per axis is allowed.")
-                    else:
-                        self._cmap_bar = kwargs["cmap"]
         except: pass
         
-        return self._plot(xs, ys, zs, zdir, **kwargs, ls="", settings={"scatter": None})
+        return self._plot(xs, ys, zs, zdir, **kwargs, ls="", settings={"scatter": None}, cb=kwargs.get("cmap", None))
     
     def plot_surface(self, X, Y, Z, **kwargs):
         kws = {"alpha", "color", "c", "linestyle", "ls", "linewidth", "lw", "label"}
@@ -992,9 +994,15 @@ class Axes3:
     def _content_tex(self, filename):
         if self._virtual:
             return ""
-        ouptut = "\n".join(e._to_tex(filename) for e in self._get_all_elements())
-        ouptut += self._add_legend_entries()
-        return ouptut
+        for which in ["xmin", "xmax", "ymin", "ymax", "zmin", "zmax"]:
+            self._get_range(which)
+        element_strings = {i: "\n".join(e._to_tex(filename, self._legend_lab_col) for e in self._elements[i]) for i in self._elements.keys()}
+        if self._legend_on:
+            element_strings[self._get_overlay()] += self._add_legend_entries()
+        for coord in self._coordinates:
+            x,y = self._coordinates[coord]
+            element_strings[self._get_overlay()] += f"\n\\coordinate ({coord}) at ({x},{y});"
+        return element_strings
     
     def _get_hard_range(self,which):
         arg = f"{which[0]}mode"
@@ -1186,7 +1194,7 @@ class Axes3:
             if self._legend_on:
                 self._overlay_legend = True
                 self._legend_on = False
-        alias = self._axis_options.get("alias", self._axis_options.get("name", None))
+        alias = self._axis_options.pop("alias", self._axis_options.pop("name", None))
         if "width" not in self._axis_options or "height" not in self._axis_options:
             self._update_size()
         if self._width:
@@ -1200,6 +1208,7 @@ class Axes3:
             else:
                 self._axis_options["xshift"] = f"{self._fig._get_spacing(self._row, self._col)}cm"
         axis_opt_str = ""
+        auxiliary_opt_str = ""
         if self._axis_args:
             axis_opt_str += ",\n".join(self._axis_args)
         #if TikzConfig.SCHOOL_AXIS:
@@ -1252,22 +1261,31 @@ class Axes3:
                 self._axis_options["zmax"] = self._int_zmax
         if self._axis_options:
             if axis_opt_str: axis_opt_str += ",\n"
+            if auxiliary_opt_str: auxiliary_opt_str += auxiliary_opt_str + ",\n"
             for k, v in self._axis_options.items():
                 if v != {}:
                     entry = self._parse_entry(k,v)
                     axis_opt_str += entry + ",\n"
+                    if k in ["xmin", "xmax", "ymin", "ymax", "zmin", "zmax", "xmode", "ymode", "zmode", "log basis x", "log basis y", "log basis z", "width", "height", "at"]:
+                        auxiliary_opt_str += entry + ",\n"
         axis_opt_str = axis_opt_str.removesuffix(",,\n")
-        if self._colorbar:
-            axis_opt_str += self._colorbar
-        elif self._cmap_bar:
-            axis_opt_str += f"colormap={self._cmap_bar._generate_tex_colormap(self._cmap_bar._cmap)},\n"
-        return axis_opt_str
+        auxiliary_opt_str = auxiliary_opt_str.removesuffix(",,\n")
+        adds = {}
+        for c in self._elements.keys():
+            adds[c] = ""
+            if self._colorbar.get(c, None) is not None:
+                adds[c] += self._colorbar[c]
+            elif self._cmap_bar.get(c, None) is not None:
+                cm = self._cmap_bar[c]
+                assert isinstance(cm, Colorbar)
+                adds[c] += f"colormap={cm._generate_tex_colormap(cm._cmap)},\n"
+        return axis_opt_str, "hide axis,\n" + auxiliary_opt_str, alias, adds
     
     def _margins(self):
         left = TikzConfig.LEFT_PADDING * self._zticks + TikzConfig.Y_LABEL_PADDING * ("zlabel" in self._axis_options)
-        right = TikzConfig.RIGHT_PADDING + TikzConfig.CBAR_X_MARGIN * (self._colorbar != "" and not self._cbar_h)
+        right = TikzConfig.RIGHT_PADDING + TikzConfig.CBAR_X_MARGIN * self._cbar_v
         top = TikzConfig.TOP_PADDING + TikzConfig.TITLE_PADDING * ("title" in self._axis_options)
-        bottom = TikzConfig.BOTTOM_PADDING * self._xticks + TikzConfig.X_LABEL_PADDING * ("xlabel" in self._axis_options) + TikzConfig.CBAR_Y_MARGIN * (self._colorbar != "" and self._cbar_h)
+        bottom = TikzConfig.BOTTOM_PADDING * self._xticks + TikzConfig.X_LABEL_PADDING * ("xlabel" in self._axis_options) + TikzConfig.CBAR_Y_MARGIN * self._cbar_h
         return left, right, top, bottom
 
     def _simulated_margins(self, preambule):
@@ -1276,8 +1294,12 @@ class Axes3:
         self._virtual = True
         from .border_finder import _get_sizes
         self._ext_xmin = self._ext_xmax = self._ext_ymin = self._ext_ymax = True
-        main, _, alias = self._axis_option_string()
+        main, aux, alias, adds = self._axis_option_string()
         main = r"""\begin{axis}[""" + main + r"]" + r"\end{axis}" + "\n"
+        for k in adds:
+            if k == 0: continue
+            if adds[k] != "":
+                main += r"\begin{axis}[" + f"at={{({alias}.south west)}}," + aux.replace("set layers=standard", "") + adds[k] + r"]" + r"\end{axis}" + "\n"
         assert self._fig is not None
         lims = self._fig._lims
         for k in lims:
@@ -1301,30 +1323,81 @@ class Axes3:
             self._defcol_counter[index] = 0
         self._defcol_counter[index] += 1
         return self._defcol_counter[index] - 1
-    def _show_colorbar(self, cbar, horizontal=False):
-        self._colorbar = ",\n" + cbar
-        self._cbar_h = horizontal
+    def _show_colorbar(self, cbar, cbar_s, horizontal=False):
+        overlay = [k for k in self._cmap_bar if self._cmap_bar[k] is cbar]
+        if len(overlay) == 0:
+            overlay = 0
+        else:
+            overlay = overlay[0]
+        self._colorbar[overlay] = ",\n" + cbar_s
+        if horizontal:
+            self._cbar_h = True
+        else:
+            self._cbar_v = True
     def _get_index(self):
         return self._index
     
     def _to_tex(self, filename, single):
         lines = []
         lines2 = []
+        main_ax, aux_ax, alias, adds = self._axis_option_string()
+        contents = self._content_tex(filename)
         if self._extend is not None:
-            lines.append(f"\\nextgroupplot[alias=p{self._index}, width={self._extend[0]}cm, height={self._extend[1]}cm, hide axis]")
-            lines2.append("\\begin{axis}")
-            lines2.append(f"[at={{(p{self._index}).south west}},\n{self._axis_option_string()}]")
-            lines2.append(self._content_tex(filename))
-            lines2.append("\\end{axis}")
-        if TikzConfig.USE_GROUPPLOTS and not single:
-            lines.append("\\nextgroupplot")
-            lines.append(f"[{self._axis_option_string()}]")
-            lines.append(self._content_tex(filename))
+            lines.append(f"\\nextgroupplot[alias={alias}, width={self._extend[0]}cm, height={self._extend[1]}cm, hide axis]")
+            for i in self._elements.keys():
+                spec = ",\n".join([self._parse_entry(k, v) for k, v in self._overlay_special.get(i, {}).items()]) + ",\n" if i in self._overlay_special else ""
+                lines2.append("\\begin{axis}[" + f"\n at={{({alias}.south west)}},")
+                if TikzConfig.SCALE_ONLY_AXIS:
+                    lines2.append("scale only axis,")
+                if i == self._get_overlay():
+                    lines2.append(f"{main_ax}{spec}\n]")
+                else:
+                    lines2.append(f"{aux_ax}{spec}\n]")
+                lines2.append(contents[i])
+                lines2.append("\\end{axis}")
         else:
-            lines.append("\\begin{axis}")
-            lines.append(f"[{self._axis_option_string()}]")
-            lines.append(self._content_tex(filename))
-            lines.append("\\end{axis}")
+            if TikzConfig.USE_GROUPPLOTS and not single:
+                lines.append("\\nextgroupplot[")
+            if not TikzConfig.USE_GROUPPLOTS or (TikzConfig.USE_GROUPPLOTS and single):
+                lines.append("\\begin{axis}[")
+                if TikzConfig.SCALE_ONLY_AXIS:
+                    lines.append("scale only axis")
+            if self._get_overlay() == 0:
+                spec = ",\n".join([self._parse_entry(k, v) for k, v in self._overlay_special.get(0, {}).items()]) + ",\n" if 0 in self._overlay_special else ""
+                if 0 in adds:
+                    spec += adds[0]
+                if any([c is not None for c in self._colorbar.values()]):
+                    lines.append(f"{main_ax}{spec}alias={alias}\n]")
+                else:
+                    lines.append(f"{main_ax}{spec}\n]")
+                lines.append(contents[0])
+            else:
+                spec = ",\n".join([self._parse_entry(k, v) for k, v in self._overlay_special.get(0, {}).items()]) + ",\n" if 0 in self._overlay_special else ""
+                if 0 in adds:
+                    spec += adds[0]
+                lines.append(f"{aux_ax}{spec}alias={alias}\n]")
+                lines.append(contents[0])
+                for i in self._elements.keys():
+                    if i == 0: continue
+                    spec = ",\n".join([self._parse_entry(k, v) for k, v in self._overlay_special.get(i, {}).items()]) + ",\n" if i in self._overlay_special else ""
+                    if i in adds:
+                        spec += adds[i]
+                    lines2.append("\\begin{axis}[")
+                    if TikzConfig.SCALE_ONLY_AXIS:
+                        lines2.append("scale only axis,")
+                    if i == self._get_overlay():
+                        lines2.append(f"{main_ax}{spec}at={{({alias}.south west)}}\n]")
+                        lines2.append(contents[i])
+                        lines2 += self._overlay_legend_entries
+                        add_l = self._add_legend_entries()
+                        if add_l:
+                            lines2.append(add_l)
+                    else:
+                        lines2.append(f"{aux_ax}{spec}at={{({alias}.south west)}}\n]")
+                        lines2.append(contents[i])
+                    lines2.append("\\end{axis}")
+            if not TikzConfig.USE_GROUPPLOTS or (TikzConfig.USE_GROUPPLOTS and single):            
+                lines.append("\\end{axis}")
         return lines, lines2
     
     def set(self, **kwargs):

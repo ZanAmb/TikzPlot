@@ -308,11 +308,11 @@ class Figure:
         if self._nrows > 1:
              row_spacing = _np.max(b[:-1, :], axis=1) + _np.max(t[1:, :], axis=1)
         else:
-            row_spacing = [0]
+            row_spacing = _np.array([0])
         if self._ncols > 1:
             col_spacing = _np.max(r[:, :-1], axis=0) + _np.max(l[:, 1:], axis=0)
         else:
-            col_spacing = [0]
+            col_spacing = _np.array([0])
         if "h_pad" in self._tight_params:
             row_spacing += self._tight_params["h_pad"]
         if "w_pad" in self._tight_params:

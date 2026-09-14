@@ -496,6 +496,69 @@ def contour(self, *args: Any, levels: Optional[Sequence[float]] = None, cmap: Op
     """
     ...
 
+def contourf(self, *args: Any, levels: Optional[Sequence[float]] = None, cmap: Optional[str] = None, colors: Optional[Sequence[ColorLike]] = None, vmin: Optional[float] = None, vmax: Optional[float] = None, alpha: float = 1.0) -> Graph:
+    """
+    Draw a filled contour plot to the selected axis. Will be drawn using matplotlib and used as input image in tex.
+    
+    Parameters
+    ----------
+    args : ArrayLike
+        Datapoints for contour plot, (X, Y, Z) or (Z) for grid (thus 1 or 3 args).
+
+    levels: int or sequence of float, optional
+        Number of contour levels to draw or list of level values. If not provided, but colors is set, it will match the length, otherwise it will be set to a value of 7 or less.
+
+    cmap: str, optional
+        Colormap name for lines, if colors is not provided.
+
+    colors: sequence of ColorLike, optional
+        List of colors for lines. If provided, it will override cmap. It will pair with levels if provided.
+
+    vmin, vmax: float, optional
+        Normalization values, if not set, they will be set to the min and max of Z.
+
+    alpha: float, optional
+        Opacity
+    """
+    ...
+def matshow(self, Z, cmap: Optional[str] = None, vmin: Optional[float] = None, vmax: Optional[float] = None, alpha: float = 1.0, extent: Optional[tuple[float, float, float, float]] = None, origin: Optional[Literal["upper", "lower"]] = None, labels: bool = False, label_color: Optional[ColorLike] = None, label_size: Optional[FontSize] = None, **kwargs) -> tuple[Any, str, float, float]:
+    """
+    Draw a matrix plot to the selected axis. For small enough matrices (TikzConfig.MAX_POINTS_PER_ELEMENT) tex the code will be pure tex, for bigger, matplotlib will be used and image will be input for tex. Labels are possible only for small enough matrices (which makes sense, since text on large matrices is too small to be practical). Return may be used to initialize Colorbar().
+    
+    Parameters
+    ----------
+    Z : ArrayLike
+        The matrix data to be displayed.
+        
+    cmap : str, optional
+        Colormap name for the matrix.
+        
+    vmin, vmax : float, optional
+        Normalization values for the colormap. If not set, they will be set to the min and max of Z.
+        
+    alpha : float, optional
+        Opacity of the matrix plot.
+        
+    extent : tuple of float, optional
+        The bounding box in data coordinates that the image will fill. Format: (left, right, bottom, top).
+        
+    origin : {"upper", "lower"}, optional
+        Place the [0,0] index of the array in the upper left or lower left corner of the axes.
+        
+    labels : bool, optional
+        Whether to display the values of the matrix elements as text labels on the plot. Default is False. Ignored for large matrices.
+        
+    label_color : ColorLike, optional
+        Color of the text labels. Default is black. Ignored for large matrices.
+        
+    label_size : FontSize, optional
+        Font size of the text labels. Default is medium. Ignored for large matrices.
+        
+    **kwargs:
+        Additional keyword arguments passed to matplotlib's imshow function.
+    """
+    ...
+
 def semilogy(
     x: ArrayLike = ..., y: ArrayLike = ..., base: Optional[float] = 10,
     fmt: Optional[str] = ...,

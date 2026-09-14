@@ -89,7 +89,7 @@ class BaseGraph:
             self._axes._add_col(r,g,b)
             return f"c{r:.3f}{g:.3f}{b:.3f}".replace(".", ""), op
 
-        if "boxplot prepared" in self._settings or "boxplot" in self._settings:
+        if "boxplot prepared" in self._settings or "boxplot" in self._settings or "contour prepared" in self._settings or "matrix plot" in self._settings or "matrix plot*" in self._settings:
             self._has_color = True
         
         if "scatter" in self._settings:
@@ -624,7 +624,7 @@ class Graph(BaseGraph):
             x,y=coordinates
             self._x = np.asarray(x)
             self._y = np.asarray(y)
-            self._meta = None
+            self._meta = self._settings.pop("meta", None)
             mask = np.isfinite(self._x) & np.isfinite(self._y)
             n0 = len(self._x)
             self._x = self._x[mask]
@@ -1335,54 +1335,55 @@ class Graph3(BaseGraph):
             return max(self._z)    
         
     def _filter(self, which, value):
-        if which == "xmin":
-            mask = self._x >= value
-            idx_keep = np.where(self._x < value)[0]
-            if len(idx_keep) > 0:
-                idx_keep = idx_keep[-1]
-        elif which == "xmax":
-            mask = self._x <= value
-            idx_keep = np.where(self._x > value)[0]
-            if len(idx_keep) > 0:
-                idx_keep = idx_keep[0]
-        elif which == "ymin":
-            mask = self._y >= value
-            idx_keep = np.where(self._y < value)[0]
-            if len(idx_keep) > 0:
-                idx_keep = idx_keep[-1]
-        elif which == "ymax":
-            mask = self._y <= value
-            idx_keep = np.where(self._y > value)[0]
-            if len(idx_keep) > 0:
-                idx_keep = idx_keep[0]
-        elif which == "zmin":
-            mask = self._z >= value
-            idx_keep = np.where(self._z < value)[0]
-            if len(idx_keep) > 0:
-                idx_keep = idx_keep[-1]
-        elif which == "zmax":
-            mask = self._z <= value
-            idx_keep = np.where(self._z > value)[0]
-            if len(idx_keep) > 0:
-                idx_keep = idx_keep[0]
-    
-        else:
-            raise ValueError("Invalid filter type")
-    
-        mask[idx_keep] = True
-    
-        self._x = self._x[mask]
-        self._y = self._y[mask]
-        self._z = self._z[mask]
-    
-        if self._xerr is not None:
-            self._xerr = self._xerr[mask]
-    
-        if self._yerr is not None:
-            self._yerr = self._yerr[mask]
+        if self._classic and "mesh" not in self._settings and "surf" not in self._settings and "bar3d" not in self._settings:
+            if which == "xmin":
+                mask = self._x >= value
+                idx_keep = np.where(self._x < value)[0]
+                if len(idx_keep) > 0:
+                    idx_keep = idx_keep[-1]
+            elif which == "xmax":
+                mask = self._x <= value
+                idx_keep = np.where(self._x > value)[0]
+                if len(idx_keep) > 0:
+                    idx_keep = idx_keep[0]
+            elif which == "ymin":
+                mask = self._y >= value
+                idx_keep = np.where(self._y < value)[0]
+                if len(idx_keep) > 0:
+                    idx_keep = idx_keep[-1]
+            elif which == "ymax":
+                mask = self._y <= value
+                idx_keep = np.where(self._y > value)[0]
+                if len(idx_keep) > 0:
+                    idx_keep = idx_keep[0]
+            elif which == "zmin":
+                mask = self._z >= value
+                idx_keep = np.where(self._z < value)[0]
+                if len(idx_keep) > 0:
+                    idx_keep = idx_keep[-1]
+            elif which == "zmax":
+                mask = self._z <= value
+                idx_keep = np.where(self._z > value)[0]
+                if len(idx_keep) > 0:
+                    idx_keep = idx_keep[0]
 
-        if self._zerr is not None:
-            self._zerr = self._zerr[mask]
+            else:
+                raise ValueError("Invalid filter type")
+
+            mask[idx_keep] = True
+
+            self._x = self._x[mask]
+            self._y = self._y[mask]
+            self._z = self._z[mask]
+
+            if self._xerr is not None:
+                self._xerr = self._xerr[mask]
+
+            if self._yerr is not None:
+                self._yerr = self._yerr[mask]
+
+            if self._zerr is not None:
+                self._zerr = self._zerr[mask]
 
     def _check_equal(self, x,y,z):
         if self._classic:

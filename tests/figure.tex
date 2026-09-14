@@ -11,9 +11,8 @@
 			grid=major,
 			legend style={at={(0.97,0.97)},
 				anchor=north east},
-			width=5.471846200359761cm,
-			height=3.761732602739727cm,
-			alias=p0
+			width=5.471846200359762cm,
+			height=3.7747497366357643cm,
 			]
 		\addplot [color={blue},
 			line width=1.5pt] table [x=x,y=y] {datapoints/figure_1.dat};\addlegendentry{sin(x)}
@@ -29,8 +28,8 @@
 			legend style={at={(0.5,0.97)},
 				anchor=north },
 			legend columns=2,
-			width=5.471846200359761cm,
-			height=3.761732602739727cm,
+			width=5.471846200359762cm,
+			height=3.7747497366357643cm,
 			xmin=\xmina,
 			xmax=\xmaxa,
 			alias=p1
@@ -48,9 +47,8 @@
 			grid=both,
 			title style={align=center},
 			title={Semilog Y\\ title in two lines},
-			width=5.471846200359761cm,
-			height=3.761732602739727cm,
-			alias=p2
+			width=5.471846200359762cm,
+			height=3.7747497366357643cm,
 			]
 		\addplot [color={violet}] table [x=x,y=y] {datapoints/figure_7.dat};\addlegendentry{$|\sin(x)|$}
 		\nextgroupplot[
@@ -62,9 +60,8 @@
 			ymin=-1.5,
 			ymax=1.5,
 			ylabel={Y-axis},
-			width=5.471846200359761cm,
-			height=3.761732602739727cm,
-			alias=p3
+			width=5.471846200359762cm,
+			height=3.7747497366357643cm,
 			]
 		\addplot [solid,
 			color={black},
@@ -87,12 +84,11 @@
 		\nextgroupplot[
 			/pgf/number format/.cd, use comma, 1000 sep={},
 			set layers=standard, cell picture=true, grid style={on layer=axis grid},
-			width=5.471846200359761cm,
-			height=3.761732602739727cm,
-			alias=p4
+			width=5.471846200359762cm,
+			height=3.7747497366357643cm,
 			]
 		\addplot [forget plot,
-			bar width=0.19088679108685713,
+			bar width=0.19860592290501852,
 			ybar,
 			fill=orange,
 			draw=none] table [x=x,y=y] {datapoints/figure_11.dat};
@@ -101,8 +97,8 @@
 			set layers=standard, cell picture=true, grid style={on layer=axis grid},
 			enlargelimits=false,
 			grid=major,
-			width=5.471846200359761cm,
-			height=3.761732602739727cm,
+			width=5.471846200359762cm,
+			height=3.7747497366357643cm,
 			colormap={urgb}{
 				    rgb=(0.2670, 0.0049, 0.3294)
 				    rgb=(0.2297, 0.3224, 0.5457)
@@ -113,6 +109,7 @@
 			colorbar,
 			colorbar style={
 				/pgf/number format/use comma,
+				/pgf/number format/1000 sep={},
 				at={(p5.east)},
 				anchor=west,
 				xshift=0.05cm,
@@ -139,8 +136,8 @@
 			y label style={at={(1.2,0.5)},
 				rotate=180},
 			ylabel={$y$-axis 2},
-			width=5.471846200359761cm,
-			height=3.761732602739727cm,
+			width=5.471846200359762cm,
+			height=3.7747497366357643cm,
 			xmin=\xmina,
 			xmax=\xmaxa,
 			]

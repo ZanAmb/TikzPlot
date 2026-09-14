@@ -1,3 +1,5 @@
+from typing import Sequence
+
 import numpy as _np
 
 from tikzplot.styles import Styles
@@ -26,11 +28,17 @@ class _Colorbar:
             try:
                 self._axis, self._cmap, self._lower, self._upper = im
             except:
-                if isinstance(im, (Graph, Single, Graph3)):
-                    self._axis = im._axes
-                    if self._axis._cmap_bar is not None:
-                        self = self._axis._cmap_bar
-                        self._axis = im._axes
+                if isinstance(im, dict):
+                    im = list(im.values())
+                if not isinstance(im, Sequence):
+                    im = [im]
+                for i in im:
+                    if isinstance(i, (Graph, Single, Graph3)):
+                        self._axis = i._axes
+                        o = self._axis._get_element_overlay(i)
+                        if self._axis._cmap_bar[o] is not None:
+                            self = self._axis._cmap_bar[o]
+                            self._axis = i._axes
 
         if "axis" in kwargs and kwargs["axis"] is not None:
             self._axis = kwargs["axis"]
@@ -76,7 +84,7 @@ class _Colorbar:
         if "divisions" in kwargs:
             self._divs = kwargs["divisions"]
         if self._axis:
-            self._axis._show_colorbar(str(self))
+            self._axis._show_colorbar(self, str(self))
         if self._pad is None:
             self._pad = 0.05 if self._horizontal else 0.15        
         if self._cmap is None:
@@ -256,6 +264,7 @@ class _Colorbar:
         else: _st_settings = {}
         if TikzConfig.USE_DECIMAL_COMMA:
             lines.append("/pgf/number format/use comma,")
+        lines.append(f"/pgf/number format/1000 sep={{{TikzConfig.THOUSANDS_SEP}}},")
         if self._location == "right":
             lines.append(f"at={{(p{self._axis._get_index()}.east)}},")
             lines.append(f"anchor=west,")
