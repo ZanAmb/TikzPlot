@@ -101,6 +101,12 @@ class _Colorbar:
                 self._targets = [0] + self._targets + [1]
             self._targets = sorted(self._targets)
 
+    def __repr__(self) -> str:
+        return f"Colorbar(cmap={self._cmap}, lower={self._lower}, upper={self._upper}, ticks={self._ticks}, tick_labels={self._tick_labels}, label={self._label}, width={self._width}, pad={self._pad}, horizontal={self._horizontal}, location={self._location}, rel_len={self._rel_len}, divisions={self._divs})"
+
+    def __eq__(self, other) -> bool:
+        return isinstance(other, _Colorbar) and self.__repr__() == other.__repr__()
+
     _discrete = {'Pastel1':9, 'Pastel2':8, 'Paired':12, 'Accent':8, 'Dark2':8, 'Set1': 9, 'Set2':8, 'Set3':12, 'tab10':10, 'tab20':20, 'tab20b':20, 'tab20c':20}
     _dictionary = {
         'viridis':       [(0.267, 0.0049, 0.3294), (0.2297, 0.3224, 0.5457), (0.1276, 0.5669, 0.5506), (0.3692, 0.7889, 0.3829), (0.9932, 0.9062, 0.1439)],

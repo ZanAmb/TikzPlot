@@ -461,6 +461,56 @@ def quiver(self, *args, pivot: Literal["tail", "middle", "tip"]="tail", scale:fl
     """
     ...
 
+def streamplot(self, x, y, u, v, density: float = 1.0, linewidth: float|None = ..., color: Optional[ColorLike] = ..., cmap: Optional[str] = ..., arrowsize: float = 1.0, minlength: float = 0.1, maxlength: float = 4.0, integration_direction: Literal["forward", "backward", "both"] = "both", broken_streamlines: bool = True, integration_max_step_scale: float = 1.0, integration_max_error_scale: float = 1.0, num_arrows: int = 1) -> Graph:
+    """
+    Draw a stream plot to the selected axis.
+    
+    Parameters
+    ----------
+    x,y : ArrayLike
+        Grid points for vector field
+        
+    u,v : ArrayLike
+        Vector components at each grid point
+        
+    density: float, optional
+        Controls the closeness of streamlines. Higher values result in more streamlines. Default is 1.0.
+        
+    linewidth: float, optional
+        Line width in pt
+        
+    color: ColorLike, optional
+        Color of streamlines. cmap has priority.
+        
+    cmap: str, optional
+        Colormap name for streamlines, if color is not provided.
+        
+    arrowsize: float, optional
+        Size of arrows along streamlines. Default is 1.0.
+        
+    minlength: float, optional
+        Minimum length of streamlines. Streamlines shorter than this will be discarded. Default is 0.1.
+        
+    maxlength: float, optional
+        Maximum length of streamlines. Streamlines longer than this will be truncated. Default is 4.0.
+        
+    integration_direction: {"forward", "backward", "both"}, optional
+        Direction of integration for streamlines. Default is "both".
+        
+    broken_streamlines: bool, optional
+        If True, streamlines will be broken when they come too close to each other. Default is True.
+        
+    integration_max_step_scale: float, optional
+        Scale factor for the maximum step size during integration. Default is 1.0.
+        
+    integration_max_error_scale: float, optional
+        Scale factor for the maximum error tolerance during integration. Default is 1.0.
+        
+    num_arrows: int, optional
+        Number of arrows to draw along each streamline. Default is 1.
+    """
+    ...
+
 def contour(self, *args: Any, levels: Optional[Sequence[float]] = None, cmap: Optional[str] = None, colors: Optional[Sequence[ColorLike]] = None, vmin: Optional[float] = None, vmax: Optional[float] = None, alpha: float = 1.0, linewidth: Optional[float] = None, lw: Optional[float] = None, linestyle: Optional[LineStyle] = None, ls: Optional[LineStyle] = None, labels: bool = False) -> Graph:
     """
     Draw a contour plot to the selected axis.
@@ -1506,7 +1556,214 @@ def psd(self, x: ArrayLike, *, NFFT: int = 256, Fs: float = 2.0, Fc: float = 0.0
         Legend entry for the PSD plot.
     """
     ...
+def acorr(self, x: Sequence[float|int], *, normed:bool=True, usevlines:bool=True, maxlags:int|None=None, alpha: float = 1.0, color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ..., linestyle: Optional[LineStyle] = ..., ls: Optional[LineStyle] = ..., linewidth: Optional[float]= ..., lw: Optional[float] = ..., marker: Optional[MarkerStyle] = ..., markersize: Optional[float] = ..., ms: Optional[float] = ...,  label:Optional[str]=...) -> tuple[np.ndarray, np.ndarray, Graph, Graph|None]:
+    """
+    Draw an autocorrelation plot to the selected axis.
 
+    Parameters
+    ----------
+    x: Sequence of float or int
+        Input signal for which the autocorrelation is computed.
+
+    normed: bool, optional
+        If True (default), normalize the autocorrelation by the variance of the signal.
+
+    usevlines: bool, optional
+        If True (default), use vertical lines to represent the autocorrelation values. If False, use a line plot.
+
+    maxlags: int or None, optional
+        The maximum number of lags to compute. If None (default), compute for all lags.
+
+    alpha: float, optional
+        Opacity of the plot.
+
+    color or c: all matplotlib color formats (without X11/xkcd), optional
+        Color of the line and markers.
+
+    linestyle or ls: str, optional
+        Line style for the autocorrelation plot.
+
+    linewidth or lw: float, optional
+        Line width in points for the autocorrelation plot.
+
+    marker: str, optional
+        Marker style for the data points in the autocorrelation plot.
+
+    markersize or ms: float, optional
+        Size of the markers in points.
+
+    label: str, optional
+        Legend entry for the autocorrelation plot.
+    """
+    ...        
+def csd(self, x: Sequence[float|int], y: Sequence[float|int], *, NFFT:int=256, Fs:float=2.0, Fc:float=0.0, detrend:Optional[Callable]=None, window:Optional[Union[Callable, np.ndarray]]=None, noverlap:int=0, pad_to:Optional[int]=None, sides:Literal["onesided", "twosided", "default"]="default", scale_by_freq:bool=True, alpha: float = 1.0, color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ..., linestyle: Optional[LineStyle] = ..., ls: Optional[LineStyle] = ..., linewidth: Optional[float]= ..., lw: Optional[float] = ..., marker: Optional[MarkerStyle] = ..., markersize: Optional[float] = ..., ms: Optional[float] = ...,  label:Optional[str]=...) -> tuple[np.ndarray, np.ndarray, Graph]:
+    """
+    Draw a cross-spectral density (CSD) plot to the selected axis.
+
+    Parameters
+    ----------
+    x: Sequence of float or int
+        First input signal for which the CSD is computed.
+
+    y: Sequence of float or int
+        Second input signal for which the CSD is computed.
+
+    NFFT: int, optional
+        The number of data points used in each block for the FFT. Default is 256.
+
+    Fs: float, optional
+        Sampling frequency of the input signals. Default is 2.0.
+
+    Fc: float, optional
+        Center frequency for the spectrum. Default is 0.0.
+
+    detrend: callable or None, optional
+        Specifies how to detrend each segment. If None, no detrending is applied.
+
+    window: Callable or ndarray, optional
+        Window function to apply to each segment before computing the FFT. If None, no windowing is applied.
+
+    noverlap: int, optional
+        The number of points of overlap between segments. Default is 0.
+
+    pad_to: int, optional
+        Length to which each segment is zero-padded before computing the FFT. If None, no padding is applied.
+
+    sides: {"onesided", "twosided", "default"}, optional
+        Specifies whether to return a one-sided or two-sided spectrum. Default is "default".
+
+    scale_by_freq: bool, optional
+        If True (default), scale the cross-spectral density by the frequency bin width.
+
+    alpha: float, optional
+        Opacity of the plot.
+
+    color or c: all matplotlib color formats (without X11/xkcd), optional
+        Color of the line and markers.
+
+    linestyle or ls: str, optional
+        Line style for the CSD plot.
+
+    linewidth or lw: float, optional
+        Line width in points for the CSD plot.
+
+    marker: str, optional
+        Marker style for the data points in the CSD plot.
+
+    markersize or ms: float, optional
+        Size of the markers in points.
+
+    label: str, optional
+        Legend entry for the CSD plot.
+    """
+    ...
+    
+def cohere(self, x:Sequence[float|int], y:Sequence[float|int], *, NFFT:int=256, Fs:float=2.0, Fc:float=0.0, detrend:Optional[Callable]=None, window: Optional[Union[Callable, np.ndarray]]=None, noverlap:int=0, pad_to:Optional[int]=None, sides:Literal["onesided", "twosided", "default"]="default", scale_by_freq:bool=True, alpha: float = 1.0, color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ..., linestyle: Optional[LineStyle] = ..., ls: Optional[LineStyle] = ..., linewidth: Optional[float]= ..., lw: Optional[float] = ..., marker: Optional[MarkerStyle] = ..., markersize: Optional[float] = ..., ms: Optional[float] = ...,  label:Optional[str]=...) -> tuple[np.ndarray, np.ndarray, Graph]:
+    """
+    Draw a coherence plot to the selected axis.
+
+    Parameters
+    ----------
+    x: Sequence of float or int
+        First input signal for which the coherence is computed.
+
+    y: Sequence of float or int
+        Second input signal for which the coherence is computed.
+
+    NFFT: int, optional
+        The number of data points used in each block for the FFT. Default is 256.
+
+    Fs: float, optional
+        Sampling frequency of the input signals. Default is 2.0.
+
+    Fc: float, optional
+        Center frequency for the spectrum. Default is 0.0.
+
+    detrend: callable or None, optional
+        Specifies how to detrend each segment. If None, no detrending is applied.
+
+    window: Callable or ndarray, optional
+        Window function to apply to each segment before computing the FFT. If None, no windowing is applied.
+
+    noverlap: int, optional
+        The number of points of overlap between segments. Default is 0.
+
+    pad_to: int, optional
+        Length to which each segment is zero-padded before computing the FFT. If None, no padding is applied.
+
+    sides: {"onesided", "twosided", "default"}, optional
+        Specifies whether to return a one-sided or two-sided spectrum. Default is "default".
+
+    scale_by_freq: bool, optional
+        If True (default), scale the coherence by the frequency bin width.
+
+    alpha: float, optional
+        Opacity of the plot.
+
+    color or c: all matplotlib color formats (without X11/xkcd), optional
+        Color of the line and markers.
+
+    linestyle or ls: str, optional
+        Line style for the coherence plot.
+
+    linewidth or lw: float, optional
+        Line width in points for the coherence plot.
+
+    marker: str, optional
+        Marker style for the data points in the coherence plot.
+
+    markersize or ms: float, optional
+        Size of the markers in points.
+
+    label: str, optional
+        Legend entry for the coherence plot.
+    """
+    ...        
+
+def xcorr(self, x:Sequence[float|int], y:Sequence[float|int], *, normed:bool=True, usevlines:bool=True, maxlags:Optional[int]=None, alpha: float = 1.0, color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ..., linestyle: Optional[LineStyle] = ..., ls: Optional[LineStyle] = ..., linewidth: Optional[float]= ..., lw: Optional[float] = ..., marker: Optional[MarkerStyle] = ..., markersize: Optional[float] = ..., ms: Optional[float] = ...,  label:Optional[str]=...) -> tuple[np.ndarray, np.ndarray, Graph, Graph|None]:
+    """
+    Draw a cross-correlation plot to the selected axis.
+
+    Parameters
+    ----------
+    x: Sequence of float or int
+        First input signal for which the cross-correlation is computed.
+
+    y: Sequence of float or int
+        Second input signal for which the cross-correlation is computed.
+
+    normed: bool, optional
+        If True (default), normalize the cross-correlation by the product of the standard deviations of the signals.
+
+    usevlines: bool, optional
+        If True (default), use vertical lines to represent the cross-correlation values. If False, use a line plot.
+
+    maxlags: int or None, optional
+        The maximum number of lags to compute. If None (default), compute for all lags.
+
+    alpha: float, optional
+        Opacity of the plot.
+
+    color or c: all matplotlib color formats (without X11/xkcd), optional
+        Color of the line and markers.
+
+    linestyle or ls: str, optional
+        Line style for the coherence plot.
+
+    linewidth or lw: float, optional
+        Line width in points for the coherence plot.
+
+    marker: str, optional
+        Marker style for the data points in the coherence plot.
+
+    markersize or ms: float, optional
+        Size of the markers in points.
+
+    label: str, optional
+        Legend entry for the coherence plot.
+    """
+    ...
+    
 def pie(x: ArrayLike, *, explode: Optional[ArrayLike] = None, labels: Optional[Sequence[str]] = None, colors: Optional[Sequence[ColorLike]] = None, autopct: Optional[str] = None, pctdistance: float = 0.6, labeldistance: float = 1.1, radius: float = 1.0, startangle: float = 0.0, counterclock: bool = True, wedgeprops: Optional[dict] = None, rotate_labels: bool = False, normalize: bool = True) -> Pie:
     """
     Draw a pie chart to the selected axis.
@@ -1572,6 +1829,51 @@ def pie_label(container: Pie, labels: Sequence[str], *, distance: float = 0.6, r
         If True, rotate each label to be parallel to its corresponding wedge. Default is False.
     """
     ...
+
+def eventplot(self, positions: ArrayLike, *, orientation: Literal["horizontal", "vertical"]="horizontal", lineoffsets:float|ArrayLike=1, linelengths:float|ArrayLike=1, linewidths:None|float|ArrayLike=None, colors:None|ColorLike|list[ColorLike]=None, alpha:None|float|Sequence[float]=None, linestyles:LineStyle|Sequence[LineStyle]="solid", color:Optional[ColorLike]=..., c:Optional[ColorLike]=..., linestyle:Optional[LineStyle]=..., ls:Optional[LineStyle]=..., linewidth:Optional[float]=..., lw:Optional[float]=..., label:Optional[str]=...) -> list[Graph]:
+    """
+    Draw an event plot to the selected axis.
+
+    Parameters
+    ----------
+    positions: ArrayLike
+        The positions of the events along the axis.
+
+    orientation: {"horizontal", "vertical"}, optional
+        The orientation of the event plot. Default is "horizontal".
+
+    lineoffsets: float or ArrayLike, optional
+        The offsets of the lines from the axis. If a single float is provided, all lines will have the same offset. If an array is provided, each line can have a different offset.
+
+    linelengths: float or ArrayLike, optional
+        The lengths of the lines. If a single float is provided, all lines will have the same length. If an array is provided, each line can have a different length.
+
+    linewidths: float or ArrayLike, optional
+        The widths of the lines. If a single float is provided, all lines will have the same width. If an array is provided, each line can have a different width.
+
+    colors: ColorLike or list of ColorLike, optional
+        The colors of the lines. If a single color is provided, all lines will have the same color. If a list is provided, each line can have a different color.
+
+    alpha: float or sequence of float, optional
+        The opacity of the lines. If a single float is provided, all lines will have the same opacity. If a sequence is provided, each line can have a different opacity.
+
+    linestyles: LineStyle or sequence of LineStyle, optional
+        The styles of the lines. If a single style is provided, all lines will have the same style. If a sequence is provided, each line can have a different style.
+
+    color or c: all matplotlib color formats (without X11/xkcd), optional
+        Color of line and markers.
+
+    linestyle or ls: str, optional
+        Line style for the event plot.
+
+    linewidth or lw: float, optional
+        Line width in points for the event plot.
+
+    label: str, optional
+        Legend entry for the event plot.
+    """
+    ...
+
 def bxp(bxpstats: list[dict[str, Any]], positions: list[float|int]|None=None, *, widths:float|ArrayLike=0.5, orientation: Literal["vertical", "horizontal"]="vertical", showcaps:bool=True, showbox:bool=True, showfliers:bool=True, showmeans:bool=False, boxprops:dict[str, Any]|None=None, whiskerprops:dict[str, Any]|None=None, flierprops:dict[str, Any]|None=None, medianprops:dict[str, Any]|None=None, meanprops:dict[str, Any]|None=None, capwidths:float|ArrayLike|None=None, tex_settings:dict[str, Any] = {}) -> list[Graph]:
     """
     Draw a box-and-whisker plot to the selected axis.

@@ -1,5 +1,6 @@
 from math import isqrt
-from typing import Any, Iterable
+from turtle import pos
+from typing import Any, Iterable, Tuple
 import copy
 
 import numpy as _np
@@ -57,8 +58,8 @@ class BaseAxes:
         return sorted(self._elements.keys())[-1]
     def _get_all_elements(self):
         return [i for l in self._elements.values() for i in l]
-    def _get_free_overlay(self):
-        if len(self._elements[self._get_overlay()]) > 0 or self._cmap_bar.get(self._get_overlay(), None) is not None:
+    def _get_free_overlay(self, cb=None):
+        if len(self._elements[self._get_overlay()]) > 0 or (cb is not None and self._cmap_bar.get(self._get_overlay(), None) is not None and self._cmap_bar[self._get_overlay()] != cb):
             new_overlay = self._get_overlay() + 1
             self._elements[new_overlay] = []
             return new_overlay
@@ -163,6 +164,8 @@ class BaseAxes:
         return f"{k}={v}"
 
     def _plot(self, x, y, settings={}, xerr=None, yerr=None, overlay=None, note=None, cb=None, **style):
+        if settings is None:
+            settings = {}
         spec = None
         if self._get_overlay() in self._overlay_special:
             spec = ",\n".join([self._parse_entry(k, v) for k, v in self._overlay_special[self._get_overlay()].items()])
@@ -170,7 +173,7 @@ class BaseAxes:
             self._get_free_overlay()
         if cb is not None:
             if self._cmap_bar.get(self._get_overlay(), None) is not None and self._cmap_bar[self._get_overlay()] != cb:
-                self._get_free_overlay()
+                self._get_free_overlay(cb=cb)
         if isinstance(self, Axes) and self._polar:
             x = _np.rad2deg(x)
         e = Graph(self, (x, y), settings, xerr=xerr, yerr=yerr, **style)
@@ -233,7 +236,7 @@ class BaseAxes:
         return self._plot(x, y, **kwargs, ls="", settings={"scatter": None}, cb = kwargs.get("cmap", None))
 
     def quiver(self, *args, **kwargs):
-        kws = {"pivot", "scale", "color", "c", "alpha", "cmap", "width", "linewidth", "lw"}
+        kws = {"pivot", "scale", "color", "c", "alpha", "cmap", "width", "linewidth", "lw", "vmin", "vmax"}
         kwargs = self._check_kwargs("quiver", kws, **kwargs)
         X = Y = C = None
         if len(args) == 2:
@@ -275,10 +278,11 @@ class BaseAxes:
                 raise Warning(f"Invalid pivot: {pivot}. Must be one of 'tail', 'middle', or 'tip'.")
         if C is not None:
             cmap = kwargs.get("cmap", "viridis")
-            kwargs["cmap"] = Colorbar(cmap=cmap, lower=_np.min(C), upper=_np.max(C))
+            kwargs["cmap"] = Colorbar(cmap=cmap, lower=kwargs.get("vmin", _np.min(C)), upper=kwargs.get("vmax", _np.max(C)))
             kwargs["C"] = C.flatten()
         else:
             kwargs["color"] = kwargs.get("color", kwargs.get("c", "k"))
+            kwargs.pop("cmap", None)
         kwargs["u"] = U
         kwargs["v"] = V
         if "width" in kwargs:
@@ -289,6 +293,320 @@ class BaseAxes:
             settings["quiver"].update({"every arrow/.append style": "mapped color"})
             settings["point meta"] = r"\thisrow{c}"
         return self._plot(X, Y, **kwargs, settings=settings, cb = kwargs.get("cmap", None))
+
+    def streamplot(self, x, y, u, v, density=1, linewidth=None, color=None, cmap=None, arrowsize=1, minlength=0.1, start_points=None, maxlength=4.0, integration_direction="both", broken_streamlines=True, integration_max_step_scale=1.0, integration_max_error_scale=1.0, num_arrows=1):
+        from scipy.integrate import solve_ivp
+        from scipy.interpolate import RegularGridInterpolator
+        import numpy as _np
+        from collections import defaultdict
+
+        x_min, x_max = (x.min(), x.max())
+        y_min, y_max = (y.min(), y.max())
+        x_1d = _np.asarray(x[0, :] if x.ndim == 2 else x).flatten()
+        y_1d = _np.asarray(y[:, 0] if y.ndim == 2 else y).flatten()
+        interp_u = RegularGridInterpolator((x_1d, y_1d), u.T, bounds_error=False, fill_value=0.0)
+        interp_v = RegularGridInterpolator((x_1d, y_1d), v.T, bounds_error=False, fill_value=0.0)
+        start_points_set = start_points is not None
+        if start_points is None:
+            nx = int(10 * density)
+            ny = int(10 * density)
+            xs = _np.linspace(x_min, x_max, nx + 1)
+            ys = _np.linspace(y_min, y_max, ny + 1)
+            xc = 0.5 * (xs[:-1] + xs[1:])
+            yc = 0.5 * (ys[:-1] + ys[1:])
+            seed_x, seed_y = _np.meshgrid(xc, yc)
+            seeds = _np.column_stack([seed_x.ravel(), seed_y.ravel()])
+            if not broken_streamlines:
+                dist_to_boundary = _np.minimum(
+                    _np.minimum(seeds[:, 0] - x_min, x_max - seeds[:, 0]),
+                    _np.minimum(seeds[:, 1] - y_min, y_max - seeds[:, 1])
+                )
+                sort_idx = _np.argsort(dist_to_boundary)
+                seeds = seeds[sort_idx]
+        else:
+            seeds = _np.asarray(start_points)
+
+        domain_dx = abs(x_max - x_min)
+        domain_dy = abs(y_max - y_min)
+        if start_points_set and not broken_streamlines:
+            ignore_length = True
+            skip_used_starts = False
+            terminate_on_used = False
+            mark_used = False
+        elif not start_points_set and broken_streamlines:
+            ignore_length = False
+            skip_used_starts = True
+            terminate_on_used = True
+            mark_used = True
+        elif not start_points_set and not broken_streamlines:
+            ignore_length = True
+            skip_used_starts = True
+            terminate_on_used = False
+            mark_used = True
+        else:
+            ignore_length = False
+            skip_used_starts = False
+            terminate_on_used = True
+            mark_used = True
+        eff_maxlength = 1e6 if ignore_length else maxlength
+        eff_minlength = 0.0 if ignore_length else minlength
+        seed_used = _np.zeros(len(seeds), dtype=bool)
+        current_line_seeds = _np.zeros(len(seeds), dtype=bool)
+        nx_seed = int(10 * density)
+        ny_seed = int(10 * density)
+        dx_seed = domain_dx / nx_seed if domain_dx > 0 else 1.0
+        dy_seed = domain_dy / ny_seed if domain_dy > 0 else 1.0
+        R_SQ_THRESH = 0.0625
+        def integrate_seed(start_point, maxlength=100.0, max_step=0.05, direction='both'):
+            x0, y0 = start_point
+            eps = 1e-8
+            def vector_field(s, state):
+                px, py = state
+                vel_x = float(interp_u((px, py)))
+                vel_y = float(interp_v((px, py)))
+                norm = _np.sqrt(vel_x**2 + vel_y**2 + eps)
+                return [vel_x / norm, vel_y / norm]
+            def out_of_bounds_event(s, state):
+                px, py = state
+                return min(px - x_min, x_max - px, py - y_min, y_max - py)
+            out_of_bounds_event.terminal = True # type: ignore
+            out_of_bounds_event.direction = -1  # type: ignore
+            def stagnation_event(s, state):
+                px, py = state
+                speed = _np.hypot(float(interp_u((px, py))), float(interp_v((px, py))))
+                return speed - 1e-4
+            stagnation_event.terminal = True    # type: ignore
+            stagnation_event.direction = -1     # type: ignore
+            def closed_loop_event(s, state):
+                if abs(s) < 1.0:
+                    return 1.0
+                px, py = state
+                dist_sq = ((px - x0) / dx_seed)**2 + ((py - y0) / dy_seed)**2
+                return dist_sq - R_SQ_THRESH
+            closed_loop_event.terminal = True   # type: ignore
+            closed_loop_event.direction = -1    # type: ignore
+            def hit_used_seed_event(s, state):
+                if not terminate_on_used:
+                    return 1.0
+                px, py = state
+                mask = seed_used & (~current_line_seeds)
+                if not _np.any(mask):
+                    return 1.0
+                dist_sq = ((px - seeds[mask, 0]) / dx_seed)**2 + ((py - seeds[mask, 1]) / dy_seed)**2
+                return _np.min(dist_sq) - R_SQ_THRESH
+            hit_used_seed_event.terminal = True # type: ignore
+            hit_used_seed_event.direction = -1  # type: ignore
+            base_events = [out_of_bounds_event, stagnation_event, closed_loop_event, hit_used_seed_event]
+            def run_solver(s_end, extra_events=None):
+                ev = base_events if extra_events is None else base_events + extra_events
+                return solve_ivp(vector_field, (0.0, s_end), start_point, method='RK45', 
+                                 max_step=max_step, events=ev, rtol=1e-6, atol=1e-4 * integration_max_error_scale * max_step, dense_output=True)
+            def finalize_trajectory_and_mark(sol):
+                if len(sol.t) == 0:
+                    return _np.array([]), _np.array([]), False
+                s_final = sol.t[-1]
+                if s_final == 0:
+                    return _np.array([x0]), _np.array([y0]), False
+                s_eval = _np.linspace(0.0, s_final, max(50, int(abs(s_final) * 50)))
+                dense_pts = sol.sol(s_eval)
+                x_pts, y_pts = dense_pts[0], dense_pts[1]
+                if mark_used:
+                    for px, py in zip(x_pts, y_pts):
+                        dist_sq = ((px - seeds[:, 0]) / dx_seed)**2 + ((py - seeds[:, 1]) / dy_seed)**2
+                        close_seeds = dist_sq < R_SQ_THRESH
+                        seed_used[close_seeds] = True
+                        current_line_seeds[close_seeds] = True
+                is_closed = (sol.t_events[2].size > 0)
+                if is_closed:
+                    x_pts = _np.append(x_pts, x0)
+                    y_pts = _np.append(y_pts, y0)
+                return x_pts, y_pts, is_closed
+            if direction == 'forward':
+                return finalize_trajectory_and_mark(run_solver(maxlength))
+            elif direction == 'backward':
+                return finalize_trajectory_and_mark(run_solver(-maxlength))
+            elif direction == 'both':
+                sol_fwd = run_solver(maxlength)
+                x_fwd, y_fwd, is_closed_fwd = finalize_trajectory_and_mark(sol_fwd)
+                if is_closed_fwd:
+                    return x_fwd, y_fwd, True
+                fwd_pts = _np.column_stack([x_fwd, y_fwd]) if len(x_fwd) > 5 else None
+                def hit_fwd_line_event(s, state):
+                    if fwd_pts is None or abs(s) < 1.0:
+                        return 1.0
+                    px, py = state
+                    dist_sq = ((px - fwd_pts[:, 0]) / dx_seed)**2 + ((py - fwd_pts[:, 1]) / dy_seed)**2
+                    return _np.min(dist_sq) - R_SQ_THRESH
+                hit_fwd_line_event.terminal = True  # type: ignore
+                hit_fwd_line_event.direction = -1   # type: ignore
+                sol_bwd = run_solver(-maxlength, extra_events=[hit_fwd_line_event])
+                x_bwd, y_bwd, is_closed_bwd = finalize_trajectory_and_mark(sol_bwd)
+                hit_fwd_line = sol_bwd.t_events[4].size > 0 if len(sol_bwd.t_events) > 4 else False
+                is_closed = is_closed_bwd or hit_fwd_line
+                if len(x_bwd) > 0 and len(x_fwd) > 0:
+                    x_full = _np.concatenate([x_bwd[::-1], x_fwd[1:]])
+                    y_full = _np.concatenate([y_bwd[::-1], y_fwd[1:]])
+                elif len(x_bwd) > 0:
+                    x_full, y_full = x_bwd[::-1], y_bwd[::-1]
+                else:
+                    x_full, y_full = x_fwd, y_fwd
+                if is_closed and len(x_full) > 0:
+                    x_full = _np.append(x_full, x_full[0])
+                    y_full = _np.append(y_full, y_full[0])
+                return x_full, y_full, is_closed
+            else:
+                raise ValueError(f"Invalid integration direction: {direction}")
+        raw_candidates = []
+        for seed_idx, seed in enumerate(seeds):
+            if skip_used_starts and seed_used[seed_idx]:
+                continue
+            current_line_seeds.fill(False)
+            x_raw, y_raw, is_closed = integrate_seed(seed, direction=integration_direction, maxlength=eff_maxlength, max_step=0.05 * integration_max_step_scale)
+            if len(x_raw) > 1 and len(y_raw) > 1:
+                arc_len = _np.sum(_np.hypot(_np.diff(x_raw), _np.diff(y_raw)))
+                if arc_len >= eff_minlength:
+                    raw_candidates.append((is_closed, arc_len, x_raw, y_raw))
+        raw_candidates.sort(key=lambda item: (item[1], item[0]), reverse=True)
+        grid_cell_size_x = dx_seed * 0.5
+        grid_cell_size_y = dy_seed * 0.5
+        spatial_grid = defaultdict(list)
+        def get_grid_key(px, py):
+            return int((px - x_min) / grid_cell_size_x), int((py - y_min) / grid_cell_size_y)
+        def perp_dist(px, py, ax, ay, bx, by):
+            npx, npy = px / dx_seed, py / dy_seed
+            nax, nay = ax / dx_seed, ay / dy_seed
+            nbx, nby = bx / dx_seed, by / dy_seed
+            abx, aby = nbx - nax, nby - nay
+            apx, apy = npx - nax, npy - nay
+            ab_sq = abx**2 + aby**2
+            if ab_sq == 0.0:
+                return apx**2 + apy**2
+            t = max(0.0, min(1.0, (apx * abx + apy * aby) / ab_sq))
+            proj_x = nax + t * abx
+            proj_y = nay + t * aby
+            return (npx - proj_x)**2 + (npy - proj_y)**2
+        def insert_segment(seg):
+            ax, ay, bx, by = seg
+            gx1, gy1 = get_grid_key(ax, ay)
+            gx2, gy2 = get_grid_key(bx, by)
+            for gx in range(min(gx1, gx2), max(gx1, gx2) + 1):
+                for gy in range(min(gy1, gy2), max(gy1, gy2) + 1):
+                    spatial_grid[(gx, gy)].append(seg)
+        final_streamlines = []
+        for is_closed, _, x_seg, y_seg in raw_candidates:
+            if not terminate_on_used or len(spatial_grid) == 0:
+                final_streamlines.append((x_seg, y_seg))
+                for i in range(len(x_seg) - 1):
+                    insert_segment((x_seg[i], y_seg[i], x_seg[i+1], y_seg[i+1]))
+                continue
+            stride = max(1, len(x_seg) // 60)
+            check_indices = list(range(0, len(x_seg), stride))
+            if check_indices[-1] != len(x_seg) - 1:
+                check_indices.append(len(x_seg) - 1)
+            valid_len = len(x_seg)
+            for idx in check_indices:
+                if idx == 0:
+                    continue
+                px, py = x_seg[idx], y_seg[idx]
+                gx, gy = get_grid_key(px, py)
+                candidate_segs = []
+                for dgx in (-1, 0, 1):
+                    for dgy in (-1, 0, 1):
+                        candidate_segs.extend(spatial_grid.get((gx + dgx, gy + dgy), []))
+                collision = False
+                for ax, ay, bx, by in candidate_segs:
+                    if perp_dist(px, py, ax, ay, bx, by) < 2 * R_SQ_THRESH:
+                        collision = True
+                        break
+                if collision:
+                    valid_len = idx
+                    break
+            if valid_len > 1:
+                x_cut, y_cut = x_seg[:valid_len], y_seg[:valid_len]
+                cropped_len = _np.sum(_np.hypot(_np.diff(x_cut), _np.diff(y_cut)))
+                if cropped_len >= minlength:
+                    final_streamlines.append((x_cut, y_cut))
+                    for i in range(len(x_cut) - 1):
+                        insert_segment((x_cut[i], y_cut[i], x_cut[i+1], y_cut[i+1]))
+        lines = {0: []}
+        st = {}
+        settings: dict[str, Any] = {"streamplot": {}}
+        for x_seg, y_seg in final_streamlines:
+            if cmap is not None:
+                vs = _np.hypot(interp_u(_np.column_stack([x_seg, y_seg])), interp_v(_np.column_stack([x_seg, y_seg])))
+                lines[0].append(list(zip(x_seg, y_seg, vs)))
+            else:
+                lines[0].append(list(zip(x_seg, y_seg)))
+        ol = None
+        if cmap is not None:
+            vmin = 0
+            vmax = _np.max(_np.hypot(u, v))
+            cb = Colorbar(cmap=cmap, lower=vmin, upper=vmax)
+            if self._cmap_bar.get(self._get_overlay(), None) is not None and self._cmap_bar[self._get_overlay()] != cb:
+                self._get_free_overlay(cb=cb)
+            ol = self._get_overlay()
+            self._cmap_bar[ol] = cb
+            settings["empty line"] = "jump"
+            settings["mesh"] = None
+            settings["point meta"] = "explicit"
+            st["color"] = True
+        elif color is not None:
+            st["c"] = color
+        else:
+            assert isinstance(self, Axes) or isinstance(self, Secondary)
+            color = f"C{self._get_defcol()}"
+            st["c"] = color
+        if num_arrows > 0 and len(final_streamlines) > 0:
+            arrow_x = []
+            arrow_y = []
+            arrow_u = []
+            arrow_v = []
+            arrow_c = []
+            scale_x = 1.0 / domain_dx if domain_dx > 0 else 1.0
+            scale_y = 1.0 / domain_dy if domain_dy > 0 else 1.0
+            for x_seg, y_seg in final_streamlines:
+                if len(x_seg) < 2:
+                    continue
+                dx_norm = _np.diff(x_seg) * scale_x
+                dy_norm = _np.diff(y_seg) * scale_y
+                step_lengths = _np.hypot(dx_norm, dy_norm)
+                cum_len = _np.concatenate([[0.0], _np.cumsum(step_lengths)])
+                total_len = cum_len[-1]
+                if total_len == 0.0:
+                    continue
+                target_lens = _np.linspace(total_len / (num_arrows + 1), total_len * num_arrows / (num_arrows + 1), num_arrows)
+                for t_len in target_lens:
+                    idx = _np.searchsorted(cum_len, t_len) - 1
+                    idx = max(0, min(idx, len(x_seg) - 2))
+                    ds = cum_len[idx + 1] - cum_len[idx]
+                    frac = (t_len - cum_len[idx]) / ds if ds > 0 else 0.0
+                    px = x_seg[idx] + frac * (x_seg[idx + 1] - x_seg[idx])
+                    py = y_seg[idx] + frac * (y_seg[idx + 1] - y_seg[idx])
+                    pu = float(interp_u((px, py)))
+                    pv = float(interp_v((px, py)))
+                    p_norm = _np.hypot(pu, pv)
+                    if p_norm > 1e-8:
+                        arrow_x.append(px)
+                        arrow_y.append(py)
+                        arrow_u.append(pu / p_norm)
+                        arrow_v.append(pv / p_norm)
+                        arrow_c.append(p_norm)
+            sc = 1e-5 * max(domain_dx, domain_dy) / _np.max(_np.hypot(u, v))
+            if len(arrow_x) > 0:
+                if cmap is not None:
+                    self.quiver(_np.array(arrow_x), _np.array(arrow_y), _np.array(arrow_u), _np.array(arrow_v), _np.array(arrow_c), scale=sc, pivot="middle", lw=arrowsize/2, cmap=cmap, vmin=0, vmax=_np.max(_np.hypot(u, v)))
+                elif color is not None:
+                    self.quiver(_np.array(arrow_x), _np.array(arrow_y), _np.array(arrow_u), _np.array(arrow_v), scale=sc, pivot="middle", lw=arrowsize/2, color=color)
+        if linewidth is not None:
+            st["lw"] = linewidth
+        e = Single(self, lines, settings=settings, **st)
+        if num_arrows > 0:
+            i = len(self._elements[self._get_overlay()]) - 1
+            if i < 0: i = 0
+            self._elements[self._get_overlay()].insert(i, e)
+        else:
+            self._elements[self._get_overlay()].append(e)
+        return e
 
     def contour(self, *args, **kwargs):
         kws = {"levels", "alpha", "cmap", "colors", "vmin", "vmax", "linewidth", "lw", "linestyle", "ls", "labels"}
@@ -336,7 +654,7 @@ class BaseAxes:
             cb = Colorbar(cmap=cmap, lower=vmin, upper=vmax)
         if cb is not None:
             if self._cmap_bar.get(self._get_overlay(), None) is not None and self._cmap_bar[self._get_overlay()] != cb:
-                self._get_free_overlay()
+                self._get_free_overlay(cb=cb)
             self._cmap_bar[self._get_overlay()] = cb
         if not kwargs.pop("labels", False):
             st["labels"] = "false"
@@ -480,7 +798,7 @@ class BaseAxes:
         return e
         
     def hlines(self, y, xmin, xmax, colors="k", linestyles="solid", **kwargs):
-        kws = {"label"}
+        kws = {"label", "color", "c", "linewidth", "lw", "linestyle", "ls", "alpha"}
         kwargs = self._check_kwargs("hlines", kws, **kwargs)
         def _pad_or_truncate(some_list, target_len):
             return some_list[:target_len] + [some_list[-1]]*(target_len - len(some_list))
@@ -491,18 +809,24 @@ class BaseAxes:
                 return [x]
             return list(x)
         ys = _to_list(y)
+        colors = kwargs.pop("c", kwargs.pop("color", colors))
+        linestyles = kwargs.pop("ls", kwargs.pop("linestyle", linestyles))
         xmins = _pad_or_truncate(_to_list(xmin), len(ys))
         xmaxs = _pad_or_truncate(_to_list(xmax), len(ys))
         colorss = _pad_or_truncate(_to_list(colors), len(ys))
         lss = _pad_or_truncate(_to_list(linestyles), len(ys))
+        st = {}
+        for k in kws - {"label"}:
+            if k in kwargs:
+                st[k] = kwargs.pop(k)
         for i in range(len(ys)):
             if i == 0 and "label" in kwargs:
-                return self._plot([xmins[i], xmaxs[i]], [ys[i]]*2, None, None, None, c=colorss[i], ls=lss[i], label=kwargs["label"])
+                return self._plot([xmins[i], xmaxs[i]], [ys[i]]*2, None, None, None, c=colorss[i], ls=lss[i], label=kwargs["label"], **st)
             else:
-                return self._plot([xmins[i], xmaxs[i]], [ys[i]]*2, None, None, None, c=colorss[i], ls=lss[i])
+                return self._plot([xmins[i], xmaxs[i]], [ys[i]]*2, None, None, None, c=colorss[i], ls=lss[i], **st)
             
     def vlines(self, x, ymin, ymax, colors="k", linestyles="solid", **kwargs):
-        kws = {"label"}
+        kws = {"label", "color", "c", "linewidth", "lw", "linestyle", "ls", "alpha"}
         kwargs = self._check_kwargs("vlines", kws, **kwargs)
         def _pad_or_truncate(some_list, target_len):
             return some_list[:target_len] + [some_list[-1]]*(target_len - len(some_list))
@@ -513,15 +837,21 @@ class BaseAxes:
                 return [x]
             return list(x)
         xs = _to_list(x)
+        colors = kwargs.pop("c", kwargs.pop("color", colors))
+        linestyles = kwargs.pop("ls", kwargs.pop("linestyle", linestyles))
         ymins = _pad_or_truncate(_to_list(ymin), len(xs))
         ymaxs = _pad_or_truncate(_to_list(ymax), len(xs))
         colorss = _pad_or_truncate(_to_list(colors), len(xs))
         lss = _pad_or_truncate(_to_list(linestyles), len(xs))
+        st = {}
+        for k in kws - {"label"}:
+            if k in kwargs:
+                st[k] = kwargs.pop(k)
         for i in range(len(xs)):
             if i == 0 and "label" in kwargs:
-                self._plot([xs[i]]*2, [ymins[i], ymaxs[i]], None, None, None, c=colorss[i], ls=lss[i], label=kwargs["label"])
+                self._plot([xs[i]]*2, [ymins[i], ymaxs[i]], None, None, None, c=colorss[i], ls=lss[i], label=kwargs["label"], **st)
             else:
-                self._plot([xs[i]]*2, [ymins[i], ymaxs[i]], None, None, None, c=colorss[i], ls=lss[i])
+                self._plot([xs[i]]*2, [ymins[i], ymaxs[i]], None, None, None, c=colorss[i], ls=lss[i], **st)
 
     def hist(self, x, bins=10, density=False,**kwargs):
         kws = {"alpha", "color", "c", "label", "facecolor", "fc", "edgecolor", "ec", "orientation", "rwidth", "cumulative", "range", "histtype", "weights", "cumulative", "align", "stacked", "fill", "hatch", "hatch_color", "hatch_linewidth", "hatch_distance"}
@@ -1153,6 +1483,44 @@ class BaseAxes:
         _, freqs = self._fft_core(win, n_fft, sides, Fs)
         return Pxx_matrix, freqs + Fc, step
 
+    def _csd_helper(self, x, y, NFFT=256, Fs=2.0, Fc=0.0, detrend=None, window=None, noverlap=0, pad_to=None, sides="default", scale_by_freq=True):
+        x, y = _np.asarray(x), _np.asarray(y)
+        if len(x) != len(y):
+            raise ValueError("x and y vectors must have equal length")
+        sides = ("onesided" if (_np.isrealobj(x) and _np.isrealobj(y)) else "twosided") if sides == "default" else sides
+        step, n_fft = NFFT - noverlap, pad_to or NFFT
+        if step <= 0 or n_fft < NFFT:
+            raise ValueError("Invalid noverlap or pad_to value")
+        win = self._get_window(window, NFFT)
+        num_segments = (len(x) - noverlap) // step
+        if num_segments == 0:
+            raise ValueError("Not enough data to compute spectrum")
+        Pxy = _np.zeros(n_fft if sides != "onesided" else (n_fft // 2 + 1), dtype=_np.complex128)
+        Pxx = _np.zeros_like(Pxy, dtype=_np.float64)
+        Pyy = _np.zeros_like(Pxy, dtype=_np.float64)
+        for i in range(num_segments):
+            seg_x = self._apply_detrend(x[i * step : i * step + NFFT], detrend)
+            seg_y = self._apply_detrend(y[i * step : i * step + NFFT], detrend)
+            X, _ = self._fft_core(seg_x * win, n_fft, sides, Fs)
+            Y, _ = self._fft_core(seg_y * win, n_fft, sides, Fs)
+            Pxy += X * _np.conj(Y)
+            Pxx += _np.abs(X) ** 2
+            Pyy += _np.abs(Y) ** 2
+        Pxy /= num_segments
+        Pxx /= num_segments
+        Pyy /= num_segments
+        sf = (Fs if scale_by_freq else 1.0) * (_np.abs(win) ** 2).sum()
+        Pxy /= sf
+        Pxx /= sf
+        Pyy /= sf
+        if sides == "onesided":
+            sl = slice(1, None if n_fft % 2 else -1)
+            Pxy[sl] *= 2.0
+            Pxx[sl] *= 2.0
+            Pyy[sl] *= 2.0
+        _, freqs = self._fft_core(win, n_fft, sides, Fs)
+        return Pxy, Pxx, Pyy, freqs + Fc
+
     def specgram(self, x, *, NFFT=256, Fs=2.0, Fc=0.0, detrend=None, window=None, noverlap=0, pad_to=None, sides="default", scale_by_freq=True, mode="psd", scale="default", cmap="viridis", **kwargs):
         Pxx, freqs, step = self._ft_helper(x, NFFT=NFFT, Fs=Fs, Fc=Fc, detrend=detrend, window=window, noverlap=noverlap, pad_to=pad_to, sides=sides, scale_by_freq=scale_by_freq, mode=mode, scale=scale)
         t = (_np.arange(Pxx.shape[1]) * step + (NFFT / 2.0)) / Fs
@@ -1169,7 +1537,61 @@ class BaseAxes:
         if isinstance(self, Axes):
             self.set_xlabel("Frequency (Hz)")
         return Pxx, freqs, self.plot(freqs, 10 * _np.log10(_np.mean(Pxx, axis=1)), **kwargs)
-        
+
+    def acorr(self, x, *, normed=True, usevlines=True, maxlags=None, **kwargs):
+        kws = {"alpha", "color", "c", "linestyle", "ls", "linewidth", "lw", "marker", "markersize", "ms", "label"}
+        kwargs = self._check_kwargs("acorr", kws, **kwargs)
+        return self.xcorr(x, x, normed=normed, usevlines=usevlines, maxlags=maxlags, **kwargs)
+
+    def csd(self, x, y, *, NFFT=256, Fs=2.0, Fc=0.0, detrend=None, window=None, noverlap=0, pad_to=None, sides="default", scale_by_freq=True, **kwargs):
+        kws = {"alpha", "color", "c", "linestyle", "ls", "linewidth", "lw", "marker", "markersize", "ms", "label"}
+        kwargs = self._check_kwargs("csd", kws, **kwargs)
+        Pxy, _, _, freqs = self._csd_helper(x, y, NFFT=NFFT, Fs=Fs, Fc=Fc, detrend=detrend, window=window, noverlap=noverlap, pad_to=pad_to, sides=sides, scale_by_freq=scale_by_freq)
+        csd_dB = 10.0 * _np.log10(_np.maximum(_np.abs(Pxy), 1e-20))
+        self.set_ylabel(f"Cross Spectral Density ({"dB/Hz" if scale_by_freq else "dB"})")
+        if isinstance(self, Axes):
+            self.set_xlabel("Frequency (Hz)")
+        return Pxy, freqs, self.plot(freqs, csd_dB, **kwargs)
+
+    def cohere(self, x, y, *, NFFT=256, Fs=2.0, Fc=0.0, detrend=None, window=None, noverlap=0, pad_to=None, sides="default", scale_by_freq=True, **kwargs):
+        kws = {"alpha", "color", "c", "linestyle", "ls", "linewidth", "lw", "marker", "markersize", "ms", "label"}
+        kwargs = self._check_kwargs("cohere", kws, **kwargs)
+        Pxy, Pxx, Pyy, freqs = self._csd_helper(x, y, NFFT=NFFT, Fs=Fs, Fc=Fc, detrend=detrend, window=window, noverlap=noverlap, pad_to=pad_to, sides=sides, scale_by_freq=scale_by_freq)
+        Cxy = (_np.abs(Pxy) ** 2) / (_np.real(Pxx) * _np.real(Pyy) + 1e-20)
+        Cxy = _np.clip(Cxy, 0.0, 1.0)
+        self.set_ylabel("Coherence")
+        if isinstance(self, Axes):
+            self.set_xlabel("Frequency (Hz)")
+        return Cxy, freqs, self.plot(freqs, Cxy, **kwargs)
+    
+    def xcorr(self, x, y, *, normed=True, usevlines=True, maxlags=None, **kwargs):
+        kws = {"alpha", "color", "c", "linestyle", "ls", "linewidth", "lw", "marker", "markersize", "ms", "label"}
+        kwargs = self._check_kwargs("xcorr", kws, **kwargs)
+        x, y = _np.asarray(x), _np.asarray(y)
+        Nx = len(x)
+        if len(y) != Nx:
+            raise ValueError("x and y must have the same length.")
+        c = _np.correlate(x, y, mode="full")
+        lags = _np.arange(-Nx + 1, Nx, dtype=_np.int64)
+        if maxlags is not None:
+            if maxlags >= Nx:
+                raise ValueError(f"maxlags must be less than len(x) ({Nx})")
+            mid = Nx - 1
+            sl = slice(mid - maxlags, mid + maxlags + 1)
+            c, lags = c[sl], lags[sl]
+        if normed:
+            c = c / _np.sqrt(_np.dot(x, x) * _np.dot(y, y))
+        axl = None
+        if usevlines:
+            res = self.vlines(lags, [0], c, **kwargs) if hasattr(self, "vlines") else self.plot(lags, c, **kwargs)
+            if isinstance(self, Axes):
+                axl = self.axhline(0, color=kwargs.get("color", "black"), lw=0.5)
+            elif isinstance(self, Secondary):
+                axl = self._primary.axhline(0, color=kwargs.get("color", "black"), lw=0.5)
+        else:
+            res = self.plot(lags, c, **kwargs)
+        return lags, c, res, axl
+    
     def pie(self, x, *, explode=None, labels=None, colors=None, autopct=None, pctdistance=0.6, labeldistance=1.1, radius=1, startangle=0, counterclock=True, wedgeprops=None, rotate_labels=False, normalize=True):
         kws = {"width"}
         kwargs = self._check_kwargs("pie: wedgeprops", kws, **wedgeprops) if wedgeprops else {}
@@ -1182,6 +1604,78 @@ class BaseAxes:
 
     def pie_label(self, container, labels, *, distance=0.6, rotate=False):
         container._add_labels(labels, distance=distance, rotate=rotate)
+
+    def eventplot(self, positions, *, orientation="horizontal", lineoffsets=1, linelengths=1, linewidths=None, colors=None, alpha=None, linestyles="solid", **kwargs):
+        kws = {"color", "c", "linestyle", "ls", "linewidth", "lw", "label"}
+        kwargs = self._check_kwargs("eventplot", kws, **kwargs)
+        positions = _np.asarray(positions)
+        if positions.ndim == 1:
+            positions = positions[None, :]
+            n = 1
+        else:
+            n = positions.shape[0]
+        if colors is not None:
+            try:
+                c = [self._match_color(colors) for _ in range(n)]
+                colors = [colors for _ in range(n)]
+            except:
+                if len(colors) != n:
+                    raise Warning(f"Length of colors ({len(colors)}) does not match number of datasets ({n}).")
+                colors = [colors[i] for i in range(n)]
+        else:
+            colors = [None for _ in range(n)]
+        def _apply_to_n(prop) -> list:
+            if prop is None:
+                return [None for _ in range(n)]
+            if isinstance(prop, (int, float, str)):
+                return [prop for _ in range(n)]
+            elif len(prop) != n:
+                raise Warning(f"Length of property ({len(prop)}) does not match number of datasets ({n}).")
+            return prop
+        if lineoffsets is None:
+            lineoffsets = [0 for _ in range(n)]
+        elif isinstance(lineoffsets, (int, float)):
+            lineoffsets = [lineoffsets*i for i in range(n)]
+        else:
+            lineoffsets = _apply_to_n(lineoffsets)
+        linelengths = _apply_to_n(linelengths)
+        linewidths = _apply_to_n(linewidths)
+        alpha = _apply_to_n(alpha)
+        linestyles = _apply_to_n(linestyles)
+        labels = _apply_to_n(kwargs.pop("label", None))
+        output = []
+        for i in range(n):
+            kws = kwargs.copy()
+            pos = positions[i]
+            loc = (lineoffsets[i]) - (linelengths[i] / 2 if linelengths[i] is not None else 0.5) if lineoffsets is not None else 0
+            loc = loc * _np.ones_like(pos)
+            if alpha[i] is not None:
+                kws["opacity"] = alpha[i]
+            if colors[i] is not None:
+                kws["c"] = colors[i]
+            if linewidths[i] is not None:
+                kws["lw"] = linewidths[i]
+            if linestyles[i] is not None:
+                kws["ls"] = linestyles[i]
+            q = Single(self, None, {}, None, **kws)._style_string()
+            st = {"draw": "none", "mark": "none"}
+            if labels[i] is not None:
+                st["legend image code/.code"] = f"{{\\draw[{q}] (0cm,0cm) -- (0.6cm,0cm);}}"
+            st["error bars/.cd"] = "none"
+            if orientation == "horizontal":
+                st["y dir"] = "plus"
+                st["y fixed"] = linelengths[i]
+                pts = (pos, loc)
+            else: # vertical
+                st["x dir"] = "plus"
+                st["x fixed"] = linelengths[i]
+                pts = (loc, pos)
+            st["error bar style"] = f"{{{q}}}"
+            st["error mark"] = "none"
+            e = Graph(self, pts, settings=st, color=True, label=labels[i])
+            self._elements[self._get_overlay()].append(e)
+            output.append(e)
+        return output
 
     def axvline(self, x, ymin=0, ymax=1, **kwargs):
         kws = {"fmt", "base", "alpha", "color", "c", "linestyle", "ls", "linewidth", "lw", "label"}
@@ -2093,7 +2587,7 @@ class Axes(BaseAxes):
         cm = None
         if cb is not None:
             if self._cmap_bar.get(self._get_overlay(), None) is not None and self._cmap_bar[self._get_overlay()] != cb:
-                self._get_free_overlay()
+                self._get_free_overlay(cb=cb)
             self._cmap_bar[self._get_overlay()] = cb
             cm = cb._cmap
         return (self, cm, vmin, vmax)
@@ -2184,7 +2678,7 @@ class Axes(BaseAxes):
             cmap = "viridis"
         cb = Colorbar(cmap=cmap, lower=kwargs.get("vmin", m), upper=kwargs.get("vmax", M))
         if self._cmap_bar.get(self._get_overlay(), None) is not None and self._cmap_bar[self._get_overlay()] != cb:
-            self._get_free_overlay()
+            self._get_free_overlay(cb=cb)
         self._cmap_bar[self._get_overlay()] = cb
         return (self, cmap, m, M)
 

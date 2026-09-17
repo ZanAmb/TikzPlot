@@ -115,7 +115,9 @@ class BaseGraph:
                 opts[ls] = None
 
         if "c" in self._style or "color" in self._style:
-            if "scatter" in self._settings:
+            if "color" in self._style and isinstance(self._style["color"], bool) and self._style["color"] == True:
+                self._has_color = True 
+            elif "scatter" in self._settings:
                 if self._colors is not None:
                     if not isinstance(self._colors[0], (int, float)):
                         self._colors = [match_color(p)[0] for p in self._colors]
@@ -339,7 +341,7 @@ class BaseGraph:
         return pname
     
     def _num_points(self):
-        if "contour prepared" in self._settings:
+        if "contour prepared" in self._settings or "streamplot" in self._settings:
             assert isinstance(self._x, dict)
             n = 0
             for z in self._x.keys():
@@ -361,6 +363,7 @@ class Single(BaseGraph):
         self._classic = True
         self._special = ""
         self._style = {}
+        self._meta = False
         self._endnotes = ""
         for s in style:
             if s.startswith("_"):
@@ -370,21 +373,37 @@ class Single(BaseGraph):
                 self._style[s] = style[s]
         if settings != {}:
             self._settings = settings
+        if "streamplot" in self._settings:
+            try:
+                if len(self._x[0][0][0]) == 3:
+                    self._meta = True
+            except: pass
 
     def _header(self):
         if "boxplot prepared" in self._settings or "boxplot" in self._settings:
             return "y"
         if "contour prepared" in self._settings:
             return ""
+        if "streamplot" in self._settings:
+            if self._meta:
+                return "x y meta"
+            return "x y"
 
     def _rows(self):
         rows = []
-        if "contour prepared" in self._settings:
+        if "contour prepared" in self._settings or "streamplot" in self._settings:
             assert isinstance(self._x, dict)
             for z in self._x.keys():
                 for i in range(len(self._x[z])):
-                    for x,y in self._x[z][i]:
-                        rows.append(f"{x} {y} {z}")
+                    for l in self._x[z][i]:
+                        x, y = l[0], l[1]
+                        if "contour prepared" in self._settings:
+                            rows.append(f"{x} {y} {z}")
+                        elif "streamplot" in self._settings:
+                            if self._meta:
+                                rows.append(f"{x} {y} {l[2]}")
+                            else:
+                                rows.append(f"{x} {y}")
                     rows.append("")
             rows.pop()
             return "\n".join(rows)
@@ -412,6 +431,11 @@ class Single(BaseGraph):
             table_opts = ""
             if "boxplot prepared" in self._settings or "boxplot" in self._settings:
                 table_opts = "y index=0"
+            if "streamplot" in self._settings:
+                if self._meta:
+                    table_opts = "x=x, y=y, meta=meta"
+                else:
+                    table_opts = "x=x, y=y"
             datapoints = f"{header}\n{rows}\n"
             if TikzConfig.SAVE_DATAPOINTS:
                 datapoints = self._save_data(datapoints, filename)
@@ -452,26 +476,27 @@ class Single(BaseGraph):
                 return q - w/2, q + w/2, min(data), max(data)
             else:
                 return min(data), max(data), q - w/2, q + w/2
-        if "contour prepared" in self._settings:
+        if "contour prepared" in self._settings or "streamplot" in self._settings:
             assert isinstance(self._x, dict)
             xvals = []
             yvals = []
             for z in self._x.keys():
-                for x,y in list(itertools.chain.from_iterable(self._x[z])):
-                    xvals.append(x)
-                    yvals.append(y)
-            return min(xvals), max(xvals), min(yvals), max(yvals)
+                for l in list(itertools.chain.from_iterable(self._x[z])):
+                    xvals.append(l[0])
+                    yvals.append(l[1])
+            if xvals and yvals:
+                return min(xvals), max(xvals), min(yvals), max(yvals)
         return None, None, None, None
 
     def _get_erange(self, which):
-        if "boxplot prepared" in self._settings or "boxplot" in self._settings or "contour prepared" in self._settings:
+        if "boxplot prepared" in self._settings or "boxplot" in self._settings or "contour prepared" in self._settings or "streamplot" in self._settings:
             ind_table = ["xmin", "xmax", "ymin", "ymax"]
             i = ind_table.index(which)
             return self._data_range()[i]
         return None
 
     def _filter(self, which, value):
-        if "contour prepared" in self._settings:
+        if "contour prepared" in self._settings or "streamplot" in self._settings:
             assert isinstance(self._x, dict)
             new_x = {}
             for z in self._x.keys():
@@ -498,18 +523,19 @@ class Single(BaseGraph):
             self._x = new_x
 
     def _check_equal(self, x):
-        if "contour prepared" in self._settings:
+        if "contour prepared" in self._settings or "streamplot" in self._settings:
             return False
         if self._classic:
             return np.all(self._x == x)
 
     def _get_points(self):
-        if "contour prepared" in self._settings:
+        if "contour prepared" in self._settings or "streamplot" in self._settings:
             assert isinstance(self._x, dict)
             x = []
             y = []
             for z in self._x.keys():
-                for xx,yy in self._x[z]:
+                for l in self._x[z]:
+                    xx, yy = l[:,0], l[:,1]
                     x.append(xx)
                     y.append(yy)
             return np.asarray(x), np.asarray(y)
@@ -518,7 +544,7 @@ class Single(BaseGraph):
         return None
 
     def _reduce_points(self, limit):
-        if "contour prepared" in self._settings:
+        if "contour prepared" in self._settings or "streamplot" in self._settings:
             xm, xmode, xbase = self._axes._get_limit("xmin")
             xM, _, _ = self._axes._get_limit("xmax")
             ym, ymode, ybase = self._axes._get_limit("ymin")
@@ -536,10 +562,10 @@ class Single(BaseGraph):
                 lo, hi = 0, max(counts)
                 while lo < hi:
                     mid = (lo + hi + 1) // 2
-                    if sum(min(c, mid) for c in counts) > limit:
-                        hi = mid
+                    if sum(min(c, mid) for c in counts) <= limit:
+                        lo = mid
                     else:
-                        lo = mid - 1
+                        hi = mid - 1
                 margin = lo
             for z in self._x.keys():
                 group = []
@@ -548,7 +574,7 @@ class Single(BaseGraph):
                     if len(g) > margin:
                         if TikzConfig.REDUCE_METHOD == 0:
                             idx_keep = np.linspace(0, len(g)-1, margin, dtype=int)
-                            group.append(g[idx_keep])
+                            g = g[idx_keep]
                         elif TikzConfig.REDUCE_METHOD in [1,2]:
                             xs, ys = g[:,0], g[:,1]
                             if xmode == "log":
@@ -569,7 +595,7 @@ class Single(BaseGraph):
                                 fac = yM - ym
                                 if fac == 0: fac = 1
                                 vis_y = ys / fac
-                            while len(self._x) > limit:
+                            while len(g) > margin:
                                 if TikzConfig.REDUCE_METHOD == 1:
                                     dx1 = vis_x[1:-1] - vis_x[:-2]
                                     dy1 = vis_y[1:-1] - vis_y[:-2]
@@ -582,7 +608,7 @@ class Single(BaseGraph):
                                     crit = np.abs((x1 - x0)*(y2 - y0) - (y1 - y0)*(x2 - x0))
                                 idx_remove = np.argmin(crit)+1
                                 if idx_remove == len(crit): idx_remove -= 1
-                                mask = np.ones(len(self._x), dtype=bool)
+                                mask = np.ones(len(g), dtype=bool)
                                 mask[idx_remove] = False
                                 g = g[mask]
                                 vis_x = vis_x[mask]
@@ -604,7 +630,7 @@ class Graph(BaseGraph):
                     self._endnotes = style[s]
             else:
                 self._style[s] = style[s]
-        if settings != {}:
+        if settings != {} and settings is not None:
             self._settings = settings
         if "scatter" in self._settings:
             self._st_dict = {}
@@ -617,7 +643,7 @@ class Graph(BaseGraph):
             if "cmap" in self._style and "C" in self._style:
                 self._has_color = True
                 self._c = self._style.pop("C", None)
-        if "axvline" in settings or "axhline" in settings or "axvspan" in settings or "axhspan" in settings:
+        if "axvline" in self._settings or "axhline" in self._settings or "axvspan" in self._settings or "axhspan" in self._settings:
             self._x, self._y=coordinates
         elif isinstance(coordinates, tuple):
             self._classic = True
@@ -1108,7 +1134,7 @@ class Graph3(BaseGraph):
         else:
             self._special = coordinates
         self._style = style
-        if settings != {}:
+        if settings != {} and settings is not None:
             self._settings = settings
         if "scatter" in self._settings:
             self._st_dict = {}

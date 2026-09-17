@@ -122,6 +122,13 @@ def quiver(*args, **kwargs):
         raise ValueError("quiver is currently not supported for 3D axes.")
     return _current_axes.quiver(*args, **kwargs)
 
+def streamplot(*args, **kwargs):
+    _ensure_axes()
+    assert _current_axes
+    if isinstance(_current_axes, Axes3):
+        raise ValueError("streamplot is currently not supported for 3D axes.")
+    return _current_axes.streamplot(*args, **kwargs)
+
 def contour(*args, **kwargs):
     _ensure_axes()
     assert _current_axes
@@ -300,6 +307,34 @@ def psd(*args, **kwargs):
         raise ValueError("psd is not supported for 3D axes.")
     return _current_axes.psd(*args, **kwargs)
 
+def acorr(*args, **kwargs):
+    _ensure_axes()
+    assert _current_axes
+    if isinstance(_current_axes, Axes3):
+        raise ValueError("acorr is not supported for 3D axes.")
+    return _current_axes.acorr(*args, **kwargs)
+
+def csd(*args, **kwargs):
+    _ensure_axes()
+    assert _current_axes
+    if isinstance(_current_axes, Axes3):
+        raise ValueError("csd is not supported for 3D axes.")
+    return _current_axes.csd(*args, **kwargs)
+
+def cohere(*args, **kwargs):
+    _ensure_axes()
+    assert _current_axes
+    if isinstance(_current_axes, Axes3):
+        raise ValueError("cohere is not supported for 3D axes.")
+    return _current_axes.cohere(*args, **kwargs)
+
+def xcorr(*args, **kwargs):
+    _ensure_axes()
+    assert _current_axes
+    if isinstance(_current_axes, Axes3):
+        raise ValueError("xcorr is not supported for 3D axes.")
+    return _current_axes.xcorr(*args, **kwargs)
+
 def pie(*args, **kwargs):
     _ensure_axes()
     assert _current_axes
@@ -313,6 +348,13 @@ def pie_label(*args, **kwargs):
     if isinstance(_current_axes, Axes3):
         raise ValueError("pie_label is not supported for 3D axes.")
     return _current_axes.pie_label(*args, **kwargs)
+
+def eventplot(*args, **kwargs):
+    _ensure_axes()
+    assert _current_axes
+    if isinstance(_current_axes, Axes3):
+        raise ValueError("eventplot is not supported for 3D axes.")
+    return _current_axes.eventplot(*args, **kwargs)
 
 def bxp(*args, **kwargs):
     _ensure_axes()
