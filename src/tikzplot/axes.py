@@ -819,12 +819,14 @@ class BaseAxes:
         for k in kws - {"label"}:
             if k in kwargs:
                 st[k] = kwargs.pop(k)
+        output = []
         for i in range(len(ys)):
             if i == 0 and "label" in kwargs:
-                return self._plot([xmins[i], xmaxs[i]], [ys[i]]*2, None, None, None, c=colorss[i], ls=lss[i], label=kwargs["label"], **st)
+                output.append(self._plot([xmins[i], xmaxs[i]], [ys[i]]*2, None, None, None, c=colorss[i], ls=lss[i], label=kwargs["label"], **st))
             else:
-                return self._plot([xmins[i], xmaxs[i]], [ys[i]]*2, None, None, None, c=colorss[i], ls=lss[i], **st)
-            
+                output.append(self._plot([xmins[i], xmaxs[i]], [ys[i]]*2, None, None, None, c=colorss[i], ls=lss[i], **st))
+        return output
+
     def vlines(self, x, ymin, ymax, colors="k", linestyles="solid", **kwargs):
         kws = {"label", "color", "c", "linewidth", "lw", "linestyle", "ls", "alpha"}
         kwargs = self._check_kwargs("vlines", kws, **kwargs)
@@ -847,11 +849,13 @@ class BaseAxes:
         for k in kws - {"label"}:
             if k in kwargs:
                 st[k] = kwargs.pop(k)
+        output = []
         for i in range(len(xs)):
             if i == 0 and "label" in kwargs:
-                self._plot([xs[i]]*2, [ymins[i], ymaxs[i]], None, None, None, c=colorss[i], ls=lss[i], label=kwargs["label"], **st)
+                output.append(self._plot([xs[i]]*2, [ymins[i], ymaxs[i]], None, None, None, c=colorss[i], ls=lss[i], label=kwargs["label"], **st))
             else:
-                self._plot([xs[i]]*2, [ymins[i], ymaxs[i]], None, None, None, c=colorss[i], ls=lss[i], **st)
+                output.append(self._plot([xs[i]]*2, [ymins[i], ymaxs[i]], None, None, None, c=colorss[i], ls=lss[i], **st))
+        return output
 
     def hist(self, x, bins=10, density=False,**kwargs):
         kws = {"alpha", "color", "c", "label", "facecolor", "fc", "edgecolor", "ec", "orientation", "rwidth", "cumulative", "range", "histtype", "weights", "cumulative", "align", "stacked", "fill", "hatch", "hatch_color", "hatch_linewidth", "hatch_distance"}

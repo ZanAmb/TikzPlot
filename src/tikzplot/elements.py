@@ -648,6 +648,10 @@ class Graph(BaseGraph):
         elif isinstance(coordinates, tuple):
             self._classic = True
             x,y=coordinates
+            if isinstance(x, (list, tuple)):
+                x = [x]
+            if isinstance(y, (list, tuple)):
+                y = [y]
             self._x = np.asarray(x)
             self._y = np.asarray(y)
             self._meta = self._settings.pop("meta", None)

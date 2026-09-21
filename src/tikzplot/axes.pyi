@@ -404,7 +404,7 @@ class BaseAxes:
         colors: Union[str, Sequence[str]] = "k",
         linestyles: Union[str, Sequence[str]] = "solid",
         label: Optional[str] = None, color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ..., linewidth: Optional[float] = ..., lw: Optional[float] = ..., linestyle: Optional[LineStyle] = ..., ls: Optional[LineStyle] = ..., alpha: float = 1.0
-    ) -> None: 
+    ) -> List[Graph]: 
         """
         Draw horizontal lines to the selected axis.
         """
@@ -417,7 +417,7 @@ class BaseAxes:
         colors: Union[str, Sequence[str]] = "k",
         linestyles: Union[str, Sequence[str]] = "solid",
         label: Optional[str] = None, color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ..., linewidth: Optional[float] = ..., lw: Optional[float] = ..., linestyle: Optional[LineStyle] = ..., ls: Optional[LineStyle] = ..., alpha: float = 1.0
-    ) -> None: 
+    ) -> List[Graph]: 
         """
         Draw vertical lines to the selected axis.
         """
