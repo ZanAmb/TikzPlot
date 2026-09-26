@@ -760,6 +760,8 @@ class Graph(BaseGraph):
         style = self._style_string().removesuffix(",\n")
 
         def rel_coor(which, m, M, v):
+            if isinstance(m, str) or isinstance(M, str):
+                return m, M
             if self._axes._axis_options.get(f"{which}mode") == "log":
                 r = M/m
                 lower = m * r**v[0]

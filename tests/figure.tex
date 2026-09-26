@@ -4,14 +4,14 @@
 	\definecolor{c012204670706}{rgb}{0.122, 0.467, 0.706}
 	\def\xmina{-0.8}
 	\def\xmaxa{10.8}
-	\begin{groupplot}[group style={group size=2 by 3, horizontal sep=1.178902321848624cm, vertical sep=1.5858133444029328cm}, scale only axis]
+	\begin{groupplot}[group style={group size=2 by 3, horizontal sep=1.178902321848623cm, vertical sep=1.5858133444029328cm}, scale only axis]
 		\nextgroupplot[
 			/pgf/number format/.cd, use comma, 1000 sep={},
 			set layers=standard, cell picture=true, grid style={on layer=axis grid},
 			grid=major,
 			legend style={at={(0.97,0.97)},
 				anchor=north east},
-			width=5.471846200359761cm,
+			width=5.471846200359762cm,
 			height=3.7747497366357643cm,
 			]
 		\addplot [color={blue},
@@ -28,7 +28,7 @@
 			legend style={at={(0.5,0.97)},
 				anchor=north },
 			legend columns=2,
-			width=5.471846200359761cm,
+			width=5.471846200359762cm,
 			height=3.7747497366357643cm,
 			xmin=\xmina,
 			xmax=\xmaxa,
@@ -47,7 +47,7 @@
 			grid=both,
 			title style={align=center},
 			title={Semilog Y\\ title in two lines},
-			width=5.471846200359761cm,
+			width=5.471846200359762cm,
 			height=3.7747497366357643cm,
 			]
 		\addplot [color={violet}] table [x=x,y=y] {datapoints/figure_7.dat};\addlegendentry{$|\sin(x)|$}
@@ -60,7 +60,7 @@
 			ymin=-1.5,
 			ymax=1.5,
 			ylabel={Y-axis},
-			width=5.471846200359761cm,
+			width=5.471846200359762cm,
 			height=3.7747497366357643cm,
 			]
 		\addplot [solid,
@@ -84,11 +84,11 @@
 		\nextgroupplot[
 			/pgf/number format/.cd, use comma, 1000 sep={},
 			set layers=standard, cell picture=true, grid style={on layer=axis grid},
-			width=5.471846200359761cm,
+			width=5.471846200359762cm,
 			height=3.7747497366357643cm,
 			]
 		\addplot [forget plot,
-			bar width=0.2063216604523238,
+			bar width=0.23032769567641337,
 			ybar,
 			fill=orange,
 			draw=none] table [x=x,y=y] {datapoints/figure_11.dat};
@@ -97,7 +97,7 @@
 			set layers=standard, cell picture=true, grid style={on layer=axis grid},
 			enlargelimits=false,
 			grid=major,
-			width=5.471846200359761cm,
+			width=5.471846200359762cm,
 			height=3.7747497366357643cm,
 			colormap={urgb}{
 				    rgb=(0.2670, 0.0049, 0.3294)
@@ -136,7 +136,7 @@
 			y label style={at={(1.2,0.5)},
 				rotate=180},
 			ylabel={$y$-axis 2},
-			width=5.471846200359761cm,
+			width=5.471846200359762cm,
 			height=3.7747497366357643cm,
 			xmin=\xmina,
 			xmax=\xmaxa,

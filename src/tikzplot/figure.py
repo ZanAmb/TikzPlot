@@ -62,9 +62,11 @@ class Figure:
 
         if projection=="3d":
             ax = Axes3(nrows, ncols, index, self)
+        elif projection is None or projection in ["normal", "polar", "smith"]:
+            proj: str = "polar" if polar else projection if projection is not None else "normal"
+            ax = Axes(nrows, ncols, index, self, proj)
         else:
-            pol: bool = projection=="polar" or polar
-            ax = Axes(nrows, ncols, index, self, pol)
+            raise ValueError(f"Invalid projection type: {projection}. If specified, must be 'normal', 'polar', 'smith', or '3d'.")
         if self._nrows != 0 and self._ncols != 0 and (self._nrows != nrows or self._ncols != ncols):
             raise ValueError("Cannot add subplot with different nrows/ncols than existing subplots")
         self._nrows = nrows
@@ -214,25 +216,25 @@ class Figure:
         new_name = get_free_name()
         if position == "left":
             insert_col(target_c)
-            new_axes = Axes(self._nrows, self._ncols, 0, self, False)
+            new_axes = Axes(self._nrows, self._ncols, 0, self, "normal")
             self._mosaic[new_name] = dict(r=target_r, c=target_c, nr=target_nr, nc=1, ax=new_axes)
             if self._wratios is not None:
                 self._wratios.insert(target_c, sum_w * relsize)
         elif position == "right":
             insert_col(target_c + target_nc)
-            new_axes = Axes(self._nrows, self._ncols, 0, self, False)
+            new_axes = Axes(self._nrows, self._ncols, 0, self, "normal")
             self._mosaic[new_name] = dict(r=target_r, c=target_c + target_nc, nr=target_nr, nc=1, ax=new_axes)
             if self._wratios is not None:
                 self._wratios.insert(target_c + target_nc, sum_w * relsize)
         elif position == "above":
             insert_row(target_r_top)
-            new_axes = Axes(self._nrows, self._ncols, 0, self, False)
+            new_axes = Axes(self._nrows, self._ncols, 0, self, "normal")
             self._mosaic[new_name] = dict(r=target_r_top, c=target_c, nr=1, nc=target_nc, ax=new_axes)
             if self._hratios is not None:
                 self._hratios.insert(target_r_top, sum_h * relsize)
         else: # below
             insert_row(target_r + 1)
-            new_axes = Axes(self._nrows, self._ncols, 0, self, False)
+            new_axes = Axes(self._nrows, self._ncols, 0, self, "normal")
             self._mosaic[new_name] = dict(r=target_r + 1, c=target_c, nr=1, nc=target_nc, ax=new_axes)
             if self._hratios is not None:
                 self._hratios.insert(target_r + 1, sum_h * relsize)
@@ -578,7 +580,7 @@ class Figure:
         ncols = self._ncols
         for i in range(1, 1 + nrows * ncols):
             if i not in self._axes:
-                self._axes[i] = Axes(nrows, ncols, -i, self, False)
+                self._axes[i] = Axes(nrows, ncols, -i, self, "normal")
         if TikzConfig.USE_GROUPPLOTS and not single:
             if TikzConfig.SIMULATE_SIZES:
                 if _can_compile_tex():

@@ -35,6 +35,7 @@ All required packages are automatically detected and can be printed at save usin
 - `\usepgfplotslibrary{groupplots}` (recommended for best results, enabled by default, may be avoided by setting TikzConfig USE_GROUPPLOTS=False),
 - `\usepackage{xcolor}` (recommended for best colors, works without but needs change of TikzConfig USE_XCOLOR=False),
 - `\usepgfplotslibrary{polar}` required for polar axis,
+- `\usepgfplotslibrary{smithchart}` required for Smith chart axis,
 - `\usetikzlibrary{patterns.meta}` for hatch patterns (available for fill_between, hist and axvspan/axhspan).
 
 Export using `plt.savefig("example_graph.tex")` (recommended) or `plt.show()`.

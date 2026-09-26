@@ -30,7 +30,7 @@ class Figure:
         *args,
         sharex: Optional[ShareOptions] = None,
         sharey: Optional[ShareOptions] = None,
-        projection: Optional[Literal["polar"]] = None,
+        projection: Optional[Literal["normal", "polar", "smith"]] = None,
         polar: Optional[bool] = False,
     ) -> Axes:  
         ...
@@ -45,8 +45,8 @@ class Figure:
         sharex, sharey: bool or "row" or "col" or "all" or "none", optional
             Share x or y axes with other subplots.
 
-        projection: None, "polar", "3d", optional
-            None results in normal 2D.
+        projection: None or "normal", "polar", "smith", "3d", optional
+            None results in normal 2D. For Smith projection, complex input should be provided as cartesian (x = z.real, y = z.imag).
         
         polar: bool, optional
             Use polar projection for axis.

@@ -174,7 +174,7 @@ class BaseAxes:
         if cb is not None:
             if self._cmap_bar.get(self._get_overlay(), None) is not None and self._cmap_bar[self._get_overlay()] != cb:
                 self._get_free_overlay(cb=cb)
-        if isinstance(self, Axes) and self._polar:
+        if isinstance(self, Axes) and self._projection == "polar":
             x = _np.rad2deg(x)
         e = Graph(self, (x, y), settings, xerr=xerr, yerr=yerr, **style)
         if overlay is None:
@@ -2451,7 +2451,7 @@ class BaseAxes:
                     self._axis_options["ymin"], self._axis_options["ymax"] = ymax, ymin
 
 class Axes(BaseAxes):
-    def __init__(self, nrows, ncols, index, fig, polar):
+    def __init__(self, nrows, ncols, index, fig, projection):
         super().__init__()
         self._left = False
         self._neigh = None
@@ -2474,7 +2474,7 @@ class Axes(BaseAxes):
         self._colorbar: dict[int, None|str] = {0: None}
         self._cbar_v = False
         self._cbar_h = False
-        self._polar = polar
+        self._projection = projection
 
         self._ext_xmin = False
         self._ext_xmax = False
@@ -2869,8 +2869,8 @@ class Axes(BaseAxes):
             self._xticks = False
 
     def twinx(self):
-        if self._polar:
-            raise Exception("Cannot create twinx() on polar plot.")
+        if self._projection in ["polar", "smith"]:
+            raise Exception("Cannot create twinx() on non-normal projection.")
         self._secondary_y = Secondary(self)
         self._ext_xmin = self._ext_xmax = True
         self.tick_params(axis="y", right=False)
@@ -3127,16 +3127,20 @@ class Axes(BaseAxes):
                     self._overlay_special[k].update({key: val}) """
         lines = []
         lines2 = []
-        if self._polar:
+        if self._projection == "polar":
             self._fig._add_required_package("\\usepgfplotslibrary{polar}")
+        elif self._projection == "smith":
+            self._fig._add_required_package("\\usepgfplotslibrary{smithchart}")
         main_ax, aux_ax, alias, adds = self._axis_option_string()
         contents = self._content_tex(filename)
         if self._extend is not None:
             lines.append(f"\\nextgroupplot[alias={alias}, width={self._extend[0]}cm, height={self._extend[1]}cm, hide axis]")
             for i in self._elements.keys():
                 spec = ",\n".join([self._parse_entry(k, v) for k, v in self._overlay_special.get(i, {}).items()]) + ",\n" if i in self._overlay_special else ""
-                if self._polar:
+                if self._projection == "polar":
                     lines2.append("\\begin{polaraxis}["+ f"\n at={{({alias}.south west)}},")
+                elif self._projection == "smith":
+                    lines2.append("\\begin{smithchart}["+ f"\n at={{({alias}.south west)}},")
                 else:
                     lines2.append("\\begin{axis}[" + f"\n at={{({alias}.south west)}},")
                 if TikzConfig.SCALE_ONLY_AXIS:
@@ -3146,8 +3150,10 @@ class Axes(BaseAxes):
                 else:
                     lines2.append(f"{aux_ax}{spec}\n]")
                 lines2.append(contents[i])
-                if self._polar:
+                if self._projection == "polar":
                     lines2.append("\\end{polaraxis}")
+                elif self._projection == "smith":
+                    lines2.append("\\end{smithchart}")
                 else:
                     lines2.append("\\end{axis}")
                     if self._secondary_y is not None:
@@ -3171,32 +3177,42 @@ class Axes(BaseAxes):
                                 if add_l:
                                     lines2.append(add_l)
                             lines2.append("\\end{axis}")
-        elif self._polar and TikzConfig.USE_GROUPPLOTS and not single:
-            lines.append(f"\\nextgroupplot[alias={self._axis_options['alias']}, width={self._width}, height={self._height}, hide axis]")
+        elif self._projection in ["polar", "smith"] and TikzConfig.USE_GROUPPLOTS and not single:
+            lines.append(f"\\nextgroupplot[alias={alias}, width={self._width}, height={self._height}, hide axis]")
             for i in self._elements.keys():
                 spec = ",\n".join([self._parse_entry(k, v) for k, v in self._overlay_special.get(i, {}).items()]) + ",\n" if i in self._overlay_special else ""
                 if i in adds:
                     spec += adds[i]
-                lines2.append("\\begin{polaraxis}[")
+                if self._projection == "polar":
+                    lines2.append("\\begin{polaraxis}["+ f"\n at={{({alias}.south west)}},")
+                elif self._projection == "smith":
+                    lines2.append("\\begin{smithchart}["+ f"\n at={{({alias}.south west)}},")
                 if TikzConfig.SCALE_ONLY_AXIS:
-                    lines2.append("scale only axis")
+                    lines2.append("scale only axis,")
                 if i == self._get_overlay():
                     lines2.append(f"{main_ax}{spec}\n]")
                 else:
                     lines2.append(f"{aux_ax}{spec}\n]")
                 lines2.append(contents[i])
-                lines2.append("\\end{polaraxis}")
+                if self._projection == "polar":
+                    lines2.append("\\end{polaraxis}")
+                elif self._projection == "smith":
+                    lines2.append("\\end{smithchart}")
         else:
-            if TikzConfig.USE_GROUPPLOTS and not single:
-                lines.append("\\nextgroupplot[")
-            if self._polar:
+            if self._projection == "polar":
                 lines.append("\\begin{polaraxis}[")
                 if TikzConfig.SCALE_ONLY_AXIS:
-                    lines.append("scale only axis")
+                    lines.append("scale only axis,")
+            elif self._projection == "smith":
+                lines.append("\\begin{smithchart}[")
+                if TikzConfig.SCALE_ONLY_AXIS:
+                    lines.append("scale only axis,")
+            elif TikzConfig.USE_GROUPPLOTS and not single:
+                lines.append("\\nextgroupplot[")
             elif not TikzConfig.USE_GROUPPLOTS or (TikzConfig.USE_GROUPPLOTS and single):
                 lines.append("\\begin{axis}[")
                 if TikzConfig.SCALE_ONLY_AXIS:
-                    lines.append("scale only axis")
+                    lines.append("scale only axis,")
             if self._get_overlay() == 0:
                 spec = ",\n".join([self._parse_entry(k, v) for k, v in self._overlay_special.get(0, {}).items()]) + ",\n" if 0 in self._overlay_special else ""
                 if 0 in adds:
@@ -3231,8 +3247,10 @@ class Axes(BaseAxes):
                         lines2.append(f"{aux_ax}{spec}at={{({alias}.south west)}}\n]")
                         lines2.append(contents[i])
                     lines2.append("\\end{axis}")
-            if self._polar:
+            if self._projection == "polar":
                 lines.append("\\end{polaraxis}")
+            elif self._projection == "smith":
+                lines.append("\\end{smithchart}")
             elif not TikzConfig.USE_GROUPPLOTS or (TikzConfig.USE_GROUPPLOTS and single):            
                 lines.append("\\end{axis}")
             if self._secondary_y is not None:

@@ -404,7 +404,7 @@ class BaseAxes:
         colors: Union[str, Sequence[str]] = "k",
         linestyles: Union[str, Sequence[str]] = "solid",
         label: Optional[str] = None, color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ..., linewidth: Optional[float] = ..., lw: Optional[float] = ..., linestyle: Optional[LineStyle] = ..., ls: Optional[LineStyle] = ..., alpha: float = 1.0
-    ) -> List[Graph]: 
+    ) -> list[Graph]: 
         """
         Draw horizontal lines to the selected axis.
         """
@@ -417,7 +417,7 @@ class BaseAxes:
         colors: Union[str, Sequence[str]] = "k",
         linestyles: Union[str, Sequence[str]] = "solid",
         label: Optional[str] = None, color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ..., linewidth: Optional[float] = ..., lw: Optional[float] = ..., linestyle: Optional[LineStyle] = ..., ls: Optional[LineStyle] = ..., alpha: float = 1.0
-    ) -> List[Graph]: 
+    ) -> list[Graph]: 
         """
         Draw vertical lines to the selected axis.
         """
@@ -1949,7 +1949,7 @@ class BaseAxes:
     def _not_hidable(self) -> None: ...
     
 class Axes(BaseAxes):
-    def __init__(self, nrows: int, ncols: int, index: int, fig: Any, pol: bool) -> None: ...
+    def __init__(self, nrows: int, ncols: int, index: int, fig: Any, projection: Literal["normal", "polar", "smith"] = "normal") -> None: ...
 
     def contourf(self, *args: Any, levels: Optional[Sequence[float]] = None, cmap: Optional[str] = None, colors: Optional[Sequence[ColorLike]] = None, vmin: Optional[float] = None, vmax: Optional[float] = None, alpha: float = 1.0) -> Graph:
         """
