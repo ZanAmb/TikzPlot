@@ -660,6 +660,8 @@ class Graph(BaseGraph):
             self._x = self._x[mask]
             self._y = self._y[mask]
             n = len(self._x)
+            if n == 0:
+                self._axes._remove_graph(self)
             self._xerr, self._x_asym = self._normalize_error(xerr, n)
             self._yerr, self._y_asym = self._normalize_error(yerr, n)
             if self._xerr is not None:
@@ -1028,7 +1030,8 @@ class Graph(BaseGraph):
                     self._v = self._v[mask]
                     if self._c is not None:
                         self._c = self._c[mask]
-
+                if len(self._x) == 0:
+                    self._axes._remove_graph(self)
     def _check_equal(self, x,y):
         if self._classic:
             return np.array_equal(np.asarray(x),self._x) and np.array_equal(np.asarray(y),self._y)

@@ -1929,7 +1929,8 @@ class BaseAxes:
             return f"c{r:.3f}{g:.3f}{b:.3f}".replace(".", "")
 
     def legend(self, *args, **kwargs):
-        kws = ["loc", "anchor", "ncols", "facecolor", "edgecolor", "labelcolor", "frameon", "fontsize"]
+        kws = {"loc", "anchor", "ncols", "facecolor", "edgecolor", "labelcolor", "frameon", "fontsize"}
+        kwargs = self._check_kwargs("legend", kws, **kwargs)
         legend_string = {}
         if "loc" in kwargs:
             loc = kwargs["loc"]
@@ -2412,7 +2413,8 @@ class BaseAxes:
     
     def _reduce_points(self, limit):
         for e in self._get_all_elements():
-            e._reduce_points(limit)
+            if e._num_points() > 0:
+                e._reduce_points(limit)
 
     def _add_col(self, r,g,b):
         assert self._fig is not None
@@ -2449,6 +2451,14 @@ class BaseAxes:
                 assert isinstance(ymin, (int, float)) and isinstance(ymax, (int, float))
                 if ymin > ymax:
                     self._axis_options["ymin"], self._axis_options["ymax"] = ymax, ymin
+
+    def _remove_graph(self, e):
+        print(e)
+        for overlay in self._elements:
+            if e in self._elements[overlay]:
+                self._elements[overlay].remove(e)
+                del e
+                break
 
 class Axes(BaseAxes):
     def __init__(self, nrows, ncols, index, fig, projection):
@@ -3102,6 +3112,13 @@ class Axes(BaseAxes):
             self._cbar_v = True
     def _get_index(self):
         return self._index
+
+    def _add_cbar(self, cbar):
+        if self._cmap_bar.get(self._get_overlay(), None) is None:
+            self._cmap_bar[self._get_overlay()] = cbar
+        elif self._cmap_bar[self._get_overlay()] is cbar:
+            self._get_free_overlay(cb=cbar)
+            self._cmap_bar[self._get_overlay()] = cbar
     
     def _to_tex(self, filename, single):
         for k,v in self._elements.items():
@@ -3226,7 +3243,10 @@ class Axes(BaseAxes):
                 spec = ",\n".join([self._parse_entry(k, v) for k, v in self._overlay_special.get(0, {}).items()]) + ",\n" if 0 in self._overlay_special else ""
                 if 0 in adds:
                     spec += adds[0]
-                lines.append(f"{aux_ax}{spec}alias={alias}\n]")
+                if len(contents[0]) == 0:
+                    lines.append(f"{aux_ax}{spec}alias={alias}\n]".replace("set layers=standard,\n", ""))
+                else:
+                    lines.append(f"{main_ax}{spec}alias={alias}\n]")
                 lines.append(contents[0])
                 for i in self._elements.keys():
                     if i == 0: continue
@@ -3237,14 +3257,20 @@ class Axes(BaseAxes):
                     if TikzConfig.SCALE_ONLY_AXIS:
                         lines2.append("scale only axis,")
                     if i == self._get_overlay():
-                        lines2.append(f"{main_ax}{spec}at={{({alias}.south west)}}\n]")
+                        if len(contents[i]) == 0:
+                            lines2.append(f"{main_ax}{spec}at={{({alias}.south west)}}\n]".replace("set layers=standard,\n", ""))
+                        else:
+                            lines2.append(f"{main_ax}{spec}at={{({alias}.south west)}}\n]")
                         lines2.append(contents[i])
                         lines2 += self._overlay_legend_entries
                         add_l = self._add_legend_entries()
                         if add_l:
                             lines2.append(add_l)
                     else:
-                        lines2.append(f"{aux_ax}{spec}at={{({alias}.south west)}}\n]")
+                        if len(contents[i]) == 0:
+                            lines2.append(f"{aux_ax}{spec}at={{({alias}.south west)}}\n]".replace("set layers=standard,\n", ""))
+                        else:
+                            lines2.append(f"{aux_ax}{spec}at={{({alias}.south west)}}\n]")
                         lines2.append(contents[i])
                     lines2.append("\\end{axis}")
             if self._projection == "polar":

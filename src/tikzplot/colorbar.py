@@ -84,6 +84,7 @@ class _Colorbar:
         if "divisions" in kwargs:
             self._divs = kwargs["divisions"]
         if self._axis:
+            self._axis._add_cbar(self)
             self._axis._show_colorbar(self, str(self))
         if self._pad is None:
             self._pad = 0.05 if self._horizontal else 0.15        
@@ -307,7 +308,7 @@ class _Colorbar:
             lines.append(f"{'width' if self._horizontal else 'height'}={self._rel_len}*\\pgfkeysvalueof{{/pgfplots/parent axis {'width' if self._horizontal else 'height'}}},")
         if self._label:
             lines.append(f"title={{{self._label}}},")
-            offset = 4 - 2 * (self._ticks == [] or self._tick_labels == [])
+            offset = 4 - 2 * (isinstance(self._ticks, Sequence) and len(self._ticks) == 0 or isinstance(self._tick_labels, Sequence) and len(self._tick_labels) == 0)
             _add_color = ""
             if _st_settings and "text" in _st_settings:
                 _add_color = f", text={_st_settings['text']}"
@@ -320,13 +321,13 @@ class _Colorbar:
             elif self._location == "left":
                 lines.append(f"title style={{at={{(-{offset},0.5)}}, anchor=base, yshift=7pt, rotate=-90{_add_color}}},")
         if self._ticks is not None:
-            if self._ticks == []:
+            if isinstance(self._ticks, Sequence) and len(self._ticks) == 0:
                 lines.append(f"{'x' if self._horizontal else 'y'}tick=\\empty,")
             else:
                 lines.append(f"{'x' if self._horizontal else 'y'}tick={{{','.join(str(a) for a in self._ticks)}}},")
             if self._tick_labels and len(self._tick_labels) == len(self._ticks):
                 lines.append(f"{'x' if self._horizontal else 'y'}ticklabels={{{','.join(str(a) for a in self._tick_labels)}}},")
-        if self._tick_labels == []:
+        if isinstance(self._tick_labels, Sequence) and len(self._tick_labels) == 0:
             lines.append(f"{'x' if self._horizontal else 'y'}ticklabels=\\empty,")
             if self._divs > 0:
                 lines.append(f"{'x' if self._horizontal else 'y'}tick =\\empty,")

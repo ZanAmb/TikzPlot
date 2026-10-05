@@ -82,6 +82,8 @@ class Figure:
 
     def subplots(self, nrows=1, ncols=1, sharex=None, sharey=None, subplot_kw=None, **kwargs):
         axes = self._add_subplots(nrows, ncols, sharex, sharey, subplot_kw)
+        if "figsize" in kwargs:
+            self.set_size_inches(kwargs["figsize"])
         if nrows * ncols == 1:
             return axes[0]
         grid = []
@@ -99,8 +101,6 @@ class Figure:
             assert len(grid.shape) == 2
             if grid.shape[1] == 1:
                 grid = grid[:,0]
-        if "figsize" in kwargs:
-            self.set_size_inches(kwargs["figsize"])
         return grid
       
     def _add_subplots(self, nrows, ncols, sharex=None, sharey=None, subplot_kw=None):
@@ -507,9 +507,16 @@ class Figure:
 
             mins = [ax._get_range(which + "min") for ax in group]
             maxes = [ax._get_range(which + "max") for ax in group]
-        
-            min_val = min(r[0] for r in mins)
-            max_val = max(r[0] for r in maxes)
+            miss = [r[0] for r in mins if r[0] is not None]
+            mass = [r[0] for r in maxes if r[0] is not None]
+            if len(miss) > 0:
+                min_val = min(miss)
+            else:
+                min_val=0
+            if len(mass) > 0:
+                max_val = max(mass)
+            else:
+                max_val=1
             mode = "log" if "log" in [r[2] for r in mins] else "lin"
             min_val, max_val = self._range_setting(min_val, max_val, mode)
             for ax in group:
