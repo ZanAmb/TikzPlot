@@ -128,12 +128,12 @@ class Axes3:
         return sorted(self._elements.keys())[-1]
     def _get_all_elements(self):
         return [i for l in self._elements.values() for i in l]
-    def _get_free_overlay(self):
-        if len(self._elements[self._get_overlay()]) > 0 or self._cmap_bar.get(self._get_overlay(), None) is not None:
-            new_overlay = self._get_overlay() + 1
-            self._elements[new_overlay] = []
-            return new_overlay
-        return self._get_overlay()
+    def _get_free_overlay(self, cb=None):
+            if len(self._elements[self._get_overlay()]) > 0 or (cb is not None and self._cmap_bar.get(self._get_overlay(), None) is not None and self._cmap_bar[self._get_overlay()] != cb):
+                new_overlay = self._get_overlay() + 1
+                self._elements[new_overlay] = []
+                return new_overlay
+            return self._get_overlay()
     def _add_overlay_legend_entry(self, entry):
         self._overlay_legend_entries.append(entry)
     def _get_element_overlay(self, element):
@@ -1336,6 +1336,13 @@ class Axes3:
             self._cbar_v = True
     def _get_index(self):
         return self._index
+
+    def _add_cbar(self, cbar):
+        if self._cmap_bar.get(self._get_overlay(), None) is None:
+            self._cmap_bar[self._get_overlay()] = cbar
+        elif self._cmap_bar[self._get_overlay()] is cbar:
+            self._get_free_overlay(cb=cbar)
+            self._cmap_bar[self._get_overlay()] = cbar
     
     def _to_tex(self, filename, single):
         lines = []

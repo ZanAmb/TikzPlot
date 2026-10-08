@@ -1120,7 +1120,7 @@ class BaseAxes:
         element_args = {}
         bar_type = None
         overlay = None
-        if isinstance(k, float):
+        if isinstance(k, (int,float)):
             k = _np.asarray([k])
         else:
             k = _np.asarray(k)
@@ -1145,14 +1145,14 @@ class BaseAxes:
                 raise Warning("Length of tick_label does not match length of values.")
             set_tick_labels(labels)
         k = _np.asarray(k, dtype=_np.float64)
-        if isinstance(v, float):
+        if isinstance(v, (int, float)):
             v = _np.asarray([v], dtype=_np.float64)
         else:
             v = _np.asarray(v, dtype=_np.float64)
         edge = kwargs.pop("edge", 0)
         thickness = kwargs.pop("thickness", 0.8)
         align = kwargs.pop("align", "center")
-        if isinstance(edge, float):
+        if isinstance(edge, (int, float)):
             edge = _np.asarray([edge] * len(v))
         else:
             edge = _np.asarray(edge)
@@ -1596,12 +1596,16 @@ class BaseAxes:
             res = self.plot(lags, c, **kwargs)
         return lags, c, res, axl
     
-    def pie(self, x, *, explode=None, labels=None, colors=None, autopct=None, pctdistance=0.6, labeldistance=1.1, radius=1, startangle=0, counterclock=True, wedgeprops=None, rotate_labels=False, normalize=True):
+    def pie(self, x, *, explode=None, labels=None, colors=None, autopct=None, pctdistance=0.6, labeldistance=1.1, radius=1, startangle=0, counterclock=True, wedgeprops=None, rotate_labels=False, normalize=True, center_text=None):
         kws = {"width"}
         kwargs = self._check_kwargs("pie: wedgeprops", kws, **wedgeprops) if wedgeprops else {}
         assert self._fig is not None
         self._fig._add_required_package("\\usepackage{wheelchart}")
-        e = Pie(self, x, explode=explode, labels=labels, colors=colors, autopct=autopct, pctdistance=pctdistance, labeldistance=labeldistance, radius=radius, startangle=startangle, counterclock=counterclock, wedgeprops=kwargs, rotate_labels=rotate_labels, normalize=normalize, at=self._axis_options.get("alias", self._axis_options.get("name", None)))
+        if center_text is not None:
+            ct = center_text #tex_text(center_text)
+        else:
+            ct = None
+        e = Pie(self, x, explode=explode, labels=labels, colors=colors, autopct=autopct, pctdistance=pctdistance, labeldistance=labeldistance, radius=radius, startangle=startangle, counterclock=counterclock, wedgeprops=kwargs, rotate_labels=rotate_labels, normalize=normalize, at=self._axis_options.get("alias", self._axis_options.get("name", None)), center_text=ct)
         self._externs = True
         self._fig._add_external(e)
         return e
@@ -1699,6 +1703,7 @@ class BaseAxes:
     def axvspan(self, xmin, xmax, ymin=0, ymax=1, **kwargs):
         kws = {"c", "color", "alpha", "label", "hatch", "hatch_color", "hatch_linewidth", "hatch_distance"}
         kwargs = self._check_kwargs("axvspan", kws, **kwargs)
+        self._ext_xmin = self._ext_xmax = True
         self._ext_ymin = self._ext_ymax = True
         if TikzConfig.USE_GROUPPLOTS:
             self._axis_args.add("set layers")
@@ -1711,6 +1716,7 @@ class BaseAxes:
             self._primary._ext_xmin = self._primary._ext_xmax = True
         else:
             self._ext_xmin = self._ext_xmax = True
+        self._ext_ymin = self._ext_ymax = True
         if TikzConfig.USE_GROUPPLOTS:
             self._axis_args.add("set layers")
         return self._plot([xmin, xmax], [ymin, ymax], settings={"axhspan": None}, **kwargs)
@@ -1793,8 +1799,9 @@ class BaseAxes:
         if "base" in kwargs:
             self._axis_options["log basis y"] = kwargs["base"]
 
-    def set_yticks(self, ticks, labels=None, **kwargs):
-        kws = {"color", "c", "fontsize"}
+    def set_yticks(self, *ticks, labels=None, **kwargs):
+        pass_to_labels = {"rotation", "va", "verticalalignment", "ha", "horizontalalignment"}
+        kws = {"color", "c", "fontsize"} | pass_to_labels
         kwargs = self._check_kwargs("set_yticks", kws, **kwargs)
         st = {}
         if "color" in kwargs or "c" in kwargs:
@@ -1804,20 +1811,29 @@ class BaseAxes:
             st["font"] = self._tex_fontsize(kwargs["fontsize"])
         if st:
             self._update_axis_options("y tick style", st)
+        passing = {k: kwargs[k] for k in pass_to_labels if k in kwargs}
+        if passing:
+            self.set_yticklabels(**passing)
         if ticks:
-            s_ticks = map(str, ticks)
-            self._axis_options["ytick"]=f"{{{','.join(s_ticks)}}}"
-            if labels is not None and len(labels)==len(ticks):
-                self._axis_options["yticklabels"]=f"{{{tex_text(','.join(labels))}}}"
-            elif labels is not None and len(labels) == 0:
-                self._axis_options["yticklabels"]=r"{}"
+            if len(ticks) == 2:
+                ticks, labels = ticks
+            elif len(ticks) == 1 and isinstance(ticks[0], (list, tuple)):
+                ticks = ticks[0]
+            else: raise Warning("Too many positional arguments for set_xticks. Expected 1 or 2.")
+            if list(ticks) != []:
+                s_ticks = map(str, ticks)
+                self._axis_options["ytick"]=f"{{{','.join(s_ticks)}}}"
+                if labels is not None and len(labels)==len(ticks):
+                    self._axis_options["yticklabels"]=f"{{{tex_text(','.join    (labels))}}}"
+                elif labels is not None and len(labels) == 0:
+                    self._axis_options["yticklabels"]=r"{}"
+                    self._yticks = False
+            else:
+                self._axis_options["ytick"]=r"\empty"
                 self._yticks = False
-        else:
-            self._axis_options["ytick"]=r"\empty"
-            self._yticks = False
 
-    def set_yticklabels(self, labels, **kwargs):
-        kws = {"color", "c", "fontsize"}
+    def set_yticklabels(self, *labels, **kwargs):
+        kws = {"color", "c", "fontsize", "rotation", "ha", "horizontalalignment", "va", "verticalalignment"}
         kwargs = self._check_kwargs("set_yticklabels", kws, **kwargs)
         st = {}
         if "color" in kwargs or "c" in kwargs:
@@ -1825,13 +1841,268 @@ class BaseAxes:
             st["text"] = self._match_color(c)
         if "fontsize" in kwargs:
             st["font"] = self._tex_fontsize(kwargs["fontsize"])
+        if "rotation" in kwargs:
+            st["rotate"] = kwargs["rotation"]
+        if "va" in kwargs or "verticalalignment" in kwargs:
+            va = kwargs.get("va", kwargs.get("verticalalignment", None))
+            current = self._axis_options.get("y tick label style", {}).get("anchor", None)
+            if current is not None:
+                current = current.replace("north", "").replace("south", "")
+            if va == "top":
+                st["anchor"] = "north" + (f" {current}" if current else "")
+            elif va == "bottom":
+                st["anchor"] = "south" + (f" {current}" if current else "")
+            elif va != "center":
+                raise Warning(f"Invalid verticalalignment: {va}. Must be one of 'top', 'bottom', or 'center'.")
+        if "ha" in kwargs or "horizontalalignment" in kwargs:
+            ha = kwargs.get("ha", kwargs.get("horizontalalignment", None))
+            if "anchor" in st:
+                current = st["anchor"]
+            else:
+                current = self._axis_options.get("y tick label style", {}).get("anchor", None)
+            if current is not None:
+                current = current.replace("east", "").replace("west", "")
+            if ha == "left":
+                st["anchor"] = (f"{current}" if current else "") + "west"
+            elif ha == "right":
+                st["anchor"] = (f"{current}" if current else "") + "east"
+            elif ha != "center":
+                raise Warning(f"Invalid horizontalalignment: {ha}. Must be one of 'left', 'right', or 'center'.")
         if st:
             self._update_axis_options("y tick style", st)
-        if labels:
-            self._axis_options["yticklabels"]=f"{{{tex_text(','.join(labels))}}}"
-        else:
-            self._axis_options["yticklabels"]=r"{}"
-            self._yticks = False
+        if list(labels) != []:
+            if len(labels) == 1 and isinstance(labels[0], (list, tuple)):
+                if len(labels[0]) > 0:
+                    self._axis_options["yticklabels"]=f"{{{tex_text(','.join(labels[0]))}}}"
+                else:
+                    self._axis_options["yticklabels"]=r"{}"
+                    self._yticks = False
+
+    def set_xlabel(self, label, **kwargs):
+        if isinstance(self, Secondary):
+            return self._primary.set_xlabel(label, **kwargs)
+        self._not_hidable()
+        kws = {"fontsize", "color", "c", "loc", "rotate"}
+        kwargs = self._check_kwargs("set_xlabel", kws, **kwargs)
+        st = {}
+        if "fontsize" in kwargs:
+            st["font"] = self._tex_fontsize(kwargs["fontsize"])
+        if "color" in kwargs or "c" in kwargs:
+            c = kwargs.get("color", kwargs.get("c", None))
+            st["text"] = self._match_color(c)
+        if "loc" in kwargs:
+            loc = kwargs["loc"]
+            if loc not in ["left", "center", "right"]:
+                raise Warning(f"Invalid loc: {loc}. Must be one of 'left', 'center', or 'right'.")
+            if loc == "left":
+                st["at"] = "{(xticklabel cs:0)}"
+                st["anchor"] = "north west"
+            elif loc == "right":
+                st["at"] = "{(xticklabel cs:1)}"
+                st["anchor"] = "north east"
+            else:
+                st["at"] = {}
+                st["anchor"] = {}
+        if "rotate" in kwargs:
+            if kwargs["rotate"] not in ["vertical", "horizontal"]:
+                raise Warning(f"Invalid rotate: {kwargs['rotate']}. Must be one of 'vertical' or 'horizontal'.")
+            if kwargs["rotate"] == "vertical":
+                st["rotate"] = "-90"
+            else:
+                st["rotate"] = {}
+        if "\n" in label:
+            label = label.replace("\n", r"\\")
+            st["align"] = "center"
+        if st:
+            self._update_axis_options("x label style", st)
+        self._axis_options["xlabel"] = f"{{{tex_text(label)}}}"
+
+    def set_title(self, title, **kwargs):
+        if isinstance(self, Secondary):
+            return self._primary.set_title(title, **kwargs)
+        self._not_hidable()
+        kws = {"fontsize", "color", "c", "loc"}
+        kwargs = self._check_kwargs("set_title", kws, **kwargs)
+        st = {}
+        if "fontsize" in kwargs:
+            st["font"] = self._tex_fontsize(kwargs["fontsize"])
+        if "color" in kwargs or "c" in kwargs:
+            c = kwargs.get("color", kwargs.get("c", None))
+            st["text"] = self._match_color(c)
+        if "loc" in kwargs:
+            loc = kwargs["loc"]
+            if loc not in ["left", "center", "right"]:
+                raise Warning(f"Invalid loc: {loc}. Must be one of 'left', 'center', or 'right'.")
+            if loc == "left":
+                st["at"] = "{(0.0,1.0)}"
+                st["anchor"] = "south west"
+            elif loc == "right":
+                st["at"] = "{(1.0,1.0)}"
+                st["anchor"] = "south east"
+            else:
+                st["at"] = {}
+                st["anchor"] = {}
+        if "\n" in title:
+            title = title.replace("\n", r"\\")
+            st["align"] = "center"
+        if st:
+            self._update_axis_options("title style", st)
+        self._axis_options["title"] = f"{{{tex_text(title)}}}"
+
+    def grid(self, visible=True, which="major", **kwargs):
+        if isinstance(self, Secondary):
+            return self._primary.grid(visible=visible, which=which, **kwargs)
+        self._not_hidable()
+        if not visible:
+            self._axis_options["grid"] = "none"
+            return
+        selector = which + " "
+        if which == "major":
+            if "grid" in self._axis_options and self._axis_options["grid"] == "minor":
+                self._axis_options["grid"] = "both"
+            else:
+                self._axis_options["grid"] = "major"
+
+        elif which == "minor":
+            if "grid" in self._axis_options and self._axis_options["grid"] == "major":
+                self._axis_options["grid"] = "both"
+            else:
+                self._axis_options["grid"] = "minor"
+
+        elif which == "both":
+            self._axis_options["grid"] = "both"
+            selector = ""
+        
+        if kwargs:
+            accepted_kwargs = {"color", "c", "linestyle", "ls", "linewidth", "lw", "alpha"}
+            kwargs = self._check_kwargs("grid", accepted_kwargs, **kwargs)
+            g = Graph(self, None, {}, None, None, **kwargs)._style_string()
+            self._axis_options[f"{selector}grid style"] = f"{{{g}}}"
+            
+    def set_minorticks_num(self, num):
+        if isinstance(self, Secondary):
+            return self._primary.set_minorticks_num(num)
+        self._axis_options["minor tick num"] = num
+
+    def set_xlim(self, *args, **kwargs):
+        if isinstance(self, Secondary):
+            return self._primary.set_xlim(*args, **kwargs)
+        left = None
+        right = None
+        for k in kwargs:
+            if k not in ["left", "right"]:
+                print(f"Invalid argument {kwargs.pop(k)} in ylim")
+
+        if len(args) == 1:
+            left, right = args[0]
+        elif len(args) == 2:
+            left, right = args
+        elif len(args) > 2:
+            raise ValueError("set_xlim accepts at most 2 positional arguments")
+
+        if "left" in kwargs:
+            left = kwargs["left"]
+        if "right" in kwargs:
+            right = kwargs["right"]
+
+        if left is not None:
+            self._axis_options["xmin"] = left
+        if right is not None:
+            self._axis_options["xmax"] = right
+
+    def set_xscale(self, *args, **kwargs):
+        if isinstance(self, Secondary):
+            return self._primary.set_xscale(*args, **kwargs)
+        kws = {"base"}
+        kwargs = self._check_kwargs("set_xscale", kws, **kwargs)
+        if "log" in args:
+            self._axis_options["xmode"] = "log"
+        if "base" in kwargs:
+            self._axis_options["log basis x"] = kwargs["base"]
+
+    def set_xticks(self, *ticks, labels=None, **kwargs):
+        if isinstance(self, Secondary):
+            return self._primary.set_xticks(*ticks, labels=labels, **kwargs)
+        pass_to_labels = {"rotation", "ha", "horizontalalignment", "va", "verticalalignment"}
+        kws = {"color", "c", "fontsize"} | pass_to_labels
+        kwargs = self._check_kwargs("set_xticks", kws, **kwargs)
+        st = {}
+        if "color" in kwargs or "c" in kwargs:
+            c = kwargs.get("color", kwargs.get("c", None))
+            st["text"] = self._match_color(c)
+        if "fontsize" in kwargs:
+            st["font"] = self._tex_fontsize(kwargs["fontsize"])
+        if st:
+            self._update_axis_options("x tick style", st)
+        passing = {k: kwargs[k] for k in pass_to_labels if k in kwargs}
+        if passing:
+            self.set_xticklabels(**passing)
+        if ticks:
+            if len(ticks) == 2:
+                ticks, labels = ticks
+            elif len(ticks) == 1 and isinstance(ticks[0], (list, tuple)):
+                ticks = ticks[0]
+            else: raise Warning("Too many positional arguments for set_xticks. Expected 1 or 2.")
+            if list(ticks) != []:
+                s_ticks = map(str, ticks)
+                self._axis_options["xtick"]=f"{{{','.join(s_ticks)}}}"
+                if labels is not None and len(labels)==len(ticks):
+                    self._axis_options["xticklabels"]=f"{{{tex_text(','.join(labels))}}}"
+                elif labels is not None and len(labels) == 0:
+                    self._axis_options["xticklabels"]=r"{}"
+                    self._xticks = False
+            else:
+                self._axis_options["xtick"]=r"\empty"
+                self._xticks = False
+
+    def set_xticklabels(self, *labels, **kwargs):
+        if isinstance(self, Secondary):
+            return self._primary.set_xticklabels(*labels, **kwargs)
+        kws = {"color", "c", "fontsize", "rotation", "ha", "horizontalalignment", "va", "verticalalignment"}
+        kwargs = self._check_kwargs("set_xticklabels", kws, **kwargs)
+        st = {}
+        if "color" in kwargs or "c" in kwargs:
+            c = kwargs.get("color", kwargs.get("c", None))
+            st["text"] = self._match_color(c)
+        if "fontsize" in kwargs:
+            st["font"] = self._tex_fontsize(kwargs["fontsize"])
+        if "rotation" in kwargs:
+            st["rotate"] = kwargs["rotation"]
+        if "ha" in kwargs or "horizontalalignment" in kwargs:
+            ha = kwargs.get("ha", kwargs.get("horizontalalignment", None))
+            current = self._axis_options.get("x tick label style", {}).get("anchor", None)
+            if current is not None:
+                current = current.replace("east", "").replace("west", "")
+            if ha == "left":
+                st["anchor"] = (f"{current} " if current else "") + "west"
+            elif ha == "right":
+                st["anchor"] = (f"{current} " if current else "") + "east"
+            elif ha != "center":
+                raise Warning(f"Invalid horizontalalignment: {ha}. Must be one of 'left', 'center', or 'right'.")
+        if "va" in kwargs or "verticalalignment" in kwargs:
+            va = kwargs.get("va", kwargs.get("verticalalignment", None))
+            if "anchor" in st:
+                current = st["anchor"]
+            else:
+                current = self._axis_options.get("x tick label style", {}).get("anchor", None)
+            if current is not None:
+                current = current.replace("north", "").replace("south", "")
+            if va == "top":
+                st["anchor"] = "north" + (f" {current}" if current else "")
+            elif va == "bottom":
+                st["anchor"] = "south" + (f" {current}" if current else "")
+            elif va != "center":
+                raise Warning(f"Invalid verticalalignment: {va}. Must be one of 'top', 'center', or 'bottom'.")
+        if st:
+            self._update_axis_options("x tick label style", st)
+        if list(labels) != []:
+            if len(labels) == 1 and isinstance(labels[0], (list, tuple)):
+                if len(labels[0]) > 0:
+                    self._axis_options["xticklabels"]=f"{{{tex_text(','.join(labels[0]))}}}"
+                else:
+                    self._axis_options["xticklabels"]=r"{}"
+                    self._xticks = False
+
 
     def tick_params(self, axis="both", **kwargs):
         kws = {"color", "c", "labelsize", "labelcolor", "colors", "direction", "top", "bottom", "left", "right", "labelbottom", "labelleft"}
@@ -1929,7 +2200,7 @@ class BaseAxes:
             return f"c{r:.3f}{g:.3f}{b:.3f}".replace(".", "")
 
     def legend(self, *args, **kwargs):
-        kws = {"loc", "anchor", "ncols", "facecolor", "edgecolor", "labelcolor", "frameon", "fontsize"}
+        kws = {"loc", "anchor", "ncols", "facecolor", "edgecolor", "labelcolor", "frameon", "fontsize", "reverse"}
         kwargs = self._check_kwargs("legend", kws, **kwargs)
         legend_string = {}
         if "loc" in kwargs:
@@ -1993,6 +2264,8 @@ class BaseAxes:
         self._legend_on = True
         if "ncols" in kwargs:
             self._axis_options["legend columns"] = kwargs["ncols"]
+        if "reverse" in kwargs and kwargs["reverse"]:
+            self._axis_options["reverse legend"] = None
         if len(args) == 2:
             self._add_legend = list(args)
         elif len(args) == 1:
@@ -2630,6 +2903,8 @@ class Axes(BaseAxes):
                     settings["matrix plot"] = None
                 else:
                     raise Warning("Invalid origin. Must be 'upper' or 'lower'.")
+            else:
+                settings["matrix plot"] = None
             settings["mesh/cols"] = Z.shape[1]
             settings["point meta"] = "explicit"
             if kwrgs.get("labels", False):
@@ -2708,176 +2983,6 @@ class Axes(BaseAxes):
         im = self.imshow(h.T, extent=[xedges[0], xedges[-1], yedges[0], yedges[-1]], origin='lower', **kwargs)
         return h, xedges, yedges, im
     
-    def set_xlabel(self, label, **kwargs):
-        self._not_hidable()
-        kws = {"fontsize", "color", "c", "loc", "rotate"}
-        kwargs = self._check_kwargs("set_xlabel", kws, **kwargs)
-        st = {}
-        if "fontsize" in kwargs:
-            st["font"] = self._tex_fontsize(kwargs["fontsize"])
-        if "color" in kwargs or "c" in kwargs:
-            c = kwargs.get("color", kwargs.get("c", None))
-            st["text"] = self._match_color(c)
-        if "loc" in kwargs:
-            loc = kwargs["loc"]
-            if loc not in ["left", "center", "right"]:
-                raise Warning(f"Invalid loc: {loc}. Must be one of 'left', 'center', or 'right'.")
-            if loc == "left":
-                st["at"] = "{(xticklabel cs:0)}"
-                st["anchor"] = "north west"
-            elif loc == "right":
-                st["at"] = "{(xticklabel cs:1)}"
-                st["anchor"] = "north east"
-            else:
-                st["at"] = {}
-                st["anchor"] = {}
-        if "rotate" in kwargs:
-            if kwargs["rotate"] not in ["vertical", "horizontal"]:
-                raise Warning(f"Invalid rotate: {kwargs['rotate']}. Must be one of 'vertical' or 'horizontal'.")
-            if kwargs["rotate"] == "vertical":
-                st["rotate"] = "-90"
-            else:
-                st["rotate"] = {}
-        if "\n" in label:
-            label = label.replace("\n", r"\\")
-            st["align"] = "center"
-        if st:
-            self._update_axis_options("x label style", st)
-        self._axis_options["xlabel"] = f"{{{tex_text(label)}}}"
-
-    def set_title(self, title, **kwargs):
-        self._not_hidable()
-        kws = {"fontsize", "color", "c", "loc"}
-        kwargs = self._check_kwargs("set_title", kws, **kwargs)
-        st = {}
-        if "fontsize" in kwargs:
-            st["font"] = self._tex_fontsize(kwargs["fontsize"])
-        if "color" in kwargs or "c" in kwargs:
-            c = kwargs.get("color", kwargs.get("c", None))
-            st["text"] = self._match_color(c)
-        if "loc" in kwargs:
-            loc = kwargs["loc"]
-            if loc not in ["left", "center", "right"]:
-                raise Warning(f"Invalid loc: {loc}. Must be one of 'left', 'center', or 'right'.")
-            if loc == "left":
-                st["at"] = "{(0.0,1.0)}"
-                st["anchor"] = "south west"
-            elif loc == "right":
-                st["at"] = "{(1.0,1.0)}"
-                st["anchor"] = "south east"
-            else:
-                st["at"] = {}
-                st["anchor"] = {}
-        if "\n" in title:
-            title = title.replace("\n", r"\\")
-            st["align"] = "center"
-        if st:
-            self._update_axis_options("title style", st)
-        self._axis_options["title"] = f"{{{tex_text(title)}}}"
-
-    def grid(self, visible=True, which="major", **kwargs):
-        self._not_hidable()
-        if not visible:
-            self._axis_options["grid"] = "none"
-            return
-        selector = which + " "
-        if which == "major":
-            if "grid" in self._axis_options and self._axis_options["grid"] == "minor":
-                self._axis_options["grid"] = "both"
-            else:
-                self._axis_options["grid"] = "major"
-
-        elif which == "minor":
-            if "grid" in self._axis_options and self._axis_options["grid"] == "major":
-                self._axis_options["grid"] = "both"
-            else:
-                self._axis_options["grid"] = "minor"
-
-        elif which == "both":
-            self._axis_options["grid"] = "both"
-            selector = ""
-        
-        if kwargs:
-            accepted_kwargs = {"color", "c", "linestyle", "ls", "linewidth", "lw", "alpha"}
-            kwargs = self._check_kwargs("grid", accepted_kwargs, **kwargs)
-            g = Graph(self, None, {}, None, None, **kwargs)._style_string()
-            self._axis_options[f"{selector}grid style"] = f"{{{g}}}"
-            
-    def set_minorticks_num(self, num):
-        self._axis_options["minor tick num"] = num
-
-    def set_xlim(self, *args, **kwargs):
-        left = None
-        right = None
-        for k in kwargs:
-            if k not in ["left", "right"]:
-                print(f"Invalid argument {kwargs.pop(k)} in ylim")
-
-        if len(args) == 1:
-            left, right = args[0]
-        elif len(args) == 2:
-            left, right = args
-        elif len(args) > 2:
-            raise ValueError("set_xlim accepts at most 2 positional arguments")
-
-        if "left" in kwargs:
-            left = kwargs["left"]
-        if "right" in kwargs:
-            right = kwargs["right"]
-
-        if left is not None:
-            self._axis_options["xmin"] = left
-        if right is not None:
-            self._axis_options["xmax"] = right
-
-    def set_xscale(self, *args, **kwargs):
-        kws = {"base"}
-        kwargs = self._check_kwargs("set_xscale", kws, **kwargs)
-        if "log" in args:
-            self._axis_options["xmode"] = "log"
-        if "base" in kwargs:
-            self._axis_options["log basis x"] = kwargs["base"]
-
-    def set_xticks(self, ticks, labels=None, **kwargs):
-        kws = {"color", "c", "fontsize"}
-        kwargs = self._check_kwargs("set_xticks", kws, **kwargs)
-        st = {}
-        if "color" in kwargs or "c" in kwargs:
-            c = kwargs.get("color", kwargs.get("c", None))
-            st["text"] = self._match_color(c)
-        if "fontsize" in kwargs:
-            st["font"] = self._tex_fontsize(kwargs["fontsize"])
-        if st:
-            self._update_axis_options("x tick style", st)
-        if ticks:
-            s_ticks = map(str, ticks)
-            self._axis_options["xtick"]=f"{{{','.join(s_ticks)}}}"
-            if labels is not None and len(labels)==len(ticks):
-                self._axis_options["xticklabels"]=f"{{{tex_text(','.join(labels))}}}"
-            elif labels is not None and len(labels) == 0:
-                self._axis_options["xticklabels"]=r"{}"
-                self._xticks = False
-        else:
-            self._axis_options["xtick"]=r"\empty"
-            self._xticks = False
-
-    def set_xticklabels(self, labels, **kwargs):
-        kws = {"color", "c", "fontsize"}
-        kwargs = self._check_kwargs("set_xticklabels", kws, **kwargs)
-        st = {}
-        if "color" in kwargs or "c" in kwargs:
-            c = kwargs.get("color", kwargs.get("c", None))
-            st["text"] = self._match_color(c)
-        if "fontsize" in kwargs:
-            st["font"] = self._tex_fontsize(kwargs["fontsize"])
-        if st:
-            self._update_axis_options("x tick label style", st)
-        if labels:
-            self._axis_options["xticklabels"]=f"{{{tex_text(','.join(labels))}}}"
-        else:
-            self._axis_options["xticklabels"]=r"{}"
-            self._xticks = False
-
     def twinx(self):
         if self._projection in ["polar", "smith"]:
             raise Exception("Cannot create twinx() on non-normal projection.")
@@ -3167,6 +3272,11 @@ class Axes(BaseAxes):
                 else:
                     lines2.append(f"{aux_ax}{spec}\n]")
                 lines2.append(contents[i])
+                if i == self._get_overlay() and self._overlay_legend:
+                    lines2 += self._overlay_legend_entries
+                    add_l = self._add_legend_entries()
+                    if add_l:
+                        lines2.append(add_l)
                 if self._projection == "polar":
                     lines2.append("\\end{polaraxis}")
                 elif self._projection == "smith":
@@ -3246,7 +3356,7 @@ class Axes(BaseAxes):
                 if len(contents[0]) == 0:
                     lines.append(f"{aux_ax}{spec}alias={alias}\n]".replace("set layers=standard,\n", ""))
                 else:
-                    lines.append(f"{main_ax}{spec}alias={alias}\n]")
+                    lines.append(f"{aux_ax}{spec}alias={alias}\n]")
                 lines.append(contents[0])
                 for i in self._elements.keys():
                     if i == 0: continue
@@ -3353,6 +3463,7 @@ class Secondary(BaseAxes):
         auxiliary_opt_str = ""
         if self._axis_args:
             axis_opt_str += ",\n".join(self._axis_args)
+            auxiliary_opt_str += ",\n".join(self._axis_args)
         if self._ext_ymin or self._ext_ymax:
             lower = self._get_range("ymin")
             upper = self._get_range("ymax")
@@ -3374,9 +3485,9 @@ class Secondary(BaseAxes):
             for k, v in self._axis_options.items():
                 entry = parse_entry(k,v)
                 axis_opt_str += entry + ",\n"
-                if k in ["xmin", "xmax", "ymin", "ymax", "xmode", "ymode", "log basis x", "log basis y", "width", "height", "at"]:
+                if k in ["xmin", "xmax", "ymin", "ymax", "xmode", "ymode", "log basis x", "log basis y", "width", "height", "at", "axis y line*", "axis x line", "anchor"]:
                     auxiliary_opt_str += entry + ",\n"
-        return axis_opt_str, auxiliary_opt_str
+        return axis_opt_str, "hide axis,\n" + auxiliary_opt_str
     
     def _padding(self):
         return TikzConfig.SEC_Y_PADDING + TikzConfig.YTICK_PADDING * self._yticks + TikzConfig.SEC_Y_LABEL_PADDING * ("ylabel" in self._axis_options)

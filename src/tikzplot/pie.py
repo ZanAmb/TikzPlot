@@ -4,7 +4,7 @@ from .colors import _tex_color
 from .config import TikzConfig
 
 class Pie:
-    def __init__(self, ax, x, explode=None, labels=None, colors=None, autopct=None, pctdistance=0.6, labeldistance=1.1, radius=1, startangle=0, counterclock=True, wedgeprops=None, rotate_labels=False, normalize=True, at=None):
+    def __init__(self, ax, x, explode=None, labels=None, colors=None, autopct=None, pctdistance=0.6, labeldistance=1.1, radius=1, startangle=0, counterclock=True, wedgeprops=None, rotate_labels=False, normalize=True, at=None, center_text=None):
         self._axes = ax
         self._x = x
         self._explode = explode
@@ -22,6 +22,7 @@ class Pie:
         self._rotate_labels = rotate_labels
         self._alignment = "auto"
         self._at = at
+        self._center_text = center_text
 
     def _match_color(self, input):
         ccode, op = _tex_color(input)
@@ -59,7 +60,7 @@ class Pie:
                 r = [v * scale_fac for v in self._radius]
                 options["outer radius{list}"] = "{" + ",".join(str(v) for v in r) + "}"
         if "width" in self._wedgeprops:
-            options["inner radius"] = self._wedgeprops["width"] * scale_fac
+            options["inner radius"] = (1-self._wedgeprops["width"]) * scale_fac * self._radius
         else:
             options["inner radius"] = 0
         if self._explode is not None:
@@ -97,6 +98,8 @@ class Pie:
             if self._alignment == "auto" or self._alignment == "outer":
                 options["data style"]["right"] = {}
             options["data style"]["right"] = {}
+        if self._center_text is not None:
+            options["middle"] = self._center_text
         output = []
         for k,v in options.items():
             if v is None:

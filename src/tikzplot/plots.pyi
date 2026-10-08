@@ -202,7 +202,7 @@ def yscale(*args: Any, base: Optional[float] = ...) -> None:
     """
     ...
 
-def xticks(ticks: ArrayLike, labels: Optional[Sequence[str]] = ..., fontsize: Optional[float] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ...) -> None: 
+def xticks(*ticks: ArrayLike, labels: Optional[Sequence[str]] = ..., fontsize: Optional[float] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ..., rotation: Optional[float|int]= ..., ha: Optional[Literal["left", "center", "right"]] = ..., horizontalalignment: Optional[Literal["left", "center", "right"]] = ..., va: Optional[Literal["top", "center", "bottom"]] = ..., verticalalignment: Optional[Literal["top", "center", "bottom"]] = ...) -> None: 
         """
         Set x-axis ticks and their labels.
 
@@ -219,9 +219,18 @@ def xticks(ticks: ArrayLike, labels: Optional[Sequence[str]] = ..., fontsize: Op
 
         color or c: all matplotlib color formats (without X11/xkcd), optional
             Color of the tick labels: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+
+        rotation: float or int, optional
+            Rotation of the tick labels in degrees.
+
+        ha or horizontalalignment: {"left", "center", "right"}, optional
+            Horizontal alignment of the tick labels.
+
+        va or verticalalignment: {"top", "center", "bottom"}, optional
+            Vertical alignment of the tick labels.
         """
         ...
-def yticks(ticks: ArrayLike, labels: Optional[Sequence[str]] = ..., fontsize: Optional[Literal["xx-small", "x-small", "small", "medium", "large", "x-large", "xx-large"] | int] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ...) -> None: 
+def yticks(*ticks: ArrayLike, labels: Optional[Sequence[str]] = ..., fontsize: Optional[Literal["xx-small", "x-small", "small", "medium", "large", "x-large", "xx-large"] | int] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ..., rotation: Optional[float|int]= ..., ha: Optional[Literal["left", "center", "right"]] = ..., horizontalalignment: Optional[Literal["left", "center", "right"]] = ..., va: Optional[Literal["top", "center", "bottom"]] = ..., verticalalignment: Optional[Literal["top", "center", "bottom"]] = ...) -> None: 
         """
         Set y-axis ticks and their labels.
 
@@ -238,6 +247,15 @@ def yticks(ticks: ArrayLike, labels: Optional[Sequence[str]] = ..., fontsize: Op
 
         color or c: all matplotlib color formats (without X11/xkcd), optional
             Color of tick labels: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+
+        rotation: float or int, optional
+            Rotation of the tick labels in degrees.
+
+        ha or horizontalalignment: {"left", "center", "right"}, optional
+            Horizontal alignment of the tick labels.
+
+        va or verticalalignment: {"top", "center", "bottom"}, optional
+            Vertical alignment of the tick labels.
         """
         ...
 
@@ -275,7 +293,7 @@ def set_minorticks_num(num: int) -> None:
     num: int
         Number of minor ticks between major ticks.
     """
-def legend(*args: Any, loc: Optional[Union[int,str,Tuple[float,float]]] = ..., facecolor: Optional[ColorLike] = ..., edgecolor: Optional[ColorLike] = ..., labelcolor: Optional[ColorLike] = ..., frameon: Optional[bool] = ..., anchor: Optional[Literal["north", "south", "east", "west", "center", "north west", "north east", "south west", "south east"]] = ..., fontsize: Optional[Literal["xx-small", "x-small", "small", "medium", "large", "x-large", "xx-large"] | int] = ...) -> None:
+def legend(*args: Any, loc: Optional[Union[int,str,Tuple[float,float]]] = ..., facecolor: Optional[ColorLike] = ..., edgecolor: Optional[ColorLike] = ..., labelcolor: Optional[ColorLike] = ..., frameon: Optional[bool] = ..., anchor: Optional[Literal["north", "south", "east", "west", "center", "north west", "north east", "south west", "south east"]] = ..., fontsize: Optional[Literal["xx-small", "x-small", "small", "medium", "large", "x-large", "xx-large"] | int] = ..., ncols: Optional[int] = 1, reverse: Optional[bool] = False) -> None:
     """
     Show legend for the selected axis. Despite arguments requires at least one plotted element on the axis (not necesarily with label) to show up (LaTeX does not allow legend on empty axis).
 
@@ -298,6 +316,8 @@ def legend(*args: Any, loc: Optional[Union[int,str,Tuple[float,float]]] = ..., f
 
     anchor: {"north", "south", "east", "west", "center", "north west", "north east", "south west", "south east"}, optional
         Anchor of legend box, default "north east" (for custom loc)
+
+    reverse: bool, optional
     """
     ...
 
@@ -1764,7 +1784,7 @@ def xcorr(self, x:Sequence[float|int], y:Sequence[float|int], *, normed:bool=Tru
     """
     ...
     
-def pie(x: ArrayLike, *, explode: Optional[ArrayLike] = None, labels: Optional[Sequence[str]] = None, colors: Optional[Sequence[ColorLike]] = None, autopct: Optional[str] = None, pctdistance: float = 0.6, labeldistance: float = 1.1, radius: float = 1.0, startangle: float = 0.0, counterclock: bool = True, wedgeprops: Optional[dict] = None, rotate_labels: bool = False, normalize: bool = True) -> Pie:
+def pie(x: ArrayLike, *, explode: Optional[ArrayLike] = None, labels: Optional[Sequence[str]] = None, colors: Optional[Sequence[ColorLike]] = None, autopct: Optional[str] = None, pctdistance: float = 0.6, labeldistance: float = 1.1, radius: float = 1.0, startangle: float = 0.0, counterclock: bool = True, wedgeprops: Optional[dict] = None, rotate_labels: bool = False, normalize: bool = True, center_text: Optional[str]=...) -> Pie:
     """
     Draw a pie chart to the selected axis.
 
@@ -1801,13 +1821,16 @@ def pie(x: ArrayLike, *, explode: Optional[ArrayLike] = None, labels: Optional[S
         If True (default), draw wedges counterclockwise. If False, draw wedges clockwise.
 
     wedgeprops: dict, optional
-        A dictionary of properties for the wedges, for now, only width (in cm) is supported, which allows to make donut or nested charts.
+        A dictionary of properties for the wedges, for now, only width (relative to radius) is supported, which allows to make donut or nested charts.
 
     rotate_labels: bool, optional
         If True, rotate each label to be parallel to its corresponding wedge. Default is False.
 
     normalize: bool, optional
         If True (default), normalize x so that it sums to 1.
+
+    center_text: str, optional
+        If provided, a text will be drawn at the center of the pie chart.
     """
     ...
 def pie_label(container: Pie, labels: Sequence[str], *, distance: float = 0.6, rotate: bool = False) -> None:

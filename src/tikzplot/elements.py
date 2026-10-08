@@ -9,6 +9,7 @@ from tikzplot.styles import Styles
 from .config import TikzConfig
 from .state import next_export_num, main_name
 from .colors import _tex_color
+from .latex_special import tex_text
 
 class BaseGraph:
     _COLOR_MAP = {'b':'blue', 'g':'teal', 'r':'red', 'c':'cyan', 'm':'magenta', 'y':'yellow', 'k':'black', 'w':'white'}
@@ -418,9 +419,9 @@ class Single(BaseGraph):
             if len(self._x) == 0:
                 if self._label and (self._axes._legend_on or self._axes._overlay_legend):
                     if label_opts:
-                        l = f"\\addlegendentry[{label_opts}]{{{self._label}}}"
+                        l = f"\\addlegendentry[{label_opts}]{{{tex_text(self._label)}}}"
                     else:
-                        l = f"\\addlegendentry{{{self._label}}}"
+                        l = f"\\addlegendentry{{{tex_text(self._label)}}}"
                     if self._axes._legend_on:
                         return f"\\addplot [{style}] coordinates {{}}{self._endnotes};{l}"
                     self._axes._add_overlay_legend_entry(f"\\addlegendimage{{{style.replace('\n', ' ')}}}{l}")
@@ -442,9 +443,9 @@ class Single(BaseGraph):
             if not TikzConfig.SAVE_DATAPOINTS or (TikzConfig.SAVE_DATAPOINTS and not TikzConfig.UPDATE_STYLE_ONLY):
                 if self._label and (self._axes._legend_on or self._axes._overlay_legend):
                     if label_opts:
-                        l = f"\\addlegendentry[{label_opts}]{{{self._label}}}"
+                        l = f"\\addlegendentry[{label_opts}]{{{tex_text(self._label)}}}"
                     else:
-                        l = f"\\addlegendentry{{{self._label}}}"
+                        l = f"\\addlegendentry{{{tex_text(self._label)}}}"
                     if self._axes._legend_on:
                         return f"\\addplot [{style}] table [{table_opts}] {{{datapoints}}}{self._endnotes};{l}"
                     self._axes._add_overlay_legend_entry(f"\\addlegendimage{{{style.replace('\n', ' ')}}}{l}")
@@ -454,8 +455,8 @@ class Single(BaseGraph):
         elif TikzConfig.SAVE_DATAPOINTS or not (TikzConfig.SAVE_DATAPOINTS and not TikzConfig.UPDATE_STYLE_ONLY):
             if self._label and self._axes._legend_on:
                 if label_opts:
-                    return f"\\addplot [{style}] {self._special}{self._endnotes};\\addlegendentry[{label_opts}]{{{self._label}}}"
-                return f"\\addplot [{style}] {self._special}{self._endnotes};\\addlegendentry{{{self._label}}}"
+                    return f"\\addplot [{style}] {self._special}{self._endnotes};\\addlegendentry[{label_opts}]{{{tex_text(self._label)}}}"
+                return f"\\addplot [{style}] {self._special}{self._endnotes};\\addlegendentry{{{tex_text(self._label)}}}"
             return f"\\addplot [forget plot,\n{style}] {self._special}{self._endnotes};"
         else:
             return ""
@@ -657,8 +658,14 @@ class Graph(BaseGraph):
             self._meta = self._settings.pop("meta", None)
             mask = np.isfinite(self._x) & np.isfinite(self._y)
             n0 = len(self._x)
-            self._x = self._x[mask]
-            self._y = self._y[mask]
+            try:
+                self._x = self._x[mask]
+            except:
+                self._x = self._x[mask[0]]
+            try:
+                self._y = self._y[mask]
+            except:
+                self._y = self._y[mask[0]]
             n = len(self._x)
             if n == 0:
                 self._axes._remove_graph(self)
@@ -796,9 +803,9 @@ class Graph(BaseGraph):
             rect = f"\\fill[{style}] (axis cs:{self._x[0]}, {lower}) rectangle (axis cs:{self._x[1]}, {upper});"
             if self._label and (self._axes._legend_on or self._axes._overlay_legend):
                 if label_opts:
-                    l = f"\\addlegendimage{{area legend, {style.replace('\n', ' ')}}}\\addlegendentry[{label_opts}]{{{self._label}}}"
+                    l = f"\\addlegendimage{{area legend, {style.replace('\n', ' ')}}}\\addlegendentry[{label_opts}]{{{tex_text(self._label)}}}"
                 else:
-                    l = f"\\addlegendimage{{area legend, {style.replace('\n', ' ')}}}\\addlegendentry{{{self._label}}}"
+                    l = f"\\addlegendimage{{area legend, {style.replace('\n', ' ')}}}\\addlegendentry{{{tex_text(self._label)}}}"
                 if self._axes._legend_on:
                     rect += l
                 else:
@@ -815,9 +822,9 @@ class Graph(BaseGraph):
             rect = f"\\fill[{style}] (axis cs:{lower}, {self._y[0]}) rectangle (axis cs:{upper}, {self._y[1]});"
             if self._label and (self._axes._legend_on or self._axes._overlay_legend):
                 if label_opts:
-                    l = f"\\addlegendimage{{area legend, {style.replace('\n', ' ')}}}\\addlegendentry[{label_opts}]{{{self._label}}}"
+                    l = f"\\addlegendimage{{area legend, {style.replace('\n', ' ')}}}\\addlegendentry[{label_opts}]{{{tex_text(self._label)}}}"
                 else:
-                    l = f"\\addlegendimage{{area legend, {style.replace('\n', ' ')}}}\\addlegendentry{{{self._label}}}"
+                    l = f"\\addlegendimage{{area legend, {style.replace('\n', ' ')}}}\\addlegendentry{{{tex_text(self._label)}}}"
                 if self._axes._legend_on:
                     rect += l
                 else:
@@ -850,9 +857,9 @@ class Graph(BaseGraph):
             if not TikzConfig.SAVE_DATAPOINTS or (TikzConfig.SAVE_DATAPOINTS and not TikzConfig.UPDATE_DATA_ONLY):
                 if self._label and (self._axes._legend_on or self._axes._overlay_legend):
                     if label_opts:
-                        l = f"\\addlegendentry[{label_opts}]{{{self._label}}}"
+                        l = f"\\addlegendentry[{label_opts}]{{{tex_text(self._label)}}}"
                     else:
-                        l = f"\\addlegendentry{{{self._label}}}"
+                        l = f"\\addlegendentry{{{tex_text(self._label)}}}"
                     if self._axes._legend_on:
                         return f"\\addplot [{style}] table [{table_opts}] {{{datapoints}}}{self._endnotes};{l}"
                     self._axes._add_overlay_legend_entry(f"\\addlegendimage{{{style.replace('\n', ' ')}}}{l}")
@@ -862,8 +869,8 @@ class Graph(BaseGraph):
         elif TikzConfig.SAVE_DATAPOINTS or not (TikzConfig.SAVE_DATAPOINTS and not TikzConfig.UPDATE_STYLE_ONLY):
             if self._label and self._axes._legend_on:
                 if label_opts:
-                    return f"\\addplot [{style}] {self._special}{self._endnotes};\\addlegendentry[{label_opts}]{{{self._label}}}"
-                return f"\\addplot [{style}] {self._special}{self._endnotes};\\addlegendentry{{{self._label}}}"
+                    return f"\\addplot [{style}] {self._special}{self._endnotes};\\addlegendentry[{label_opts}]{{{tex_text(self._label)}}}"
+                return f"\\addplot [{style}] {self._special}{self._endnotes};\\addlegendentry{{{tex_text(self._label)}}}"
             return f"\\addplot [forget plot,\n{style}] {self._special}{self._endnotes};"
         else:
             return ""
@@ -1309,9 +1316,9 @@ class Graph3(BaseGraph):
             if not TikzConfig.SAVE_DATAPOINTS or (TikzConfig.SAVE_DATAPOINTS and not TikzConfig.UPDATE_DATA_ONLY):
                 if self._label and (self._axes._legend_on or self._axes._overlay_legend):
                     if label_opts:
-                        l = f"\\addlegendentry[{label_opts}]{{{self._label}}}"
+                        l = f"\\addlegendentry[{label_opts}]{{{tex_text(self._label)}}}"
                     else:
-                        l = f"\\addlegendentry{{{self._label}}}"
+                        l = f"\\addlegendentry{{{tex_text(self._label)}}}"
                     if self._axes._legend_on:
                         return f"\\addplot3 [{style}] table [{table_opts}] {{{datapoints}}};{l}"
                 return f"\\addplot3 [forget plot,\n{style}] table [{table_opts}] {{{datapoints}}};"
@@ -1319,8 +1326,8 @@ class Graph3(BaseGraph):
         elif TikzConfig.SAVE_DATAPOINTS or not (TikzConfig.SAVE_DATAPOINTS and not TikzConfig.UPDATE_STYLE_ONLY):
             if self._label and self._axes._legend_on:
                 if label_opts:
-                    return f"\\addplot3 [{style}] {self._special};\\addlegendentry[{label_opts}]{{{self._label}}}"
-                return f"\\addplot3 [{style}] {self._special};\\addlegendentry{{{self._label}}}"
+                    return f"\\addplot3 [{style}] {self._special};\\addlegendentry[{label_opts}]{{{tex_text(self._label)}}}"
+                return f"\\addplot3 [{style}] {self._special};\\addlegendentry{{{tex_text(self._label)}}}"
             return f"""\\addplot3 [forget plot,\n{style}] {self._special};"""
         else:
             return ""

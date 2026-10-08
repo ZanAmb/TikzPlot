@@ -1,6 +1,5 @@
 from re import L
 from typing import Any, Optional, Sequence, Tuple, Union, Literal, Callable
-from matplotlib.pylab import Color
 import numpy as np
 from .colorbar import Colorbar
 from .elements import Graph
@@ -1326,7 +1325,7 @@ class BaseAxes:
         """
         ...             
 
-    def pie(self, x: ArrayLike, *, explode: Optional[ArrayLike] = None, labels: Optional[Sequence[str]] = None, colors: Optional[Sequence[ColorLike]] = None, autopct: Optional[str] = None, pctdistance: float = 0.6, labeldistance: float = 1.1, radius: float = 1.0, startangle: float = 0.0, counterclock: bool = True, wedgeprops: Optional[dict] = None, rotate_labels: bool = False, normalize: bool = True) -> Pie:
+    def pie(self, x: ArrayLike, *, explode: Optional[ArrayLike] = None, labels: Optional[Sequence[str]] = None, colors: Optional[Sequence[ColorLike]] = None, autopct: Optional[str] = None, pctdistance: float = 0.6, labeldistance: float = 1.1, radius: float = 1.0, startangle: float = 0.0, counterclock: bool = True, wedgeprops: Optional[dict] = None, rotate_labels: bool = False, normalize: bool = True, center_text: Optional[str]=...) -> Pie:
         """
         Draw a pie chart to the selected axis.
 
@@ -1363,13 +1362,16 @@ class BaseAxes:
             If True (default), draw wedges counterclockwise. If False, draw wedges clockwise.
 
         wedgeprops: dict, optional
-            A dictionary of properties for the wedges, for now, only width (in cm) is supported, which allows to make donut or nested charts.
+            A dictionary of properties for the wedges, for now, only width (relative to radius) is supported, which allows to make donut or nested charts.
 
         rotate_labels: bool, optional
             If True, rotate each label to be parallel to its corresponding wedge. Default is False.
 
         normalize: bool, optional
             If True (default), normalize x so that it sums to 1.
+
+        center_text: str, optional
+            If provided, this text will be drawn at the center of the pie chart.
         """
         ...
 
@@ -1841,7 +1843,7 @@ class BaseAxes:
         Set y-axis scale (to log).
         """
         ...
-    def set_yticks(self, ticks: ArrayLike, labels: Optional[Sequence[str]] = ..., fontsize: Optional[Literal["xx-small", "x-small", "small", "medium", "large", "x-large", "xx-large"] | int] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ...) -> None: 
+    def set_yticks(self, *ticks: ArrayLike, labels: Optional[Sequence[str]] = ..., fontsize: Optional[Literal["xx-small", "x-small", "small", "medium", "large", "x-large", "xx-large"] | int] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ..., rotation: Optional[float|int]= ..., ha: Optional[Literal["left", "center", "right"]] = ..., horizontalalignment: Optional[Literal["left", "center", "right"]] = ..., va: Optional[Literal["top", "center", "bottom"]] = ..., verticalalignment: Optional[Literal["top", "center", "bottom"]] = ...) -> None: 
         """
         Set y-axis ticks and their labels.
 
@@ -1858,9 +1860,18 @@ class BaseAxes:
 
         color or c: all matplotlib color formats (without X11/xkcd), optional
             Color of tick labels: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+
+        rotation: float or int, optional
+            Rotation of tick labels in degrees
+
+        ha or horizontalalignment: {"left", "center", "right"}, optional
+            Horizontal alignment of tick labels, default "center"
+
+        va or verticalalignment: {"top", "center", "bottom"}, optional
+            Vertical alignment of tick labels, default "center"
         """
         ...
-    def set_yticklabels(self, labels: Sequence[str], fontsize: Optional[Literal["xx-small", "x-small", "small", "medium", "large", "x-large", "xx-large"] | int] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ...) -> None: 
+    def set_yticklabels(self, *labels: Sequence[str], fontsize: Optional[Literal["xx-small", "x-small", "small", "medium", "large", "x-large", "xx-large"] | int] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ..., rotation: Optional[float|int]= ..., ha: Optional[Literal["left", "center", "right"]] = ..., horizontalalignment: Optional[Literal["left", "center", "right"]] = ..., va: Optional[Literal["top", "center", "bottom"]] = ..., verticalalignment: Optional[Literal["top", "center", "bottom"]] = ...) -> None: 
         """
         Set y-axis tick labels.
 
@@ -1874,8 +1885,151 @@ class BaseAxes:
 
         color or c: all matplotlib color formats (without X11/xkcd), optional
             Color of tick labels: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+
+        rotation: float or int, optional
+            Rotation of tick labels in degrees
+
+        ha or horizontalalignment: {"left", "center", "right"}, optional
+            Horizontal alignment of tick labels, default "center"
+
+        va or verticalalignment: {"top", "center", "bottom"}, optional
+            Vertical alignment of tick labels, default "center"
         """
         ...
+
+    def set_xlabel(self, label: str, fontsize: Optional[float|FontSize] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ..., loc: Optional[Literal["left", "center", "right"]] = ...) -> None: 
+        """
+        Set x-axis label.
+
+        Parameters
+        ----------
+        label: str
+            Label text
+
+        fontsize: FontSize or float, optional
+            Font size of the label
+
+        color or c: all matplotlib color formats (without X11/xkcd), optional
+            Text color: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+
+        loc: {"left", "center", "right"}, optional
+            Label location, default "center"
+        """
+        ...
+    def set_title(self, title: str, fontsize: Optional[float|FontSize] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ..., loc: Optional[Literal["left", "center", "right"]] = ...) -> None: 
+        """
+        Set plot title.
+
+        Parameters
+        ----------
+        title: str
+            Title text
+
+        fontsize: FontSize or float, optional
+            Font size of the title
+
+        color or c: all matplotlib color formats (without X11/xkcd), optional
+            Text color: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+
+        loc: {"left", "center", "right"}, optional
+            Title location, default "center"
+        """
+        ...
+    def grid(self, visible: bool = True, which: Literal["major","minor","both"] = "major", alpha: float = 1.0, color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ..., linestyle: Optional[LineStyle] = ..., ls: Optional[LineStyle] = ..., linewidth: Optional[float]= ..., lw: Optional[float] = ...) -> None: 
+        """
+        Set grid.
+
+        Parameters
+        ----------
+        visible: bool, default True
+            Show grid
+        which: {"major", "minor", "both"}, default "major"
+            Grid selector
+        alpha: float, optional
+            Opacity
+        color or c: all matplotlib color formats (without X11/xkcd), optional
+            Grid color: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+        linestyle or ls: str, optional
+            Grid line style
+        linewidth or lw: float, optional
+            Grid line width in pt
+        """
+        ...
+    def set_minorticks_num(self, num: int) -> None:
+        """
+        Set number of minor ticks between major ticks.
+        
+        Parameters
+        ----------
+        num: int
+            Number of minor ticks between major ticks.
+        """
+        ...
+    def set_xlim(self, *args: Any, left: Optional[float] = ..., right: Optional[float] = ...) -> None: 
+        """
+        Set x-axis limit(-s). Set as tuple or as kwargs (left, right).
+
+        """
+        ...
+    def set_xscale(self, *args: Any, base: Optional[float] = ...) -> None: 
+        """
+        Set x-axis scale (to log).
+        """
+        ...
+    def set_xticks(self, *ticks: ArrayLike, labels: Optional[Sequence[str]] = ..., fontsize: Optional[float] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ..., rotation: Optional[float|int]= ..., ha: Optional[Literal["left", "center", "right"]] = ..., horizontalalignment: Optional[Literal["left", "center", "right"]] = ..., va: Optional[Literal["top", "center", "bottom"]] = ..., verticalalignment: Optional[Literal["top", "center", "bottom"]] = ...) -> None: 
+        """
+        Set x-axis ticks and their labels.
+
+        Parameters
+        ----------
+        ticks: ArrayLike
+            Positions of the ticks on the x-axis.
+
+        labels: sequence of str, optional
+            Labels for the ticks. If not provided, the tick positions will be used as labels.
+
+        fontsize: float, optional
+            Font size of the tick labels.
+
+        color or c: all matplotlib color formats (without X11/xkcd), optional
+            Color of the tick labels: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+
+        rotation: float or int, optional
+            Rotation of the tick labels in degrees.
+
+        ha or horizontalalignment: {"left", "center", "right"}, optional
+            Horizontal alignment of the tick labels.
+
+        va or verticalalignment: {"top", "center", "bottom"}, optional
+            Vertical alignment of the tick labels.
+        """
+        ...
+    def set_xticklabels(self, *labels: Sequence[str], fontsize: Optional[float] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ..., rotation: Optional[float|int]= ..., ha: Optional[Literal["left", "center", "right"]] = ..., horizontalalignment: Optional[Literal["left", "center", "right"]] = ..., va: Optional[Literal["top", "center", "bottom"]] = ..., verticalalignment: Optional[Literal["top", "center", "bottom"]] = ...) -> None: 
+        """
+        Set x-axis tick labels.
+
+        Parameters
+        ----------
+        labels: sequence of str
+            Labels for the ticks.
+
+        fontsize: float, optional
+            Font size of the tick labels.
+
+        color or c: all matplotlib color formats (without X11/xkcd), optional
+            Color of the tick labels: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+
+        rotation: float or int, optional
+            Rotation of the tick labels in degrees.
+
+        ha or horizontalalignment: {"left", "center", "right"}, optional
+            Horizontal alignment of the tick labels.
+
+        va or verticalalignment: {"top", "center", "bottom"}, optional
+            Vertical alignment of the tick labels.
+        """
+        ...
+
 
     def tick_params(self, axis: Literal["x", "y", "both"] = "both", color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ..., labelcolor: Optional[ColorLike] = ..., labelsize: Optional[Literal["xx-small", "x-small", "small", "medium", "large", "x-large", "xx-large"] | int] = ..., direction: Optional[Literal["in", "out", "inout"]] = "in", top: Optional[bool] = True, bottom: Optional[bool] = True, left: Optional[bool] = True, right: Optional[bool] = True, labelbottom: Optional[bool] = True, labeltop: Optional[bool] = True) -> None:
         """
@@ -1906,7 +2060,7 @@ class BaseAxes:
         """
         ...
         
-    def legend(self, *args: Any, loc: Optional[Union[int,str,Tuple[float,float]]] = ..., facecolor: Optional[ColorLike] = ..., edgecolor: Optional[ColorLike] = ..., labelcolor: Optional[ColorLike] = ..., frameon: Optional[bool] = ..., anchor: Optional[Literal["north", "south", "east", "west", "center", "north west", "north east", "south west", "south east"]] = ..., fontsize: Optional[Literal["xx-small", "x-small", "small", "medium", "large", "x-large", "xx-large"] | int] = ..., ncols: Optional[int] = 1) -> None:
+    def legend(self, *args: Any, loc: Optional[Union[int,str,Tuple[float,float]]] = ..., facecolor: Optional[ColorLike] = ..., edgecolor: Optional[ColorLike] = ..., labelcolor: Optional[ColorLike] = ..., frameon: Optional[bool] = ..., anchor: Optional[Literal["north", "south", "east", "west", "center", "north west", "north east", "south west", "south east"]] = ..., fontsize: Optional[Literal["xx-small", "x-small", "small", "medium", "large", "x-large", "xx-large"] | int] = ..., ncols: Optional[int] = 1, reverse: Optional[bool] = False) -> None:
         """
         Show legend for the selected axis. Despite arguments requires at least one plotted element on the axis (not necesarily with label) to show up (LaTeX does not allow legend on empty axis).
 
@@ -1929,6 +2083,9 @@ class BaseAxes:
 
         anchor: {"north", "south", "east", "west", "center", "north west", "north east", "south west", "south east"}, optional
             Anchor of legend box, default "north east" (for custom loc)
+
+        reverse: bool, optional
+            Reverse order of legend entries, default False
         """
         ...
     def set(self, **kwargs) -> None:
@@ -2096,120 +2253,6 @@ class Axes(BaseAxes):
     def imshow(self, *args: Any, cmap: Optional[str] = ..., **kwargs: Any) -> Tuple[Any, str, float, float]: 
         """
         Draw image to the selected axis from array. Uses matplotlib imshow() to export to PDF, then inputs the image to the axis. Return may be used to initialize Colorbar().
-        """
-        ...
-    def set_xlabel(self, label: str, fontsize: Optional[float|FontSize] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ..., loc: Optional[Literal["left", "center", "right"]] = ...) -> None: 
-        """
-        Set x-axis label.
-
-        Parameters
-        ----------
-        label: str
-            Label text
-
-        fontsize: FontSize or float, optional
-            Font size of the label
-
-        color or c: all matplotlib color formats (without X11/xkcd), optional
-            Text color: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
-
-        loc: {"left", "center", "right"}, optional
-            Label location, default "center"
-        """
-        ...
-    def set_title(self, title: str, fontsize: Optional[float|FontSize] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ..., loc: Optional[Literal["left", "center", "right"]] = ...) -> None: 
-        """
-        Set plot title.
-
-        Parameters
-        ----------
-        title: str
-            Title text
-
-        fontsize: FontSize or float, optional
-            Font size of the title
-
-        color or c: all matplotlib color formats (without X11/xkcd), optional
-            Text color: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
-
-        loc: {"left", "center", "right"}, optional
-            Title location, default "center"
-        """
-        ...
-    def grid(self, visible: bool = True, which: Literal["major","minor","both"] = "major", alpha: float = 1.0, color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ..., linestyle: Optional[LineStyle] = ..., ls: Optional[LineStyle] = ..., linewidth: Optional[float]= ..., lw: Optional[float] = ...) -> None: 
-        """
-        Set grid.
-
-        Parameters
-        ----------
-        visible: bool, default True
-            Show grid
-        which: {"major", "minor", "both"}, default "major"
-            Grid selector
-        alpha: float, optional
-            Opacity
-        color or c: all matplotlib color formats (without X11/xkcd), optional
-            Grid color: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
-        linestyle or ls: str, optional
-            Grid line style
-        linewidth or lw: float, optional
-            Grid line width in pt
-        """
-        ...
-    def set_minorticks_num(self, num: int) -> None:
-        """
-        Set number of minor ticks between major ticks.
-        
-        Parameters
-        ----------
-        num: int
-            Number of minor ticks between major ticks.
-        """
-        ...
-    def set_xlim(self, *args: Any, left: Optional[float] = ..., right: Optional[float] = ...) -> None: 
-        """
-        Set x-axis limit(-s). Set as tuple or as kwargs (left, right).
-
-        """
-        ...
-    def set_xscale(self, *args: Any, base: Optional[float] = ...) -> None: 
-        """
-        Set x-axis scale (to log).
-        """
-        ...
-    def set_xticks(self, ticks: ArrayLike, labels: Optional[Sequence[str]] = ..., fontsize: Optional[float] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ...) -> None: 
-        """
-        Set x-axis ticks and their labels.
-
-        Parameters
-        ----------
-        ticks: ArrayLike
-            Positions of the ticks on the x-axis.
-
-        labels: sequence of str, optional
-            Labels for the ticks. If not provided, the tick positions will be used as labels.
-
-        fontsize: float, optional
-            Font size of the tick labels.
-
-        color or c: all matplotlib color formats (without X11/xkcd), optional
-            Color of the tick labels: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
-        """
-        ...
-    def set_xticklabels(self, labels: Sequence[str], fontsize: Optional[float] = ..., color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ...) -> None: 
-        """
-        Set x-axis tick labels.
-
-        Parameters
-        ----------
-        labels: sequence of str
-            Labels for the ticks.
-
-        fontsize: float, optional
-            Font size of the tick labels.
-
-        color or c: all matplotlib color formats (without X11/xkcd), optional
-            Color of the tick labels: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
         """
         ...
     def twinx(self) -> "Secondary": 

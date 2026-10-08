@@ -1,5 +1,6 @@
 import numpy as _np
 import copy
+import re
 
 from .axes import Axes
 from .axes3d import Axes3
@@ -124,7 +125,7 @@ class Figure:
         if not TikzConfig.USE_GROUPPLOTS:
             raise Warning("subplot_mosaic is only available when using groupplots (TikzConfig.USE_GROUPPLOTS). Command will be ignored.")
         if isinstance(mosaic, str):
-            mosaic = [list(row) for row in mosaic.splitlines() if row]
+            mosaic = [list(row.strip()) for row in mosaic.splitlines() if row]
         nrows = len(mosaic)
         ncols = max(len(row) for row in mosaic)
         for r in range(nrows):
@@ -134,7 +135,7 @@ class Figure:
         for r in reversed(range(nrows)):
             for c in range(ncols):
                 n = mosaic[r][c]
-                if r < nrows - 1 and c > 0 and mosaic[r+1][c] == mosaic[r][c-1] != n:
+                if r < nrows - 1 and c > 0 and mosaic[r+1][c] == mosaic[r][c-1] != n and mosaic[r+1][c] != empty_sentinel:
                     raise ValueError(f"Invalid mosaic: {n} is not a contiguous block")
                 if n != empty_sentinel:
                     if n in grid:
@@ -570,6 +571,11 @@ class Figure:
             ax._reduce_points(limit)
 
     def _to_tex(self, filename, png=False, standalone=None, print_requirements=False):
+        for k,v in self._lims.items():
+            for j in v:
+                if v[j] is None:
+                    print(f"Warning: at least one of {k} limits is None, LaTeX will probably not compile. Set limit manually or add a plot type with absolute data coordinates.")
+                    break
         single = self._nrows * self._ncols == 1
         if not self._axes:
             return ""
@@ -658,14 +664,22 @@ class Figure:
         depth = 0
         mathmode = False
         output = []
+        levels = []
         for line in lines:
+            current = 0
             if len(line.strip()) == 0 or line.strip() == ",":
                 continue
-            if line.strip().startswith("\\end{") and depth > 0:
-                depth -= 1
-            output.append("\t" * depth + line)
-            if line.strip().startswith("\\begin{"):
-                depth += 1
+            openers = r"\\begin\{([a-zA-Z0-9]+)\}"
+            closers = r"\\end\{([a-zA-Z0-9]+)\}"
+            op = re.findall(openers, line)
+            cl = re.findall(closers, line)
+            for o in op:
+                current = 1
+                levels.append(o)
+            for c in cl:
+                if levels and levels[-1] == c:
+                    levels.pop()
+            output.append("\t" * (depth + len(levels) - current) + line)
             for c in line.strip():
                 if c == "$":
                     mathmode = not mathmode
