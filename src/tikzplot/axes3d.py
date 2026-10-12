@@ -86,7 +86,6 @@ class Axes3:
             self._width= f"{self._fig._get_width() / ncols}cm"
         if self._fig._get_height():
             self._height = f"{self._fig._get_height() / nrows}cm"
-
         self._style_defaults()
 
     def _new_pos(self, nrows, ncols, index):
@@ -1020,14 +1019,26 @@ class Axes3:
         mode = "lin"
         if arg in self._axis_options:
             mode = self._axis_options[arg]
-        if which in self._axis_options:
-            for e in self._elements[self._get_overlay()]:
-                e._filter(which, self._axis_options[which])
+        common = self._get_all_elements().copy()
+        if which in self._axis_options and isinstance(self._axis_options[which], (int, float)):
+            other = which.replace("min", "max") if "min" in which else which.replace("max", "min")
+            if other in self._axis_options and (("min" in which and self._axis_options[which] > self._axis_options[other]) or ("max" in which and self._axis_options[which] < self._axis_options[other])):
+                for e in common:
+                    e._filter(other, self._axis_options[which])
+            else:
+                for e in common:
+                    e._filter(which, self._axis_options[which])
             return (self._axis_options[which], True, mode)
+        values = [e._get_erange(which) for e in common]
+        if which in self._preferred_lims:
+            values.append(self._preferred_lims[which])
+        values = [v for v in values if v is not None]
+        if not values:
+            return (None, False, mode)
         if "min" in which:
-            return (min([e._get_erange(which) for e in self._get_all_elements()]), False, mode)
-        return (max([e._get_erange(which) for e in self._get_all_elements()]), False, mode)
-    
+            return (min(values), False, mode)
+        return (max(values), False, mode) 
+       
     def _set_range(self, which, value):
         self._axis_options[which] = value
         for e in self._get_all_elements():
@@ -1099,6 +1110,9 @@ class Axes3:
 
     def set_minorticks_num(self, num):
         self._axis_options["minor tick num"] = num
+
+    def set_axis_off(self):
+        self._axis_options["hide axis"] = None
 
     def _axis_option_string(self):
         if self._extend:

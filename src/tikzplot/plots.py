@@ -195,6 +195,11 @@ def text(*args, **kwargs):
     assert _current_axes
     return _current_axes.text(*args, **kwargs)
 
+def annotate(*args, **kwargs):
+    _ensure_axes()
+    assert _current_axes
+    return _current_axes.annotate(*args, **kwargs)
+
 def hlines(*args, **kwargs):
     _ensure_axes()
     assert _current_axes

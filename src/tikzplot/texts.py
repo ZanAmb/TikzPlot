@@ -1,4 +1,5 @@
 from .colors import _tex_color
+from .latex_special import tex_text
 
 class Text:
     def __init__(self, ax, x, y, coordinate, s, **kwargs):
@@ -6,14 +7,13 @@ class Text:
         self._x = x
         self._y = y
         self._coordinate = coordinate
-        self._s = s
+        self._s = tex_text(s)
         self._kwargs = kwargs
         self._color = False
         self._opacity = 1
         self._fsize = None
         self._label = kwargs.get("label", None)
         self._visible = True
-
 
     def match_color(self, input):
         self._has_color = True
@@ -71,7 +71,6 @@ class Text:
             output.insert(0,f"color={self._color}")
         return ", ".join(output)
 
-
     def _to_tex(self, *args, **kwargs):
         if self._visible:
             if self._coordinate is not None:
@@ -87,6 +86,7 @@ class Text:
                 return f"\\node[{self._style_string()}] at {self._coordinate} {{{self._fsize or ''}{self._s}}};"
         else:
             return ""
+        
     def _set_label(self, label):
         self._label = label
 

@@ -59,4 +59,4 @@ def tex_text(sa: str) -> str:
 
         i += 1
 
-    return "".join(out)
+    return "".join(out) if len(out) > 0 else ""

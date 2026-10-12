@@ -64,6 +64,7 @@ Some basic plot commands are already implemented with commonly used arguments:
 - `imshow()`,
 - `matshow()`,
 - `text()`,
+- `annotate()`,
 - `bxp()` (without notches),
 - `boxplot()` (without notches),
 - `violin()`,

@@ -27,6 +27,7 @@ ax.plot(x, y, color="blue", lw=1.5, label="sin(x)")
 ax.text(1.5, 0.5, r"text $\alpha$", color="blue", ha="center", on_top=False, va="center", backgroundcolor="cyan", rotation=30)
 ax.plot(x, y2, ls="--", color="red", label="cos(x)")
 ax.text(1.5, -0.5, r"text $\beta$", color="teal", ha="center", va="center", rotation=-70)
+ax.annotate(r"min", xy=(4.7, -1), xytext=(5, -0.5), arrowprops={"arrowstyle": "|-stealth", "color": "grey", "lw": 1.5}, c="cyan", va="bottom", rotation=-10)
 
 ax.grid()
 ax.legend(loc="upper right")

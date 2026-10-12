@@ -754,7 +754,7 @@ def text(x: float, y: float, s: str, color: Optional[ColorLike] = ..., c: Option
         Text position in axis coordinates
     
     s: str
-        Text content (LaTeX format)
+        Text content
     
     color or c: all matplotlib color formats (without X11/xkcd), optional
         Text color: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
@@ -777,6 +777,50 @@ def text(x: float, y: float, s: str, color: Optional[ColorLike] = ..., c: Option
     rotation: float or {"vertical", "horizontal"}, optional
         Rotation angle in degrees or preset rotation
     
+    label: str, optional
+        Legend entry
+    """
+    ...
+
+def annotate(self, text: str, xy: Tuple[float|int, float|int], xytext: Optional[Tuple[float|int, float|int]] = None, arrowprops: Optional[dict] = None, alpha: float = 1, color: Optional[ColorLike] = ..., c: Optional[ColorLike] = ..., fontsize: Optional[FontSize] = ..., size: Optional[FontSize] = ..., backgroundcolor: Optional[ColorLike] = ..., horizontalalignment: Literal["left", "center", "right"] = "center", ha: Literal["left", "center", "right"] = "center", verticalalignment: Literal["bottom", "center", "top"] = "center", va: Literal["bottom", "center", "top"] = "center", rotation: float = 0, label: Optional[str] = ...) -> None:
+    """
+    Add an annotation with optional arrow to the selected axis.
+
+    Parameters
+    ----------
+    text: str
+        Annotation text
+
+    xy: tuple of float
+        Point (x,y) to annotate in axis coordinates
+
+    xytext: tuple of float, optional
+        Position (x,y) of the text in axis coordinates. If not provided, only text will be displayed at specified location (same as using text() method).
+
+    arrowprops: dict, optional
+        Dictionary of properties for the arrow. If not provided, no arrow will be drawn. Possible keys include 'arrowstyle', 'color', 'c', 'linewidth', 'lw', 'linestyle', 'ls', 'alpha'. For 'arrowstyle', basic LaTeX arrow styles are allowed ('>', '<', '|', 'stealth', 'latex', etc., separated by '-' to indicate side). 
+
+    alpha: float, optional
+        Opacity
+
+    color or c: all matplotlib color formats (without X11/xkcd), optional
+        Text color: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+
+    fontsize or size: FontSize, optional
+        Font size
+
+    backgroundcolor: all matplotlib color formats (without X11/xkcd), optional
+        Background color of text box: RGB/RGBA (tuple), HEX (str), grayscale (float), single-char (str), name (str), default cycle ("CX", X int), none for invisible
+
+    horizontalalignment or ha: {"center", "left", "right"}, optional
+        Horizontal alignment of text
+
+    verticalalignment or va: {"center", "top", "bottom"}, optional
+        Vertical alignment of text
+
+    rotation: float or {"vertical", "horizontal"}, optional
+        Rotation angle in degrees or preset rotation
+
     label: str, optional
         Legend entry
     """

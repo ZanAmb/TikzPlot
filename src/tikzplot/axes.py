@@ -9,6 +9,7 @@ from skimage import measure
 
 from .elements import Graph, Single
 from .texts import Text
+from .arrows import Arrow
 from .config import TikzConfig
 from .colorbar import Colorbar
 from .state import _next_imshow_num, main_name
@@ -2560,6 +2561,32 @@ class BaseAxes:
             txt = Text(self, x, y, None, s, **kwargs)
         self._elements[self._get_overlay()].append(txt)
 
+    def annotate(self, text, xy, xytext=None, arrowprops=None, **kwargs):
+        kws = {"alpha", "color", "c", "fontsize", "size", "backgroundcolor", "horizontalalignment", "ha", "verticalalignment", "va", "rotation", "label"}
+        kwargs = self._check_kwargs("annotate", kws, **kwargs)
+        akws = {"arrowstyle", "alpha", "color", "c", "linewidth", "lw", "linestyle", "ls"}
+        passing_kwargs = {"alpha", "color", "c"}
+        ap0 = {k: kwargs[k] for k in passing_kwargs if k in kwargs}
+        if arrowprops is not None:
+            arrowprops = self._check_kwargs("annotate: arrowprops", akws, **arrowprops)
+        else:
+            arrowprops = {}
+        arrowprops = ap0 | arrowprops
+        assert self._fig is not None
+        xa, ya = xy
+        if xytext is not None:
+            xt, yt = xytext
+        else:
+            return self.text(xa, ya, text, **kwargs)
+        ca = self._fig._next_coordinate_name()
+        ct = self._fig._next_coordinate_name()
+        txt = Text(self, xt, yt, ct, text, **kwargs)
+        self._fig._add_text(txt)
+        arr = Arrow(self, xa, ya, xt, yt, ca, ct, **arrowprops)
+        self._fig._add_arrow(arr)
+        self._elements[self._get_overlay()].append(txt)
+        self._elements[self._get_overlay()].append(arr)
+
     def magnify(self, x_p, y_p, x_m, y_m, zoom, size, **kwargs):
         kws = {"shape", "connect"}
         kwargs = self._check_kwargs("magnify", kws, **kwargs)
@@ -2567,6 +2594,9 @@ class BaseAxes:
         n = self._fig._add_spy(zoom, size, **kwargs)
         self._coordinates.update({f"spypoint{n}": (x_p,y_p)})
         self._coordinates.update({f"spyviewr{n}": (x_m,y_m)})
+
+    def set_axis_off(self):
+        self._axis_options["hide axis"] = None
 
     def _add_legend_entries(self):
         if self._add_legend == []: return ""

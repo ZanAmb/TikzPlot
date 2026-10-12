@@ -37,6 +37,7 @@ class Figure:
         self._num_coordinates = 0
 
         self._texts = []
+        self._arrows = []
 
         self._lims = {"xmin": {}, "xmax": {}, "ymin": {}, "ymax": {}, "zmin": {}, "zmax": {}}
 
@@ -628,6 +629,8 @@ class Figure:
             lines.append(spy)
         for text in self._texts:
             lines.append(text._to_tex_fin())
+        for arr in self._arrows:
+            lines.append(arr._to_tex_fin())
         for ext in self._external:
             lines.append(ext._to_tex())
         lines.append("\\end{tikzpicture}")
@@ -729,6 +732,9 @@ class Figure:
     
     def _add_text(self, text):
         self._texts.append(text)
+
+    def _add_arrow(self, arrow):
+        self._arrows.append(arrow)
 
     def tight_layout(self, h_pad=0, w_pad=0, rect=(0,0,1,1)):
         TikzConfig.SCALE_ONLY_AXIS = True
